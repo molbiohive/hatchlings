@@ -1,123 +1,206 @@
 <script lang="ts">
-	import type { Feature } from '../../types/index.js';
+	import type { Part } from '../../types/index.js';
 	import { getFeatureColor } from '../../util/colors.js';
+	import { IntervalTree } from '../../util/interval-tree.js';
 
 	interface Props {
-		/** Array of features to render */
-		features: Feature[];
-		/** Start bp of this row */
+		parts: Part[];
 		start: number;
-		/** End bp of this row */
 		end: number;
-		/** Y position */
 		y?: number;
-		/** Characters per row */
 		charsPerRow?: number;
-		/** Width of each character in pixels */
 		charWidth?: number;
+		onpartclick?: (part: Part) => void;
+		onparthover?: (part: Part | null, e?: MouseEvent) => void;
 	}
 
-	let { features, start, end, y = 0, charsPerRow = 60, charWidth = 10 }: Props = $props();
+	let { parts, start, end, y = 0, charsPerRow = 60, charWidth = 10, onpartclick, onparthover }: Props = $props();
 
 	const TRACK_HEIGHT = 16;
 	const TRACK_GAP = 2;
 	const ARROW_WIDTH = 6;
+	const NOTCH_WIDTH = 4;
 
-	/** Features visible within this row's range */
-	const visibleFeatures = $derived.by(() => {
-		return features.filter((f) => {
-			return f.start < end && f.end > start;
-		});
+	const visibleParts = $derived.by(() => {
+		return parts.filter((p) => p.start < end && p.end > start);
 	});
 
-	/** Assign lanes to overlapping features to avoid collisions */
+	/** Use IntervalTree for layer computation */
 	const laneAssignments = $derived.by(() => {
-		const sorted = [...visibleFeatures].sort((a, b) => a.start - b.start);
-		const lanes: { end: number }[] = [];
-		const assignments = new Map<Feature, number>();
-
-		for (const feat of sorted) {
-			let assignedLane = -1;
-			for (let i = 0; i < lanes.length; i++) {
-				if (feat.start >= lanes[i].end) {
-					assignedLane = i;
-					lanes[i].end = feat.end;
-					break;
-				}
-			}
-			if (assignedLane === -1) {
-				assignedLane = lanes.length;
-				lanes.push({ end: feat.end });
-			}
-			assignments.set(feat, assignedLane);
-		}
+		const intervals = visibleParts.map((p) => ({ start: p.start, end: p.end }));
+		const layers = IntervalTree.computeLayers(intervals);
+		const assignments = new Map<Part, number>();
+		visibleParts.forEach((part, i) => {
+			assignments.set(part, layers.get(i) ?? 0);
+		});
 		return assignments;
 	});
 
-	function featureX(bp: number): number {
+	function partX(bp: number): number {
 		return Math.max(0, (bp - start)) * charWidth;
 	}
 
-	function featureWidth(feat: Feature): number {
-		const visStart = Math.max(feat.start, start);
-		const visEnd = Math.min(feat.end, end);
+	function partWidth(part: Part): number {
+		const visStart = Math.max(part.start, start);
+		const visEnd = Math.min(part.end, end);
 		return (visEnd - visStart) * charWidth;
 	}
 
-	function arrowPath(feat: Feature, lane: number): string {
-		const fx = featureX(Math.max(feat.start, start));
-		const fw = featureWidth(feat);
+	/** Truncate label with ellipsis if too wide */
+	function truncateLabel(text: string, maxWidth: number): string {
+		const charPx = 6;
+		const maxChars = Math.floor(maxWidth / charPx) - 1;
+		if (maxChars <= 0) return '';
+		if (text.length <= maxChars) return text;
+		if (maxChars <= 2) return '';
+		return text.slice(0, maxChars - 1) + '\u2026';
+	}
+
+	function arrowPath(part: Part, lane: number): string {
+		const clippedStart = Math.max(part.start, start);
+		const clippedEnd = Math.min(part.end, end);
+		const fx = partX(clippedStart);
+		const fw = partWidth(part);
 		const fy = y + lane * (TRACK_HEIGHT + TRACK_GAP);
 		const h = TRACK_HEIGHT;
 
+		const continuesLeft = part.start < start;
+		const continuesRight = part.end > end;
+
 		if (fw <= ARROW_WIDTH * 2) {
-			// Too small for arrow, draw simple rect
 			return `M ${fx} ${fy} L ${fx + fw} ${fy} L ${fx + fw} ${fy + h} L ${fx} ${fy + h} Z`;
 		}
 
-		if (feat.strand === 1) {
-			// Forward arrow: body + arrowhead on right
-			const bodyEnd = fx + fw - ARROW_WIDTH;
-			return `M ${fx} ${fy} L ${bodyEnd} ${fy} L ${fx + fw} ${fy + h / 2} L ${bodyEnd} ${fy + h} L ${fx} ${fy + h} Z`;
+		if (continuesLeft && part.strand === 1) {
+			const pts: string[] = [];
+			pts.push(`M ${fx + NOTCH_WIDTH} ${fy}`);
+			if (continuesRight) {
+				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy}`);
+				pts.push(`L ${fx + fw} ${fy + h / 2}`);
+				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy + h}`);
+			} else {
+				const bodyEnd = fx + fw - ARROW_WIDTH;
+				pts.push(`L ${bodyEnd} ${fy}`);
+				pts.push(`L ${fx + fw} ${fy + h / 2}`);
+				pts.push(`L ${bodyEnd} ${fy + h}`);
+			}
+			pts.push(`L ${fx + NOTCH_WIDTH} ${fy + h}`);
+			pts.push(`L ${fx} ${fy + h / 2}`);
+			pts.push('Z');
+			return pts.join(' ');
+		}
+
+		if (continuesLeft && part.strand === -1) {
+			const pts: string[] = [];
+			pts.push(`M ${fx} ${fy + h / 2}`);
+			pts.push(`L ${fx + ARROW_WIDTH} ${fy}`);
+			if (continuesRight) {
+				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy}`);
+				pts.push(`L ${fx + fw} ${fy + h / 2}`);
+				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy + h}`);
+			} else {
+				pts.push(`L ${fx + fw} ${fy}`);
+				pts.push(`L ${fx + fw} ${fy + h}`);
+			}
+			pts.push(`L ${fx + ARROW_WIDTH} ${fy + h}`);
+			pts.push('Z');
+			return pts.join(' ');
+		}
+
+		if (part.strand === 1) {
+			const pts: string[] = [];
+			pts.push(`M ${fx} ${fy}`);
+			if (continuesRight) {
+				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy}`);
+				pts.push(`L ${fx + fw} ${fy + h / 2}`);
+				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy + h}`);
+			} else {
+				const bodyEnd = fx + fw - ARROW_WIDTH;
+				pts.push(`L ${bodyEnd} ${fy}`);
+				pts.push(`L ${fx + fw} ${fy + h / 2}`);
+				pts.push(`L ${bodyEnd} ${fy + h}`);
+			}
+			pts.push(`L ${fx} ${fy + h}`);
+			pts.push('Z');
+			return pts.join(' ');
 		} else {
-			// Reverse arrow: arrowhead on left + body
-			const bodyStart = fx + ARROW_WIDTH;
-			return `M ${fx} ${fy + h / 2} L ${bodyStart} ${fy} L ${fx + fw} ${fy} L ${fx + fw} ${fy + h} L ${bodyStart} ${fy + h} Z`;
+			const pts: string[] = [];
+			if (!continuesLeft) {
+				pts.push(`M ${fx} ${fy + h / 2}`);
+				pts.push(`L ${fx + ARROW_WIDTH} ${fy}`);
+			} else {
+				pts.push(`M ${fx} ${fy}`);
+			}
+			if (continuesRight) {
+				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy}`);
+				pts.push(`L ${fx + fw} ${fy + h / 2}`);
+				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy + h}`);
+			} else {
+				pts.push(`L ${fx + fw} ${fy}`);
+				pts.push(`L ${fx + fw} ${fy + h}`);
+			}
+			if (!continuesLeft) {
+				pts.push(`L ${fx + ARROW_WIDTH} ${fy + h}`);
+			} else {
+				pts.push(`L ${fx} ${fy + h}`);
+			}
+			pts.push('Z');
+			return pts.join(' ');
 		}
 	}
 </script>
 
 <g class="hatch-annotation-track">
-	{#each visibleFeatures as feat}
-		{@const lane = laneAssignments.get(feat) ?? 0}
-		{@const color = getFeatureColor(feat.type, feat.color)}
-		{@const fx = featureX(Math.max(feat.start, start))}
-		{@const fw = featureWidth(feat)}
+	{#each visibleParts as part}
+		{@const lane = laneAssignments.get(part) ?? 0}
+		{@const color = getFeatureColor(part.type, part.color)}
+		{@const fx = partX(Math.max(part.start, start))}
+		{@const fw = partWidth(part)}
 		{@const fy = y + lane * (TRACK_HEIGHT + TRACK_GAP)}
+		{@const labelText = part.label ?? part.name}
+		{@const displayLabel = truncateLabel(labelText, fw - 8)}
 
-		<!-- Feature arrow/rect -->
-		<path
-			d={arrowPath(feat, lane)}
-			fill={color}
-			fill-opacity="0.7"
-			stroke={color}
-			stroke-width="1"
-		/>
+		<g
+			class="annotation-part"
+			onclick={() => onpartclick?.(part)}
+			onmouseenter={(e) => onparthover?.(part, e)}
+			onmouseleave={() => onparthover?.(null)}
+		>
+			<path
+				d={arrowPath(part, lane)}
+				fill={color}
+				fill-opacity="0.8"
+				stroke="#000"
+				stroke-width="0.5"
+			/>
 
-		<!-- Feature label -->
-		{#if fw > 20}
-			<text
-				x={fx + fw / 2}
-				y={fy + TRACK_HEIGHT / 2 + 1}
-				text-anchor="middle"
-				dominant-baseline="middle"
-				fill="var(--hatch-annotation-text, #fff)"
-				font-size="10"
-				font-weight="600"
-				font-family="var(--hatch-font, -apple-system, sans-serif)"
-			>
-				{feat.label ?? feat.name}
-			</text>
-		{/if}
+			{#if displayLabel}
+				<text
+					x={fx + fw / 2}
+					y={fy + TRACK_HEIGHT / 2 + 1}
+					text-anchor="middle"
+					dominant-baseline="middle"
+					fill="var(--hatch-annotation-text, #fff)"
+					font-size="10"
+					font-weight="600"
+					font-family="var(--hatch-font, -apple-system, sans-serif)"
+				>
+					{displayLabel}
+				</text>
+			{/if}
+
+			<title>{labelText} ({part.type}) {part.start}..{part.end} [{part.strand === 1 ? '+' : '-'}]</title>
+		</g>
 	{/each}
 </g>
+
+<style>
+	.annotation-part {
+		cursor: pointer;
+	}
+
+	.annotation-part:hover path {
+		stroke: #fff;
+		stroke-width: 1;
+	}
+</style>

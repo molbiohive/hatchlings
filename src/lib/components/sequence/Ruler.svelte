@@ -52,7 +52,7 @@
 		y1={y}
 		x2={x + (end - start)}
 		y2={y}
-		stroke="var(--hatch-ruler-color, #555)"
+		stroke="var(--hatch-ruler-color, #4a5a6a)"
 		stroke-width="1"
 	/>
 
@@ -64,7 +64,7 @@
 			y1={y}
 			x2={tx}
 			y2={tick.major ? y - 8 : y - 4}
-			stroke="var(--hatch-ruler-color, #555)"
+			stroke="var(--hatch-ruler-color, #4a5a6a)"
 			stroke-width={tick.major ? 1 : 0.5}
 		/>
 		<!-- Label -->
@@ -73,7 +73,7 @@
 				x={tx}
 				y={y - 10}
 				text-anchor="middle"
-				fill="var(--hatch-ruler-text, #888)"
+				fill="var(--hatch-ruler-text, #7a8898)"
 				font-size="9"
 				font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 			>{tick.label}</text>

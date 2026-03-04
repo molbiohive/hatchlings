@@ -14,3 +14,4 @@ export { default as HeatmapViewer } from './HeatmapViewer.svelte';
 export { default as ScatterPlot } from './ScatterPlot.svelte';
 export { default as SeqLogo } from './SeqLogo.svelte';
 export { default as FlowCytometryViewer } from './FlowCytometryViewer.svelte';
+export { default as CompositionChart } from './CompositionChart.svelte';

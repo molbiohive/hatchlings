@@ -23,8 +23,6 @@
 	const plotH = $derived(height - margin.top - margin.bottom);
 	const colW = $derived(plotW / Math.max(positions.length, 1));
 
-	let svgEl: SVGSVGElement | undefined = $state();
-
 	const colors = $derived(alphabet === 'protein' ? aminoAcidColors : nucleotideColors);
 
 	// Maximum possible information content
@@ -64,23 +62,23 @@
 </script>
 
 <div class="hatch-seqlogo">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		{#if title}
-			<text x={width / 2} y="16" text-anchor="middle" fill="var(--hatch-title-color, #ddd)" font-size="12" font-weight="600">{title}</text>
+			<text x={width / 2} y="16" text-anchor="middle" fill="var(--hatch-title-color, #d4dce6)" font-size="12" font-weight="600">{title}</text>
 		{/if}
 
 		<!-- Y axis (bits) -->
 		<line x1={margin.left} y1={margin.top} x2={margin.left} y2={margin.top + plotH}
-			stroke="var(--hatch-axis-color, #666)" stroke-width="1" />
+			stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" />
 		{#each [0, 0.5, 1, 1.5, 2] as tick}
 			{#if tick <= maxBits}
 				{@const ty = margin.top + plotH - scaleH(tick)}
 				<line x1={margin.left - 4} y1={ty} x2={margin.left} y2={ty}
-					stroke="var(--hatch-axis-color, #666)" stroke-width="1" />
-				<text x={margin.left - 6} y={ty + 3} text-anchor="end" fill="var(--hatch-axis-text, #888)" font-size="9">{tick}</text>
+					stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" />
+				<text x={margin.left - 6} y={ty + 3} text-anchor="end" fill="var(--hatch-axis-text, #7a8898)" font-size="9">{tick}</text>
 			{/if}
 		{/each}
-		<text x={margin.left - 28} y={margin.top + plotH / 2} text-anchor="middle" fill="var(--hatch-axis-label, #aaa)" font-size="10"
+		<text x={margin.left - 28} y={margin.top + plotH / 2} text-anchor="middle" fill="var(--hatch-axis-label, #95a3b3)" font-size="10"
 			transform="rotate(-90, {margin.left - 28}, {margin.top + plotH / 2})">bits</text>
 
 		<!-- Position numbers -->
@@ -90,7 +88,7 @@
 					x={margin.left + i * colW + colW / 2}
 					y={margin.top + plotH + 16}
 					text-anchor="middle"
-					fill="var(--hatch-axis-text, #888)"
+					fill="var(--hatch-axis-text, #7a8898)"
 					font-size="8"
 				>{i + 1}</text>
 			{/if}

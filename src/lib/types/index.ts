@@ -5,3 +5,7 @@ export * from './plate.js';
 export * from './kinetics.js';
 export * from './chromatography.js';
 export * from './interaction.js';
+export * from './alignment.js';
+export * from './protein.js';
+export * from './composition.js';
+export * from './utility.js';

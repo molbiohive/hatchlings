@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { WaterfallBar } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import AxisY from '../shared/AxisY.svelte';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		bars: WaterfallBar[];
@@ -11,6 +11,7 @@
 		xLabel?: string;
 		yLabel?: string;
 		sortDescending?: boolean;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -20,14 +21,12 @@
 		xLabel = '',
 		yLabel = 'Value',
 		sortDescending = true,
+		onhoverinfo,
 	}: Props = $props();
 
 	const margin = { top: 20, right: 20, bottom: 60, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
-
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
 
 	const sortedBars = $derived.by(() => {
 		if (!sortDescending) return bars;
@@ -50,19 +49,19 @@
 
 	function barColor(bar: WaterfallBar, idx: number): string {
 		if (bar.color) return bar.color;
-		if (bar.value > 0) return 'var(--hatch-positive, #4daf4a)';
-		return 'var(--hatch-negative, #e41a1c)';
+		if (bar.value > 0) return 'var(--hatch-positive, #58b56a)';
+		return 'var(--hatch-negative, #d45858)';
 	}
 </script>
 
 <div class="hatch-waterfall" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plot-bg, #1a1a2e)" rx="2" />
+			fill="var(--hatch-plot-bg, #141c26)" rx="2" />
 
 		<!-- Zero line -->
 		<line x1={margin.left} y1={scaleY(0)} x2={margin.left + plotW} y2={scaleY(0)}
-			stroke="var(--hatch-axis-color, #666)" stroke-width="1" />
+			stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" />
 
 		<!-- Bars -->
 		{#each sortedBars as bar, idx}
@@ -78,9 +77,9 @@
 				opacity="0.85"
 				rx="1"
 				onmouseenter={(e) => {
-					tooltip = { visible: true, x: e.clientX, y: e.clientY, text: `${bar.label}: ${bar.value.toFixed(2)}` };
+					onhoverinfo?.({ title: bar.label, items: [{label: 'Value', value: bar.value.toFixed(2)}], position: { x: e.clientX, y: e.clientY } });
 				}}
-				onmouseleave={() => tooltip.visible = false}
+				onmouseleave={() => onhoverinfo?.(null)}
 				style="cursor: pointer"
 			/>
 		{/each}
@@ -92,7 +91,7 @@
 				<text
 					x={bx} y={margin.top + plotH + 8}
 					text-anchor="end"
-					fill="var(--hatch-axis-text, #888)" font-size="8"
+					fill="var(--hatch-axis-text, #7a8898)" font-size="8"
 					transform="rotate(-45, {bx}, {margin.top + plotH + 8})"
 				>{bar.label}</text>
 			{/if}
@@ -101,9 +100,6 @@
 		<AxisY min={yRange.min} max={yRange.max} height={plotH} x={margin.left} y={margin.top} label={yLabel} />
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

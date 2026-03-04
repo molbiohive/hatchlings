@@ -48,9 +48,9 @@
 	}
 
 	button {
-		background: var(--hatch-controls-bg, #2a2a3e);
-		border: 1px solid var(--hatch-controls-border, #444);
-		color: var(--hatch-controls-color, #ccc);
+		background: var(--hatch-controls-bg, #1e2a38);
+		border: 1px solid var(--hatch-controls-border, #3a4858);
+		color: var(--hatch-controls-color, #d4dce6);
 		cursor: pointer;
 		padding: 4px 12px;
 		border-radius: 4px;
@@ -59,7 +59,7 @@
 	}
 
 	button:hover {
-		background: var(--hatch-controls-hover, #3a3a5e);
+		background: var(--hatch-controls-hover, #2a3848);
 	}
 
 	.hatch-export-menu {
@@ -67,8 +67,8 @@
 		top: 100%;
 		right: 0;
 		margin-top: 4px;
-		background: var(--hatch-controls-bg, #2a2a3e);
-		border: 1px solid var(--hatch-controls-border, #444);
+		background: var(--hatch-controls-bg, #1e2a38);
+		border: 1px solid var(--hatch-controls-border, #3a4858);
 		border-radius: 4px;
 		overflow: hidden;
 		z-index: 100;

@@ -15,8 +15,7 @@
 	name={data.name}
 	size={data.size}
 	topology={data.topology}
-	features={data.features}
-	primers={data.primers}
+	parts={data.parts}
 	cutSites={data.cutSites}
 	{width}
 	{height}

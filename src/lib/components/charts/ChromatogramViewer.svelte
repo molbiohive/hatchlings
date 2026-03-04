@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { ChromData, ChromTrace, ChromPeak, ChromFraction } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		traces: ChromTrace[];
@@ -14,6 +14,7 @@
 		height?: number;
 		showPeaks?: boolean;
 		showFractions?: boolean;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -25,15 +26,13 @@
 		height = 350,
 		showPeaks = true,
 		showFractions = true,
+		onhoverinfo,
 	}: Props = $props();
 
 	const margin = { top: 20, right: 60, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
 	const fractionH = 20;
-
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
 
 	const xRange = $derived.by(() => {
 		const allX = traces.flatMap(t => t.x);
@@ -74,15 +73,15 @@
 </script>
 
 <div class="hatch-chromatogram" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plot-bg, #1a1a2e)" rx="2" />
+			fill="var(--hatch-plot-bg, #141c26)" rx="2" />
 
 		<!-- Grid lines -->
 		{#each Array.from({length: 5}, (_, i) => i) as i}
 			{@const yVal = yRangeLeft.min + (i / 4) * (yRangeLeft.max - yRangeLeft.min)}
 			<line x1={margin.left} y1={scaleY(yVal)} x2={margin.left + plotW} y2={scaleY(yVal)}
-				stroke="var(--hatch-grid-color, #2a2a4a)" stroke-width="0.5" />
+				stroke="var(--hatch-grid-color, #1e2a38)" stroke-width="0.5" />
 		{/each}
 
 		<!-- Fraction bars -->
@@ -103,7 +102,7 @@
 					x={(scaleX(frac.start) + scaleX(frac.end)) / 2}
 					y={fracY + fractionH / 2 + 3}
 					text-anchor="middle"
-					fill="var(--hatch-axis-text, #888)"
+					fill="var(--hatch-axis-text, #7a8898)"
 					font-size="8"
 				>{frac.name}</text>
 			{/each}
@@ -124,7 +123,7 @@
 						x={scaleX(peak.apex)}
 						y={margin.top + 14}
 						text-anchor="middle"
-						fill="var(--hatch-axis-text, #aaa)"
+						fill="var(--hatch-axis-text, #95a3b3)"
 						font-size="10"
 					>{peak.label}</text>
 				{/if}
@@ -156,14 +155,11 @@
 		{#each traces as trace, idx}
 			<g transform="translate({margin.left + 10}, {margin.top + 10 + idx * 18})">
 				<line x1="0" y1="0" x2="16" y2="0" stroke={traceColor(trace, idx)} stroke-width="2" />
-				<text x="22" y="4" fill="var(--hatch-legend-color, #aaa)" font-size="10">{trace.name}</text>
+				<text x="22" y="4" fill="var(--hatch-legend-color, #95a3b3)" font-size="10">{trace.name}</text>
 			</g>
 		{/each}
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

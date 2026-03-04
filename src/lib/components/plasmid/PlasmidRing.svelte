@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { generateTicks, bpToXY } from '../../util/coordinates.js';
+	import { generateTicks, bpToAngle, angleToXY } from '../../util/coordinates.js';
 
 	interface Props {
 		size: number;
@@ -7,48 +7,70 @@
 		cx: number;
 		cy: number;
 		showTicks?: boolean;
+		axisWidth?: number;
+		/** Current rotation of the map in degrees — used to counter-rotate tick labels */
+		rotation?: number;
 	}
 
-	let { size, radius, cx, cy, showTicks = true }: Props = $props();
+	let { size, radius, cx, cy, showTicks = true, axisWidth = 12, rotation = 0 }: Props = $props();
 
 	let ticks = $derived(generateTicks(size));
+
+	let innerR = $derived(radius - axisWidth / 2);
+	let outerR = $derived(radius + axisWidth / 2);
+
+	const RAD_TO_DEG = 180 / Math.PI;
 </script>
 
 <g class="plasmid-ring">
-	<!-- Backbone circle -->
+	<!-- Inner backbone circle -->
 	<circle
 		{cx}
 		{cy}
-		r={radius}
+		r={innerR}
 		fill="none"
-		stroke="var(--hatch-ring-color, #555)"
-		stroke-width="2"
+		stroke="var(--hatch-ring-color, #4a5a6a)"
+		stroke-width="1.5"
+	/>
+	<!-- Outer axis ring circle -->
+	<circle
+		{cx}
+		{cy}
+		r={outerR}
+		fill="none"
+		stroke="var(--hatch-ring-color, #4a5a6a)"
+		stroke-width="1.5"
 	/>
 
-	<!-- Tick marks -->
+	<!-- Tick marks between inner and outer circles -->
 	{#if showTicks}
 		{#each ticks as tick}
-			{@const inner = bpToXY(tick.position, size, radius - (tick.major ? 8 : 4), cx, cy)}
-			{@const outer = bpToXY(tick.position, size, radius + (tick.major ? 8 : 4), cx, cy)}
+			{@const angle = bpToAngle(tick.position, size)}
+			{@const inner = angleToXY(angle, innerR, cx, cy)}
+			{@const outer = angleToXY(angle, outerR, cx, cy)}
 			<line
 				x1={inner.x}
 				y1={inner.y}
 				x2={outer.x}
 				y2={outer.y}
-				stroke={tick.major ? 'var(--hatch-tick-major, #777)' : 'var(--hatch-tick-minor, #444)'}
+				stroke={tick.major ? 'var(--hatch-tick-major, #5a6a7a)' : 'var(--hatch-tick-minor, #3a4858)'}
 				stroke-width={tick.major ? 1.5 : 0.75}
 			/>
 			{#if tick.major && tick.label}
-				{@const labelPt = bpToXY(tick.position, size, radius + 20, cx, cy)}
-				<text
-					x={labelPt.x}
-					y={labelPt.y}
-					text-anchor="middle"
-					dominant-baseline="central"
-					class="tick-label"
-				>
-					{tick.label}
-				</text>
+				{@const labelR = outerR + 14}
+				{@const labelPt = angleToXY(angle, labelR, cx, cy)}
+				<!-- Counter-rotate to keep label upright regardless of map rotation -->
+				<g transform="rotate({-rotation}, {labelPt.x}, {labelPt.y})">
+					<text
+						x={labelPt.x}
+						y={labelPt.y}
+						text-anchor="middle"
+						dominant-baseline="central"
+						class="tick-label"
+					>
+						{tick.label}
+					</text>
+				</g>
 			{/if}
 		{/each}
 	{/if}
@@ -56,8 +78,8 @@
 
 <style>
 	.tick-label {
-		font-size: 9px;
-		fill: var(--hatch-axis-text, #888);
+		font-size: 8px;
+		fill: var(--hatch-axis-text, #7a8898);
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
 		pointer-events: none;
 	}

@@ -30,20 +30,16 @@
 
 	let colors = $derived(stainColors[stain]);
 
-	/** Band width proportional to intensity; ladder bands are thinner.
-	 *  Clamped to max 60px and min 4px for consistent readability. */
-	let bandWidth = $derived.by(() => {
-		const maxWidth = Math.min(isLadder ? laneWidth * 0.5 : laneWidth * 0.7, 60);
-		return Math.max(maxWidth * band.intensity, 4);
-	});
+	/** Band width (horizontal): identical for ALL bands in a lane */
+	let bandWidth = $derived(
+		Math.min(isLadder ? laneWidth * 0.5 : laneWidth * 0.65, 60)
+	);
 
-	/** Band thickness: inversely proportional to fragment size (smaller = thinner).
-	 *  Clamp between 1.5 and 6 pixels. */
+	/** Band thickness (vertical): varies by intensity — more material = thicker */
 	let bandThickness = $derived.by(() => {
-		const maxSize = 10000;
-		const normalized = Math.min(band.size / maxSize, 1);
-		const thickness = 2 + normalized * 4;
-		return isLadder ? Math.max(thickness * 0.6, 1.5) : thickness;
+		const minT = isLadder ? 1.5 : 2;
+		const maxT = isLadder ? 4 : 7;
+		return minT + band.intensity * (maxT - minT);
 	});
 
 	let bandY = $derived(band.position * gelHeight);
@@ -116,6 +112,7 @@
 	.gel-band {
 		cursor: pointer;
 		transition: filter 0.15s;
+		outline: none;
 	}
 
 	.gel-band:hover {

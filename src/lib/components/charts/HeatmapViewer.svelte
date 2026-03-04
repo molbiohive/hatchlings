@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { HeatmapData } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { interpolateColor, type colorScales } from '../../util/colors.js';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		rows: string[];
@@ -12,6 +12,7 @@
 		height?: number;
 		showLabels?: boolean;
 		cellBorder?: boolean;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -23,6 +24,7 @@
 		height = 400,
 		showLabels = true,
 		cellBorder = true,
+		onhoverinfo,
 	}: Props = $props();
 
 	const margin = { top: 60, right: 20, bottom: 20, left: 80 };
@@ -30,9 +32,6 @@
 	const plotH = $derived(height - margin.top - margin.bottom);
 	const cellW = $derived(plotW / Math.max(cols.length, 1));
 	const cellH = $derived(plotH / Math.max(rows.length, 1));
-
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
 
 	const barW = 12;
 	const barH = $derived(Math.min(plotH, 150));
@@ -51,7 +50,7 @@
 </script>
 
 <div class="hatch-heatmap" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<!-- Column headers -->
 		{#if showLabels}
 			{#each cols as col, ci}
@@ -59,7 +58,7 @@
 					x={margin.left + ci * cellW + cellW / 2}
 					y={margin.top - 8}
 					text-anchor="end"
-					fill="var(--hatch-axis-text, #888)"
+					fill="var(--hatch-axis-text, #7a8898)"
 					font-size={cols.length > 30 ? 6 : 9}
 					transform="rotate(-45, {margin.left + ci * cellW + cellW / 2}, {margin.top - 8})"
 				>{col}</text>
@@ -73,7 +72,7 @@
 					x={margin.left - 6}
 					y={margin.top + ri * cellH + cellH / 2 + 3}
 					text-anchor="end"
-					fill="var(--hatch-axis-text, #888)"
+					fill="var(--hatch-axis-text, #7a8898)"
 					font-size={rows.length > 30 ? 6 : 9}
 				>{row}</text>
 			{/each}
@@ -89,15 +88,12 @@
 					width={cellW}
 					height={cellH}
 					fill={cellColor(val)}
-					stroke={cellBorder ? 'var(--hatch-plot-bg, #1a1a2e)' : 'none'}
+					stroke={cellBorder ? 'var(--hatch-plot-bg, #141c26)' : 'none'}
 					stroke-width="0.5"
 					onmouseenter={(e) => {
-						tooltip = {
-							visible: true, x: e.clientX, y: e.clientY,
-							text: `${rows[ri]}, ${cols[ci]}: ${val.toFixed(2)}`,
-						};
+						onhoverinfo?.({ title: `${rows[ri]} × ${cols[ci]}`, items: [{label: 'Value', value: val.toFixed(2)}], position: { x: e.clientX, y: e.clientY } });
 					}}
-					onmouseleave={() => tooltip.visible = false}
+					onmouseleave={() => onhoverinfo?.(null)}
 					style="cursor: crosshair"
 				/>
 			{/each}
@@ -115,13 +111,10 @@
 				fill={cellColor(val)}
 			/>
 		{/each}
-		<text x={barX + barW + 3} y={barY + 8} fill="var(--hatch-axis-text, #888)" font-size="8">{valRange.max.toFixed(1)}</text>
-		<text x={barX + barW + 3} y={barY + barH} fill="var(--hatch-axis-text, #888)" font-size="8">{valRange.min.toFixed(1)}</text>
+		<text x={barX + barW + 3} y={barY + 8} fill="var(--hatch-axis-text, #7a8898)" font-size="8">{valRange.max.toFixed(1)}</text>
+		<text x={barX + barW + 3} y={barY + barH} fill="var(--hatch-axis-text, #7a8898)" font-size="8">{valRange.min.toFixed(1)}</text>
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

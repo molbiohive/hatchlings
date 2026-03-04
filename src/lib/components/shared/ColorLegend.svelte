@@ -31,7 +31,7 @@
 	.hatch-legend {
 		font-family: var(--hatch-font, sans-serif);
 		font-size: 11px;
-		color: var(--hatch-legend-color, #aaa);
+		color: var(--hatch-legend-color, #95a3b3);
 	}
 
 	.legend-title {

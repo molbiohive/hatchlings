@@ -13,8 +13,7 @@
 
 <SequenceViewer
 	seq={data.seq}
-	features={data.features}
-	primers={data.primers}
+	parts={data.parts}
 	cutSites={data.cutSites}
 	translations={data.translations}
 	{width}

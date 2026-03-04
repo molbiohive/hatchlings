@@ -29,9 +29,16 @@
 		}
 	},
 	"peerDependencies": {
-		"svelte": "^5.0.0"
+		"svelte": "^5.0.0",
+		"3dmol": "^2.4.2"
+	},
+	"peerDependenciesMeta": {
+		"3dmol": {
+			"optional": true
+		}
 	},
 	"devDependencies": {
+		"3dmol": "^2.4.2",
 		"@sveltejs/adapter-auto": "^7.0.0",
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/package": "^2.5.7",

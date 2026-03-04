@@ -36,28 +36,28 @@
 
 <g class="hatch-axis-y">
 	<!-- Axis line -->
-	<line x1={x} y1={y} x2={x} y2={y + height} stroke="var(--hatch-axis-color, #666)" stroke-width="1" />
+	<line x1={x} y1={y} x2={x} y2={y + height} stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" />
 
 	<!-- Ticks -->
 	{#each tickValues as val}
 		{@const ty = scaleY(val)}
 		{#if side === 'left'}
-			<line x1={x - 6} y1={ty} x2={x} y2={ty} stroke="var(--hatch-axis-color, #666)" stroke-width="1" />
+			<line x1={x - 6} y1={ty} x2={x} y2={ty} stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" />
 			<text
 				x={x - 8}
 				y={ty + 3}
 				text-anchor="end"
-				fill="var(--hatch-axis-text, #888)"
+				fill="var(--hatch-axis-text, #7a8898)"
 				font-size="10"
 				font-family="var(--hatch-font-mono, monospace)"
 			>{formatTick(val)}</text>
 		{:else}
-			<line x1={x} y1={ty} x2={x + 6} y2={ty} stroke="var(--hatch-axis-color, #666)" stroke-width="1" />
+			<line x1={x} y1={ty} x2={x + 6} y2={ty} stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" />
 			<text
 				x={x + 8}
 				y={ty + 3}
 				text-anchor="start"
-				fill="var(--hatch-axis-text, #888)"
+				fill="var(--hatch-axis-text, #7a8898)"
 				font-size="10"
 				font-family="var(--hatch-font-mono, monospace)"
 			>{formatTick(val)}</text>
@@ -71,7 +71,7 @@
 			x={lx}
 			y={y + height / 2}
 			text-anchor="middle"
-			fill="var(--hatch-axis-label, #aaa)"
+			fill="var(--hatch-axis-label, #95a3b3)"
 			font-size="12"
 			font-family="var(--hatch-font, sans-serif)"
 			transform="rotate(-90, {lx}, {y + height / 2})"

@@ -100,13 +100,13 @@
 		{width}
 		height={TRACK_HEIGHT}
 		viewBox="0 0 {width} {TRACK_HEIGHT}"
-		style="display: block; background: var(--hatch-bg, #0d1117);"
+		style="display: block; background: var(--hatch-bg, #0c1018);"
 	>
 		<!-- Label -->
 		<text
 			x={4}
 			y={TOP_PADDING + FONT_SIZE - 1}
-			fill="var(--hatch-text-dim, #666)"
+			fill="var(--hatch-text-dim, #566070)"
 			font-size="9"
 			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 		>
@@ -115,7 +115,7 @@
 		<text
 			x={4}
 			y={TOP_PADDING + LINE_HEIGHT + FONT_SIZE - 1}
-			fill="var(--hatch-text-dim, #666)"
+			fill="var(--hatch-text-dim, #566070)"
 			font-size="9"
 			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 		>
@@ -156,7 +156,7 @@
 					x={pos.x}
 					y={TOP_PADDING + LINE_HEIGHT - 1}
 					text-anchor="middle"
-					fill="var(--hatch-tick-minor, #444)"
+					fill="var(--hatch-tick-minor, #3a4858)"
 					font-size="8"
 					font-family="var(--hatch-font-mono, 'SF Mono', monospace)"
 				>
@@ -185,7 +185,7 @@
 				x={width - 6}
 				y={TRACK_HEIGHT - 4}
 				text-anchor="end"
-				fill="var(--hatch-text-dim, #666)"
+				fill="var(--hatch-text-dim, #566070)"
 				font-size="9"
 				font-family="var(--hatch-font-mono, 'SF Mono', monospace)"
 			>

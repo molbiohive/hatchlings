@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { DataPoint, Thresholds } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		points: DataPoint[];
@@ -12,6 +12,7 @@
 		width?: number;
 		height?: number;
 		highlightSignificant?: boolean;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -22,14 +23,12 @@
 		width = 500,
 		height = 400,
 		highlightSignificant = true,
+		onhoverinfo,
 	}: Props = $props();
 
 	const margin = { top: 20, right: 20, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
-
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
 
 	const xRange = $derived.by(() => {
 		const vals = points.map(p => p.x);
@@ -54,33 +53,33 @@
 
 	function pointColor(p: DataPoint): string {
 		if (p.color) return p.color;
-		if (!highlightSignificant) return 'var(--hatch-text-dim, #666)';
+		if (!highlightSignificant) return 'var(--hatch-text-dim, #566070)';
 		const sig = p.significant ?? (
 			p.y >= (thresholds.y ?? 1.3) &&
 			(p.x >= (thresholds.x ?? 1) || p.x <= (thresholds.xNeg ?? -(thresholds.x ?? 1)))
 		);
-		if (!sig) return 'var(--hatch-text-dim, #555)';
+		if (!sig) return 'var(--hatch-text-dim, #4a5a6a)';
 		return p.x > 0 ? '#e41a1c' : '#1f77b4';
 	}
 </script>
 
 <div class="hatch-volcano" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plot-bg, #1a1a2e)" rx="2" />
+			fill="var(--hatch-plot-bg, #141c26)" rx="2" />
 
 		<!-- Threshold lines -->
 		{#if thresholds.y != null}
 			<line x1={margin.left} y1={scaleY(thresholds.y)} x2={margin.left + plotW} y2={scaleY(thresholds.y)}
-				stroke="var(--hatch-axis-color, #666)" stroke-width="1" stroke-dasharray="4 3" />
+				stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" stroke-dasharray="4 3" />
 		{/if}
 		{#if thresholds.x != null}
 			<line x1={scaleX(thresholds.x)} y1={margin.top} x2={scaleX(thresholds.x)} y2={margin.top + plotH}
-				stroke="var(--hatch-axis-color, #666)" stroke-width="1" stroke-dasharray="4 3" />
+				stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" stroke-dasharray="4 3" />
 		{/if}
 		{#if thresholds.xNeg != null}
 			<line x1={scaleX(thresholds.xNeg)} y1={margin.top} x2={scaleX(thresholds.xNeg)} y2={margin.top + plotH}
-				stroke="var(--hatch-axis-color, #666)" stroke-width="1" stroke-dasharray="4 3" />
+				stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" stroke-dasharray="4 3" />
 		{/if}
 
 		<!-- Points -->
@@ -92,12 +91,9 @@
 				fill={pointColor(point)}
 				opacity="0.7"
 				onmouseenter={(e) => {
-					tooltip = {
-						visible: true, x: e.clientX, y: e.clientY,
-						text: `${point.label ?? ''} FC=${point.x.toFixed(2)}, -log10(p)=${point.y.toFixed(2)}`,
-					};
+					onhoverinfo?.({ title: point.label ?? 'Point', items: [{label: 'Fold Change', value: point.x.toFixed(2)}, {label: '-log10(p)', value: point.y.toFixed(2)}], position: { x: e.clientX, y: e.clientY } });
 				}}
-				onmouseleave={() => tooltip.visible = false}
+				onmouseleave={() => onhoverinfo?.(null)}
 				style="cursor: pointer"
 			/>
 		{/each}
@@ -107,7 +103,7 @@
 			<text
 				x={scaleX(point.x) + 5}
 				y={scaleY(point.y) - 5}
-				fill="var(--hatch-axis-text, #aaa)"
+				fill="var(--hatch-axis-text, #95a3b3)"
 				font-size="9"
 			>{point.label}</text>
 		{/each}
@@ -116,9 +112,6 @@
 		<AxisY min={yRange.min} max={yRange.max} height={plotH} x={margin.left} y={margin.top} label={yLabel} />
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

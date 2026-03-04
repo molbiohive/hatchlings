@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PlateData, Well, PlateFormat } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { interpolateColor } from '../../util/colors.js';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		format: PlateFormat;
@@ -13,6 +13,7 @@
 		colorScale?: 'viridis' | 'plasma' | 'blues' | 'reds' | 'diverging';
 		showLabels?: boolean;
 		onwellclick?: (well: Well) => void;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -25,6 +26,7 @@
 		colorScale = 'viridis',
 		showLabels = true,
 		onwellclick,
+		onhoverinfo,
 	}: Props = $props();
 
 	const plateLayouts: Record<PlateFormat, { rows: number; cols: number }> = {
@@ -45,9 +47,6 @@
 	const cellH = $derived(plotH / layout.rows);
 	const wellR = $derived(Math.min(cellW, cellH) * 0.4);
 
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
-
 	const wellMap = $derived.by(() => {
 		const map = new Map<string, Well>();
 		wells.forEach(w => map.set(w.id, w));
@@ -64,29 +63,29 @@
 	}
 
 	function wellColor(well: Well | undefined): string {
-		if (!well) return 'var(--hatch-empty-well, #2a2a3e)';
+		if (!well) return 'var(--hatch-empty-well, #1e2a38)';
 		const { min, max } = valueRange;
 		return interpolateColor(well.value, min, max, colorScale);
 	}
 </script>
 
 <div class="hatch-plate-heatmap" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<!-- Title -->
 		{#if title}
-			<text x={width / 2} y="18" text-anchor="middle" fill="var(--hatch-title-color, #ddd)" font-size="14" font-weight="600">{title}</text>
+			<text x={width / 2} y="18" text-anchor="middle" fill="var(--hatch-title-color, #d4dce6)" font-size="14" font-weight="600">{title}</text>
 		{/if}
 
 		<!-- Z-factor badge -->
 		{#if zFactor != null}
-			<text x={width - margin.right} y="18" text-anchor="end" fill={zFactor >= 0.5 ? 'var(--hatch-positive, #4daf4a)' : zFactor >= 0 ? 'var(--hatch-warning, #ff7f00)' : 'var(--hatch-negative, #e41a1c)'} font-size="11">
+			<text x={width - margin.right} y="18" text-anchor="end" fill={zFactor >= 0.5 ? 'var(--hatch-positive, #58b56a)' : zFactor >= 0 ? 'var(--hatch-warning, #d9953a)' : 'var(--hatch-negative, #d45858)'} font-size="11">
 				Z' = {zFactor.toFixed(3)}
 			</text>
 		{/if}
 
 		<!-- Plate border -->
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plate-bg, #111122)" stroke="var(--hatch-plate-border, #333)" stroke-width="1" rx="4" />
+			fill="var(--hatch-plate-bg, #0c1018)" stroke="var(--hatch-plate-border, #2a3848)" stroke-width="1" rx="4" />
 
 		<!-- Column headers -->
 		{#each Array.from({length: layout.cols}, (_, i) => i) as col}
@@ -94,7 +93,7 @@
 				x={margin.left + col * cellW + cellW / 2}
 				y={margin.top - 6}
 				text-anchor="middle"
-				fill="var(--hatch-axis-text, #888)"
+				fill="var(--hatch-axis-text, #7a8898)"
 				font-size={format >= 384 ? 7 : 10}
 			>{col + 1}</text>
 		{/each}
@@ -105,7 +104,7 @@
 				x={margin.left - 8}
 				y={margin.top + row * cellH + cellH / 2 + 3}
 				text-anchor="end"
-				fill="var(--hatch-axis-text, #888)"
+				fill="var(--hatch-axis-text, #7a8898)"
 				font-size={format >= 384 ? 7 : 10}
 			>{String.fromCharCode(65 + row)}</text>
 		{/each}
@@ -120,18 +119,13 @@
 					cy={margin.top + row * cellH + cellH / 2}
 					r={wellR}
 					fill={wellColor(well)}
-					stroke="var(--hatch-well-border, #333)"
+					stroke="var(--hatch-well-border, #2a3848)"
 					stroke-width="0.5"
 					style="cursor: pointer"
 					onmouseenter={(e) => {
-						tooltip = {
-							visible: true,
-							x: e.clientX,
-							y: e.clientY,
-							text: well ? `${id}: ${well.value.toFixed(2)}${well.label ? ` (${well.label})` : ''}` : id,
-						};
+						onhoverinfo?.({ title: id, items: [...(well ? [{label: 'Value', value: well.value.toFixed(2)}, ...(well.group ? [{label: 'Group', value: well.group}] : [])] : [])], position: { x: e.clientX, y: e.clientY } });
 					}}
-					onmouseleave={() => tooltip.visible = false}
+					onmouseleave={() => onhoverinfo?.(null)}
 					onclick={() => well && onwellclick?.(well)}
 				/>
 				{#if showLabels && format <= 48 && well?.label}
@@ -148,9 +142,6 @@
 		{/each}
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

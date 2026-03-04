@@ -1,8 +1,7 @@
 <script lang="ts">
-	import type { Feature, Primer, Translation } from '../../types/index.js';
-	import { nucleotideColors } from '../../util/colors.js';
+	import type { Part, Translation } from '../../types/index.js';
+	import { nucleotideColors, aminoAcidColors } from '../../util/colors.js';
 	import AnnotationTrack from './AnnotationTrack.svelte';
-	import PrimerTrack from './PrimerTrack.svelte';
 	import TranslationTrack from './TranslationTrack.svelte';
 
 	interface Props {
@@ -10,61 +9,82 @@
 		seq: string;
 		/** Bp position of the first base in this row (0-based) */
 		start: number;
-		/** Features overlapping this row */
-		features?: Feature[];
-		/** Primers overlapping this row */
-		primers?: Primer[];
+		/** Sequence alphabet */
+		alphabet?: 'dna' | 'rna' | 'protein';
+		/** Parts overlapping this row (unified features + primers) */
+		parts?: Part[];
 		/** Translations overlapping this row */
 		translations?: Translation[];
 		/** Width of each character in pixels */
 		charWidth?: number;
 		/** Show position numbers on left */
 		showNumbers?: boolean;
-		/** Show feature annotations */
+		/** Show annotation tracks */
 		showAnnotations?: boolean;
-		/** Show primers */
-		showPrimers?: boolean;
 		/** Show translations */
 		showTranslations?: boolean;
+		/** Show complement strand */
+		showComplement?: boolean;
+		/** Color individual bases */
+		colorBases?: boolean;
+		/** Part click callback */
+		onpartclick?: (part: Part) => void;
+		/** Part hover callback */
+		onparthover?: (part: Part | null, e?: MouseEvent) => void;
 	}
 
 	let {
 		seq,
 		start,
-		features = [],
-		primers = [],
+		alphabet = 'dna',
+		parts = [],
 		translations = [],
 		charWidth = 10,
 		showNumbers = true,
 		showAnnotations = true,
-		showPrimers = true,
 		showTranslations = true,
+		showComplement = false,
+		colorBases = true,
+		onpartclick,
+		onparthover,
 	}: Props = $props();
+
+	const COMPLEMENT_MAP: Record<string, string> = {
+		A: 'T', T: 'A', G: 'C', C: 'G',
+		U: 'A',
+	};
+	function complementBase(b: string): string {
+		return COMPLEMENT_MAP[b.toUpperCase()] ?? b;
+	}
+
+	const MONO_COLOR = 'var(--hatch-seq-base-mono, #8a95a5)';
+
+	let colorMap = $derived(alphabet === 'protein' ? aminoAcidColors : nucleotideColors);
 
 	const end = $derived(start + seq.length);
 	const NUMBER_WIDTH = 50;
 	const SEQ_X = $derived(showNumbers ? NUMBER_WIDTH : 0);
 	const LINE_HEIGHT = 14;
 
-	/** Compute lane count for annotation track to properly offset subsequent tracks */
+	/** Compute lane count for annotation track */
 	const annotationLanes = $derived.by(() => {
-		if (!showAnnotations || features.length === 0) return 0;
-		const visible = features.filter((f) => f.start < end && f.end > start);
+		if (!showAnnotations || parts.length === 0) return 0;
+		const visible = parts.filter((p) => p.start < end && p.end > start);
 		if (visible.length === 0) return 0;
 
 		const sorted = [...visible].sort((a, b) => a.start - b.start);
 		const lanes: { end: number }[] = [];
-		for (const feat of sorted) {
+		for (const part of sorted) {
 			let assigned = false;
 			for (const lane of lanes) {
-				if (feat.start >= lane.end) {
-					lane.end = feat.end;
+				if (part.start >= lane.end) {
+					lane.end = part.end;
 					assigned = true;
 					break;
 				}
 			}
 			if (!assigned) {
-				lanes.push({ end: feat.end });
+				lanes.push({ end: part.end });
 			}
 		}
 		return lanes.length;
@@ -72,18 +92,14 @@
 
 	const ANNOTATION_TRACK_HEIGHT = $derived(annotationLanes * 18);
 
-	/** Y positions for each sub-element */
 	const annotationY = 0;
 	const seqY = $derived(ANNOTATION_TRACK_HEIGHT + (annotationLanes > 0 ? 4 : 0));
-	const translationY = $derived(seqY + LINE_HEIGHT + 4);
-	const primerY = $derived(
-		translationY +
-			(showTranslations && translations.length > 0 ? 20 : 0) +
-			(showTranslations && translations.length > 0 ? 4 : 0)
-	);
+	const complementY = $derived(seqY + LINE_HEIGHT + 2);
+	const complementOffset = $derived(showComplement ? LINE_HEIGHT + 2 : 0);
+	const translationY = $derived(seqY + LINE_HEIGHT + complementOffset + 4);
 	const totalHeight = $derived(
-		primerY +
-			(showPrimers && primers.length > 0 ? 26 : 0)
+		translationY +
+			(showTranslations && translations.length > 0 ? 24 : 0)
 	);
 </script>
 
@@ -95,30 +111,56 @@
 			y={seqY + LINE_HEIGHT / 2 + 1}
 			text-anchor="end"
 			dominant-baseline="middle"
-			fill="var(--hatch-line-number, #666)"
+			fill="var(--hatch-line-number, #566070)"
 			font-size="10"
 			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 		>{start + 1}</text>
 	{/if}
 
-	<!-- Annotation track -->
-	{#if showAnnotations && features.length > 0}
+	<!-- Annotation track (unified parts) -->
+	{#if showAnnotations && parts.length > 0}
 		<g transform="translate({SEQ_X}, 0)">
 			<AnnotationTrack
-				{features}
+				{parts}
 				{start}
 				{end}
 				y={annotationY}
 				charsPerRow={seq.length}
 				{charWidth}
+				{onpartclick}
+				{onparthover}
 			/>
 		</g>
 	{/if}
 
-	<!-- Sequence bases -->
+	<!-- Direction indicators (right side only, to avoid overlap with line numbers) -->
+	{#if showComplement}
+		<text
+			x={SEQ_X + seq.length * charWidth + 4}
+			y={seqY + LINE_HEIGHT / 2 + 1}
+			text-anchor="start"
+			dominant-baseline="middle"
+			fill="var(--hatch-text-dim, #566070)"
+			font-size="8"
+			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
+		>5'→3'</text>
+		<text
+			x={SEQ_X + seq.length * charWidth + 4}
+			y={complementY + LINE_HEIGHT / 2 + 1}
+			text-anchor="start"
+			dominant-baseline="middle"
+			fill="var(--hatch-text-dim, #566070)"
+			font-size="8"
+			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
+		>3'→5'</text>
+	{/if}
+
+	<!-- Forward strand bases -->
 	<g transform="translate({SEQ_X}, {seqY})">
 		{#each seq.split('') as base, i}
-			{@const color = nucleotideColors[base.toUpperCase()] ?? '#999'}
+			{@const upper = base.toUpperCase()}
+			{@const displayChar = alphabet === 'rna' && upper === 'T' ? 'U' : upper}
+			{@const color = colorBases ? (colorMap[displayChar] ?? colorMap[upper] ?? '#999') : MONO_COLOR}
 			<text
 				x={i * charWidth + charWidth / 2}
 				y={LINE_HEIGHT / 2 + 1}
@@ -128,9 +170,30 @@
 				font-size="12"
 				font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 				font-weight="500"
-			>{base.toUpperCase()}</text>
+			>{displayChar}</text>
 		{/each}
 	</g>
+
+	<!-- Complement strand -->
+	{#if showComplement}
+		<g transform="translate({SEQ_X}, {complementY})">
+			{#each seq.split('') as base, i}
+				{@const upper = base.toUpperCase()}
+				{@const comp = complementBase(alphabet === 'rna' && upper === 'T' ? 'U' : upper)}
+				{@const color = colorBases ? (colorMap[comp] ?? '#999') : MONO_COLOR}
+				<text
+					x={i * charWidth + charWidth / 2}
+					y={LINE_HEIGHT / 2 + 1}
+					text-anchor="middle"
+					dominant-baseline="middle"
+					fill={color}
+					font-size="12"
+					font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
+					font-weight="500"
+				>{comp}</text>
+			{/each}
+		</g>
+	{/if}
 
 	<!-- Translation track -->
 	{#if showTranslations && translations.length > 0}
@@ -144,20 +207,6 @@
 					{charWidth}
 				/>
 			{/each}
-		</g>
-	{/if}
-
-	<!-- Primer track -->
-	{#if showPrimers && primers.length > 0}
-		<g transform="translate({SEQ_X}, 0)">
-			<PrimerTrack
-				{primers}
-				{start}
-				{end}
-				y={primerY}
-				charsPerRow={seq.length}
-				{charWidth}
-			/>
 		</g>
 	{/if}
 </g>

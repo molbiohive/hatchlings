@@ -17,6 +17,8 @@
 		scrollX?: number;
 		/** Which channels to display */
 		showChannels?: { A: boolean; C: boolean; G: boolean; T: boolean };
+		/** Background color override (reads --hatch-bg from theme by default) */
+		bgColor?: string;
 	}
 
 	let {
@@ -27,6 +29,7 @@
 		zoom = 1,
 		scrollX = 0,
 		showChannels = { A: true, C: true, G: true, T: true },
+		bgColor,
 	}: Props = $props();
 
 	let canvas: HTMLCanvasElement | undefined = $state();
@@ -133,8 +136,9 @@
 		// Clear
 		ctx.clearRect(0, 0, _width, _height);
 
-		// Background (solid dark color; canvas doesn't support CSS custom properties)
-		ctx.fillStyle = '#0d1117';
+		// Background — read from CSS custom property or use fallback
+		const resolvedBg = bgColor ?? (getComputedStyle(canvas).getPropertyValue('--hatch-bg').trim() || '#0c1018');
+		ctx.fillStyle = resolvedBg;
 		ctx.fillRect(0, 0, _width, _height);
 
 		// Draw subtle gridlines at peak positions
@@ -161,5 +165,5 @@
 
 <canvas
 	bind:this={canvas}
-	style="width: {width}px; height: {height}px; display: block; background: #0d1117; border-radius: 4px 4px 0 0;"
+	style="width: {width}px; height: {height}px; display: block; background: var(--hatch-bg, #0c1018); border-radius: 4px 4px 0 0;"
 ></canvas>

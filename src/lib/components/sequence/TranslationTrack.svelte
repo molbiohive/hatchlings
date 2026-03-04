@@ -20,48 +20,72 @@
 	const CODON_WIDTH = $derived(charWidth * 3);
 	const AA_HEIGHT = 16;
 
+	// Start and stop codon colors
+	const START_CODON_COLOR = '#2ecc71';
+	const STOP_CODON_COLOR = '#e74c3c';
+
 	/** Amino acids that fall within this row's visible range */
 	const visibleAminoAcids = $derived.by(() => {
-		const result: { aa: string; x: number; codonStart: number }[] = [];
+		const result: { aa: string; x: number; codonStart: number; index: number; isStart: boolean; isStop: boolean }[] = [];
 
-		// Each amino acid corresponds to 3 bases starting from translation.start
 		const aaString = translation.aminoAcids;
 
 		for (let i = 0; i < aaString.length; i++) {
 			const codonStart = translation.start + i * 3;
 			const codonEnd = codonStart + 3;
 
-			// Check if this codon overlaps with the visible range
 			if (codonEnd > start && codonStart < end) {
 				const x = Math.max(0, (codonStart - start)) * charWidth;
 				result.push({
 					aa: aaString[i],
 					x,
 					codonStart,
+					index: i,
+					isStart: aaString[i] === 'M' && i === 0,
+					isStop: aaString[i] === '*',
 				});
 			}
 		}
 		return result;
 	});
+
+	/**
+	 * Arrow-shaped path for amino acid blocks.
+	 * Forward strand: notch on left, arrowhead on right.
+	 * Reverse strand: arrowhead on left, notch on right.
+	 */
+	function aaArrowPath(x: number, w: number, ay: number, h: number, strand: number, isFirst: boolean): string {
+		const tip = Math.min(4, w * 0.25);
+		const midY = ay + h / 2;
+
+		if (strand === -1) {
+			if (isFirst) {
+				return `M ${x + tip} ${ay} L ${x + w} ${ay} L ${x + w} ${ay + h} L ${x + tip} ${ay + h} L ${x} ${midY} Z`;
+			}
+			return `M ${x + tip} ${ay} L ${x + w} ${ay} L ${x + w - tip} ${midY} L ${x + w} ${ay + h} L ${x + tip} ${ay + h} L ${x} ${midY} Z`;
+		}
+
+		if (isFirst) {
+			return `M ${x} ${ay} L ${x + w - tip} ${ay} L ${x + w} ${midY} L ${x + w - tip} ${ay + h} L ${x} ${ay + h} Z`;
+		}
+		return `M ${x} ${ay} L ${x + tip} ${midY} L ${x} ${ay + h} L ${x + w - tip} ${ay + h} L ${x + w} ${midY} L ${x + w - tip} ${ay} Z`;
+	}
 </script>
 
 <g class="hatch-translation-track">
-	{#each visibleAminoAcids as { aa, x, codonStart }}
-		{@const color = aminoAcidColors[aa] ?? '#999'}
+	{#each visibleAminoAcids as { aa, x, codonStart, index, isStart, isStop }}
+		{@const baseColor = aminoAcidColors[aa] ?? '#999'}
+		{@const color = isStart ? START_CODON_COLOR : isStop ? STOP_CODON_COLOR : baseColor}
 		{@const visibleWidth = Math.min(CODON_WIDTH, (end - Math.max(codonStart, start)) * charWidth)}
 
-		<!-- Amino acid background -->
-		<rect
-			{x}
-			{y}
-			width={visibleWidth}
-			height={AA_HEIGHT}
+		<!-- Arrow-shaped amino acid background -->
+		<path
+			d={aaArrowPath(x, visibleWidth, y, AA_HEIGHT, translation.strand ?? 1, index === 0)}
 			fill={color}
-			fill-opacity="0.2"
+			fill-opacity={isStart || isStop ? 0.35 : 0.2}
 			stroke={color}
-			stroke-opacity="0.4"
+			stroke-opacity={isStart || isStop ? 0.7 : 0.4}
 			stroke-width="0.5"
-			rx="1"
 		/>
 
 		<!-- Amino acid letter -->

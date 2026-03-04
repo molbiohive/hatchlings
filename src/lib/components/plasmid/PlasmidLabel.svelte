@@ -1,52 +1,107 @@
 <script lang="ts">
-	import { arcMidpoint } from '../../util/coordinates.js';
-
 	interface Props {
 		name: string;
-		startBp: number;
-		endBp: number;
-		totalSize: number;
-		radius: number;
+		/** Relaxed label X position */
+		x: number;
+		/** Relaxed label Y position */
+		y: number;
+		/** Anchor point X (on the arc/feature/site) */
+		anchorX: number;
+		/** Anchor point Y */
+		anchorY: number;
+		/** Center X of the plasmid */
 		cx: number;
+		/** Center Y of the plasmid */
 		cy: number;
+		/** Radius at which labels sit (for elbow connector midpoint) */
+		labelRadius?: number;
+		/** Color for the label text */
+		color?: string;
+		/** Which part to render: connector line only, label (dot+text) only, or all */
+		renderPart?: 'connector' | 'label' | 'all';
+		/** Counter-rotation in degrees to keep labels upright during map rotation */
+		counterRotation?: number;
 	}
 
-	let { name, startBp, endBp, totalSize, radius, cx, cy }: Props = $props();
+	let { name, x, y, anchorX, anchorY, cx, cy, labelRadius = 100, color, renderPart = 'all', counterRotation = 0 }: Props = $props();
 
-	let mid = $derived(arcMidpoint(startBp, endBp, totalSize, radius, cx, cy));
+	/** Text anchor: right-aligned for left-side labels, left-aligned for right-side */
+	let isLeftSide = $derived(x < cx);
+	let textAnchor = $derived(isLeftSide ? 'end' : 'start');
 
-	/** Compute rotation angle in degrees so text follows the arc */
-	let rotationDeg = $derived.by(() => {
-		let deg = (mid.angle * 180) / Math.PI;
-		// Flip text if on the bottom half so it reads left-to-right
-		if (deg > 90 && deg < 270) {
-			deg += 180;
+	/** Max elbow bend angle (radians). Above this threshold, use a straight line. */
+	const MAX_ELBOW_ANGLE = Math.PI / 4; // 45 degrees
+
+	/**
+	 * Connector line: elbow (anchor → radial midpoint → label) when the bend is gentle,
+	 * straight line (anchor → label) when the angle between the two segments is too sharp.
+	 */
+	let connectorPoints = $derived.by(() => {
+		const dx = anchorX - cx;
+		const dy = anchorY - cy;
+		const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+		const midR = labelRadius + 8;
+		const midX = cx + (dx / dist) * midR;
+		const midY = cy + (dy / dist) * midR;
+
+		// Compute the angle of the bend at the elbow midpoint
+		// Vector from anchor to mid
+		const v1x = midX - anchorX;
+		const v1y = midY - anchorY;
+		// Vector from mid to label
+		const v2x = x - midX;
+		const v2y = y - midY;
+		const dot = v1x * v2x + v1y * v2y;
+		const mag1 = Math.sqrt(v1x * v1x + v1y * v1y) || 1;
+		const mag2 = Math.sqrt(v2x * v2x + v2y * v2y) || 1;
+		const cosAngle = dot / (mag1 * mag2);
+		// Bend angle: 0 = straight, PI = full reversal
+		const bendAngle = Math.acos(Math.max(-1, Math.min(1, cosAngle)));
+
+		// If the bend is too sharp (> threshold), draw a straight line
+		if (bendAngle > MAX_ELBOW_ANGLE) {
+			return `${anchorX},${anchorY} ${x},${y}`;
 		}
-		// Same for negative range
-		if (deg > -270 && deg < -90) {
-			deg += 180;
-		}
-		return deg;
+		return `${anchorX},${anchorY} ${midX},${midY} ${x},${y}`;
 	});
 </script>
 
-<text
-	x={mid.x}
-	y={mid.y}
-	text-anchor="middle"
-	dominant-baseline="central"
-	transform="rotate({rotationDeg}, {mid.x}, {mid.y})"
-	class="plasmid-label"
->
-	{name}
-</text>
+{#if renderPart === 'connector' || renderPart === 'all'}
+	<!-- Elbow-style polyline connector from anchor to label -->
+	<polyline
+		points={connectorPoints}
+		stroke="var(--hatch-label-connector, #4a5568)"
+		stroke-width="0.7"
+		stroke-opacity="0.35"
+		fill="none"
+		class="label-connector"
+	/>
+{/if}
+
+{#if renderPart === 'label' || renderPart === 'all'}
+	<!-- Counter-rotate group to keep labels upright during map rotation -->
+	<g transform="rotate({counterRotation}, {x}, {y})">
+		<text
+			{x}
+			{y}
+			text-anchor={textAnchor}
+			dominant-baseline="central"
+			fill={color ?? 'var(--hatch-text, #d4dce6)'}
+			class="plasmid-label"
+		>
+			{name}
+		</text>
+	</g>
+{/if}
 
 <style>
 	.plasmid-label {
-		font-size: 11px;
-		fill: var(--hatch-text, #e0e0e0);
+		font-size: 10px;
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
 		pointer-events: none;
-		text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+	}
+
+	.label-connector {
+		pointer-events: none;
 	}
 </style>

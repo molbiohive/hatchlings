@@ -69,7 +69,7 @@
 	{width}
 	height={TRACK_HEIGHT}
 	viewBox="0 0 {width} {TRACK_HEIGHT}"
-	style="display: block; background: var(--hatch-bg, #0d1117);"
+	style="display: block; background: var(--hatch-bg, #0c1018);"
 >
 	<!-- Quality score bars behind each base -->
 	{#each visibleBases as item}

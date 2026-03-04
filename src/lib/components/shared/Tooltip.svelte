@@ -23,9 +23,9 @@
 	.hatch-tooltip {
 		position: absolute;
 		pointer-events: none;
-		background: var(--hatch-tooltip-bg, #1a1a2e);
-		color: var(--hatch-tooltip-color, #e8e8e8);
-		border: 1px solid var(--hatch-tooltip-border, #333);
+		background: var(--hatch-tooltip-bg, #141c26);
+		color: var(--hatch-tooltip-color, #d4dce6);
+		border: 1px solid var(--hatch-tooltip-border, #2a3848);
 		border-radius: 4px;
 		padding: 6px 10px;
 		font-size: 12px;

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { FlowData, Gate } from '../../types/index.js';
-	import Tooltip from '../shared/Tooltip.svelte';
+	import type { HoverInfo } from '../../types/utility.js';
 
 	interface Props {
 		events: number[][];
@@ -14,6 +14,7 @@
 		logY?: boolean;
 		mode?: 'scatter' | 'density';
 		ongatechange?: (gates: Gate[]) => void;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -28,13 +29,18 @@
 		logY = true,
 		mode = 'scatter',
 		ongatechange,
+		onhoverinfo,
 	}: Props = $props();
+
+	/** Resolve a CSS custom property from the canvas element, with fallback */
+	function resolveVar(el: HTMLElement, prop: string, fallback: string): string {
+		return getComputedStyle(el).getPropertyValue(prop).trim() || fallback;
+	}
 
 	const margin = { top: 20, right: 20, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
 
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
 	let canvasEl: HTMLCanvasElement | undefined = $state();
 
 	const xIdx = $derived(axes[xAxisIdx]?.index ?? 0);
@@ -76,6 +82,9 @@
 
 		ctx.clearRect(0, 0, plotW, plotH);
 
+		// Read theme-aware scatter color
+		const scatterColor = resolveVar(canvasEl, '--hatch-highlight', '#6ab8e0');
+
 		if (mode === 'density') {
 			// Simple density rendering with binning
 			const bins = 100;
@@ -114,7 +123,7 @@
 				const x = scaleX(event[xIdx]);
 				const y = scaleY(event[yIdx]);
 				if (x >= 0 && x <= plotW && y >= 0 && y <= plotH) {
-					ctx.fillStyle = '#4dc3ff';
+					ctx.fillStyle = scatterColor;
 					ctx.beginPath();
 					ctx.arc(x, y, 1.5, 0, Math.PI * 2);
 					ctx.fill();
@@ -128,7 +137,7 @@
 <div class="hatch-flow" style:position="relative">
 	<svg {width} {height}>
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plot-bg, #0d0d1a)" rx="2" />
+			fill="var(--hatch-plot-bg, #141c26)" rx="2" />
 
 		<!-- Canvas overlay for points -->
 		<foreignObject x={margin.left} y={margin.top} width={plotW} height={plotH}>
@@ -160,23 +169,20 @@
 
 		<!-- Axes labels -->
 		<line x1={margin.left} y1={margin.top + plotH} x2={margin.left + plotW} y2={margin.top + plotH}
-			stroke="var(--hatch-axis-color, #666)" stroke-width="1" />
+			stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" />
 		<line x1={margin.left} y1={margin.top} x2={margin.left} y2={margin.top + plotH}
-			stroke="var(--hatch-axis-color, #666)" stroke-width="1" />
+			stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" />
 		<text x={margin.left + plotW / 2} y={margin.top + plotH + 35} text-anchor="middle"
-			fill="var(--hatch-axis-label, #aaa)" font-size="12">{xName}</text>
+			fill="var(--hatch-axis-label, #95a3b3)" font-size="12">{xName}</text>
 		<text x={margin.left - 35} y={margin.top + plotH / 2} text-anchor="middle"
-			fill="var(--hatch-axis-label, #aaa)" font-size="12"
+			fill="var(--hatch-axis-label, #95a3b3)" font-size="12"
 			transform="rotate(-90, {margin.left - 35}, {margin.top + plotH / 2})">{yName}</text>
 
 		<!-- Event count -->
 		<text x={margin.left + plotW - 4} y={margin.top + 14} text-anchor="end"
-			fill="var(--hatch-axis-text, #666)" font-size="9">n={events.length.toLocaleString()}</text>
+			fill="var(--hatch-axis-text, #7a8898)" font-size="9">n={events.length.toLocaleString()}</text>
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

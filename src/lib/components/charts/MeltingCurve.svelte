@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { MeltingCurveData } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		curves: MeltingCurveData['curves'];
@@ -11,6 +11,7 @@
 		height?: number;
 		showDerivative?: boolean;
 		showTm?: boolean;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -19,14 +20,12 @@
 		height = 350,
 		showDerivative = true,
 		showTm = true,
+		onhoverinfo,
 	}: Props = $props();
 
 	const margin = { top: 20, right: 60, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
-
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
 
 	const xRange = $derived.by(() => {
 		const allT = curves.flatMap(c => c.temp);
@@ -73,9 +72,9 @@
 </script>
 
 <div class="hatch-melting-curve" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plot-bg, #1a1a2e)" rx="2" />
+			fill="var(--hatch-plot-bg, #141c26)" rx="2" />
 
 		{#each curves as curve, idx}
 			{@const color = categoricalColors[idx % categoricalColors.length]}
@@ -112,14 +111,11 @@
 			{@const color = categoricalColors[idx % categoricalColors.length]}
 			<g transform="translate({margin.left + 10}, {margin.top + 10 + idx * 18})">
 				<line x1="0" y1="0" x2="16" y2="0" stroke={color} stroke-width="2" />
-				<text x="22" y="4" fill="var(--hatch-legend-color, #aaa)" font-size="10">{curve.name}</text>
+				<text x="22" y="4" fill="var(--hatch-legend-color, #95a3b3)" font-size="10">{curve.name}</text>
 			</g>
 		{/each}
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

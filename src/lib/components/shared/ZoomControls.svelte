@@ -34,16 +34,16 @@
 	.hatch-zoom-controls {
 		display: inline-flex;
 		gap: 2px;
-		background: var(--hatch-controls-bg, #2a2a3e);
+		background: var(--hatch-controls-bg, #1e2a38);
 		border-radius: 6px;
 		padding: 2px;
-		border: 1px solid var(--hatch-controls-border, #444);
+		border: 1px solid var(--hatch-controls-border, #3a4858);
 	}
 
 	button {
 		background: transparent;
 		border: none;
-		color: var(--hatch-controls-color, #ccc);
+		color: var(--hatch-controls-color, #d4dce6);
 		cursor: pointer;
 		width: 28px;
 		height: 28px;
@@ -56,7 +56,7 @@
 	}
 
 	button:hover:not(:disabled) {
-		background: var(--hatch-controls-hover, #3a3a5e);
+		background: var(--hatch-controls-hover, #2a3848);
 	}
 
 	button:disabled {

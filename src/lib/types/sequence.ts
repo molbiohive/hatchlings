@@ -1,56 +1,37 @@
 /** Sequence and annotation types for PlasmidViewer and SequenceViewer */
 
-export interface Feature {
+export interface Part {
+	id?: string;
 	name: string;
-	type: FeatureType;
+	type: string;
 	start: number;
 	end: number;
 	strand: 1 | -1;
 	color?: string;
 	label?: string;
 	note?: string;
-}
-
-export type FeatureType =
-	| 'CDS'
-	| 'promoter'
-	| 'terminator'
-	| 'rep_origin'
-	| 'misc_feature'
-	| 'regulatory'
-	| 'gene'
-	| 'primer_bind'
-	| 'protein_bind'
-	| 'RBS'
-	| 'sig_peptide'
-	| 'transit_peptide'
-	| 'mat_peptide'
-	| 'misc_binding'
-	| 'enhancer'
-	| 'intron'
-	| 'exon'
-	| 'polyA_signal'
-	| '3\'UTR'
-	| '5\'UTR'
-	| string;
-
-export interface Primer {
-	name: string;
-	start: number;
-	end: number;
-	strand: 1 | -1;
 	tm?: number;
 	sequence?: string;
-	color?: string;
 }
 
 export interface CutSite {
+	id?: string;
 	enzyme: string;
 	position: number;
 	strand: 1 | -1;
 	overhang?: string;
 	cutPosition?: number;
 	complementCutPosition?: number;
+}
+
+export interface ORF {
+	id?: string;
+	start: number;
+	end: number;
+	strand: 1 | -1;
+	frame: 0 | 1 | 2;
+	length: number;
+	aminoAcids?: string;
 }
 
 export interface Translation {
@@ -66,15 +47,14 @@ export interface PlasmidData {
 	size: number;
 	topology: 'circular' | 'linear';
 	seq?: string;
-	features: Feature[];
-	primers: Primer[];
+	parts: Part[];
 	cutSites: CutSite[];
 }
 
 export interface SequenceData {
 	seq: string;
-	features: Feature[];
-	primers: Primer[];
+	parts: Part[];
 	cutSites: CutSite[];
 	translations: Translation[];
+	alphabet?: 'dna' | 'rna' | 'protein';
 }

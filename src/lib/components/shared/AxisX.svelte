@@ -60,17 +60,17 @@
 
 <g class="hatch-axis-x">
 	<!-- Axis line -->
-	<line x1={x} y1={y} x2={x + width} y2={y} stroke="var(--hatch-axis-color, #666)" stroke-width="1" />
+	<line x1={x} y1={y} x2={x + width} y2={y} stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" />
 
 	<!-- Ticks -->
 	{#each tickValues as val}
 		{@const tx = scaleX(val)}
-		<line x1={tx} y1={y} x2={tx} y2={y + 6} stroke="var(--hatch-axis-color, #666)" stroke-width="1" />
+		<line x1={tx} y1={y} x2={tx} y2={y + 6} stroke="var(--hatch-axis-color, #3a4858)" stroke-width="1" />
 		<text
 			x={tx}
 			y={y + 18}
 			text-anchor="middle"
-			fill="var(--hatch-axis-text, #888)"
+			fill="var(--hatch-axis-text, #7a8898)"
 			font-size="10"
 			font-family="var(--hatch-font-mono, monospace)"
 		>{formatTick(val)}</text>
@@ -82,7 +82,7 @@
 			x={x + width / 2}
 			y={y + 34}
 			text-anchor="middle"
-			fill="var(--hatch-axis-label, #aaa)"
+			fill="var(--hatch-axis-label, #95a3b3)"
 			font-size="12"
 			font-family="var(--hatch-font, sans-serif)"
 		>{label}</text>

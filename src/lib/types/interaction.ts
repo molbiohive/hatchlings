@@ -21,7 +21,8 @@ export interface Point2D {
 	y: number;
 }
 
-export interface HoverInfo {
+/** @deprecated Use HoverInfo from utility.ts instead for rich hover panels */
+export interface ChartHoverInfo {
 	position: Point2D;
 	label: string;
 	value?: string | number;

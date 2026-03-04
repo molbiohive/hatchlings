@@ -42,6 +42,15 @@
 	let labelColor = $derived(isDarkBg ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)');
 	let laneLabelColor = $derived(isDarkBg ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)');
 
+	/** Truncate lane name to fit within lane width */
+	let maxChars = $derived(Math.max(3, Math.floor(width / 6)));
+	let displayLabel = $derived.by(() => {
+		const label = lane.label;
+		if (label.length <= maxChars) return label;
+		return label.slice(0, maxChars - 1) + '\u2026';
+	});
+	let labelFontSize = $derived(width < 50 ? '8' : '10');
+
 	function formatSize(size: number): string {
 		if (size >= 1000) {
 			const kb = size / 1000;
@@ -62,17 +71,18 @@
 		stroke-width="1"
 	/>
 
-	<!-- Lane label at top -->
+	<!-- Lane label at top (truncated with tooltip) -->
 	{#if showLaneLabel}
 		<text
 			x={x + width / 2}
 			y={16}
 			text-anchor="middle"
 			fill={laneLabelColor}
-			font-size="10"
+			font-size={labelFontSize}
 			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 		>
-			{lane.label}
+			{displayLabel}
+			<title>{lane.label}</title>
 		</text>
 	{/if}
 

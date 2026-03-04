@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { DataPoint, Gate } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		points: DataPoint[];
@@ -16,6 +16,7 @@
 		logX?: boolean;
 		logY?: boolean;
 		pointSize?: number;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -29,14 +30,12 @@
 		logX = false,
 		logY = false,
 		pointSize = 2.5,
+		onhoverinfo,
 	}: Props = $props();
 
 	const margin = { top: 20, right: 20, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
-
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
 
 	function range(vals: number[], log: boolean): { min: number; max: number } {
 		const filtered = log ? vals.filter(v => v > 0) : vals;
@@ -75,9 +74,9 @@
 </script>
 
 <div class="hatch-scatter" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plot-bg, #1a1a2e)" rx="2" />
+			fill="var(--hatch-plot-bg, #141c26)" rx="2" />
 
 		<!-- Gates -->
 		{#each gates as gate}
@@ -115,9 +114,9 @@
 				fill={pointColor(point, idx)}
 				opacity="0.6"
 				onmouseenter={(e) => {
-					tooltip = { visible: true, x: e.clientX, y: e.clientY, text: `${point.label ?? ''} (${point.x.toFixed(2)}, ${point.y.toFixed(2)})` };
+					onhoverinfo?.({ title: point.label ?? 'Point', items: [{label: xLabel, value: point.x.toFixed(2)}, {label: yLabel, value: point.y.toFixed(2)}], position: { x: e.clientX, y: e.clientY } });
 				}}
-				onmouseleave={() => tooltip.visible = false}
+				onmouseleave={() => onhoverinfo?.(null)}
 			/>
 		{/each}
 
@@ -125,9 +124,6 @@
 		<AxisY min={yRange.min} max={yRange.max} height={plotH} x={margin.left} y={margin.top} label={yLabel} />
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

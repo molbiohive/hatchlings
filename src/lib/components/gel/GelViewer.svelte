@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { GelLane, GelBand, GelType, StainType } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { stainColors } from '../../util/colors.js';
-	import { Tooltip } from '../shared/index.js';
 	import GelLaneComponent from './GelLane.svelte';
 	import GelLadder from './GelLadder.svelte';
 
@@ -15,6 +15,7 @@
 		showLaneLabels?: boolean;
 		bandStyle?: 'realistic' | 'simple';
 		onbandclick?: (lane: GelLane, band: GelBand) => void;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -27,9 +28,9 @@
 		showLaneLabels = true,
 		bandStyle = 'realistic',
 		onbandclick,
+		onhoverinfo,
 	}: Props = $props();
 
-	let svgEl: SVGSVGElement | undefined = $state(undefined);
 
 	let colors = $derived(stainColors[stain]);
 
@@ -48,25 +49,20 @@
 	let usableWidth = $derived(width - PADDING_X * 2);
 	let laneWidth = $derived(usableWidth / Math.max(lanes.length, 1));
 
-	/** Tooltip state */
-	let tooltipVisible = $state(false);
-	let tooltipX = $state(0);
-	let tooltipY = $state(0);
-	let tooltipBand: GelBand | null = $state(null);
-	let tooltipLane: GelLane | null = $state(null);
-
 	function handleBandEnter(lane: GelLane, band: GelBand, e: MouseEvent) {
-		tooltipBand = band;
-		tooltipLane = lane;
-		tooltipX = e.clientX;
-		tooltipY = e.clientY;
-		tooltipVisible = true;
+		onhoverinfo?.({
+			title: lane.label ?? 'Band',
+			items: [
+				...(band.name ? [{ label: 'Name', value: band.name }] : []),
+				{ label: 'Size', value: formatSize(band.size) },
+				{ label: 'Intensity', value: `${(band.intensity * 100).toFixed(0)}%` },
+			],
+			position: { x: e.clientX, y: e.clientY },
+		});
 	}
 
 	function handleBandLeave() {
-		tooltipVisible = false;
-		tooltipBand = null;
-		tooltipLane = null;
+		onhoverinfo?.(null);
 	}
 
 	function handleBandClick(lane: GelLane, band: GelBand) {
@@ -84,7 +80,6 @@
 
 <div class="gel-viewer" style:position="relative" style:display="inline-block">
 	<svg
-		bind:this={svgEl}
 		{width}
 		{height}
 		viewBox="0 0 {width} {height}"
@@ -167,50 +162,10 @@
 		{/each}
 	</svg>
 
-	<!-- Tooltip -->
-	<Tooltip x={tooltipX} y={tooltipY} visible={tooltipVisible}>
-		{#if tooltipBand && tooltipLane}
-			<div class="band-info">
-				<strong>{tooltipLane.label}</strong>
-				{#if tooltipBand.name}
-					<span class="band-name">{tooltipBand.name}</span>
-				{/if}
-				<span class="band-size">{formatSize(tooltipBand.size)}</span>
-				<span class="band-intensity">Intensity: {(tooltipBand.intensity * 100).toFixed(0)}%</span>
-			</div>
-		{/if}
-	</Tooltip>
 </div>
 
 <style>
 	.gel-viewer {
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-	}
-
-	.band-info {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.band-info strong {
-		color: var(--hatch-text, #e0e0e0);
-		font-size: 12px;
-	}
-
-	.band-name {
-		color: var(--hatch-text-muted, #aaa);
-		font-size: 11px;
-	}
-
-	.band-size {
-		color: var(--hatch-highlight, #7dd3fc);
-		font-size: 12px;
-		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
-	}
-
-	.band-intensity {
-		color: var(--hatch-axis-text, #888);
-		font-size: 10px;
 	}
 </style>

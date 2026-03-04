@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { DistributionData } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		bins: { start: number; end: number; count: number }[];
@@ -13,6 +13,7 @@
 		xLabel?: string;
 		yLabel?: string;
 		color?: string;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -24,14 +25,12 @@
 		xLabel = 'Value',
 		yLabel = 'Count',
 		color = '#1f77b4',
+		onhoverinfo,
 	}: Props = $props();
 
 	const margin = { top: 20, right: 20, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
-
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
 
 	const xRange = $derived.by(() => {
 		return { min: Math.min(...bins.map(b => b.start)), max: Math.max(...bins.map(b => b.end)) };
@@ -65,9 +64,9 @@
 </script>
 
 <div class="hatch-distribution" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plot-bg, #1a1a2e)" rx="2" />
+			fill="var(--hatch-plot-bg, #141c26)" rx="2" />
 
 		{#if mode === 'histogram' || mode === 'density'}
 			{#each bins as bin}
@@ -82,9 +81,9 @@
 					fill={color}
 					opacity="0.7"
 					onmouseenter={(e) => {
-						tooltip = { visible: true, x: e.clientX, y: e.clientY, text: `[${bin.start.toFixed(1)}, ${bin.end.toFixed(1)}): ${bin.count}` };
+						onhoverinfo?.({ title: 'Bin', items: [{label: 'Range', value: bin.start.toFixed(1) + ' – ' + bin.end.toFixed(1)}, {label: 'Count', value: String(bin.count)}], position: { x: e.clientX, y: e.clientY } });
 					}}
-					onmouseleave={() => tooltip.visible = false}
+					onmouseleave={() => onhoverinfo?.(null)}
 				/>
 			{/each}
 		{/if}
@@ -109,9 +108,6 @@
 			label={mode === 'cumulative' ? 'Cumulative Count' : yLabel} />
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

@@ -1,14 +1,18 @@
 /** Color palettes for molecular biology visualizations */
 
-/** Nucleotide colors (standard bioinformatics convention) */
+/** Nucleotide colors — soft muted palette */
 export const nucleotideColors: Record<string, string> = {
-	A: '#4daf4a', // green
-	T: '#e41a1c', // red
-	U: '#e41a1c', // red (RNA)
-	G: '#377eb8', // blue (dark)
-	C: '#ff7f00', // orange
+	A: '#6abf69', // soft green
+	T: '#e07070', // soft coral
+	U: '#e07070', // soft coral (RNA)
+	G: '#f0c050', // warm gold
+	C: '#6aa5d8', // soft blue
 	N: '#999999', // grey
 };
+
+/** Aliases for convenience */
+export const dnaColors = nucleotideColors;
+export const rnaColors = nucleotideColors;
 
 /** Feature type colors */
 export const featureColors: Record<string, string> = {
@@ -34,14 +38,30 @@ export const featureColors: Record<string, string> = {
 	"5'UTR": '#d9d9d9',
 };
 
-/** Amino acid color scheme (Taylor) */
+/** Amino acid color scheme — property-grouped muted palette */
 export const aminoAcidColors: Record<string, string> = {
-	A: '#ccff00', C: '#ffff00', D: '#ff0000', E: '#ff0066',
-	F: '#00ff66', G: '#ff9900', H: '#0066ff', I: '#66ff00',
-	K: '#6600ff', L: '#33ff00', M: '#00ff00', N: '#cc00ff',
-	P: '#ffcc00', Q: '#ff00cc', R: '#0000ff', S: '#ff3300',
-	T: '#ff6600', V: '#99ff00', W: '#00ccff', Y: '#00ffcc',
-	'*': '#999999',
+	// Hydrophobic (warm amber/tan)
+	A: '#c9a55a', V: '#d4a843', I: '#c9a55a', L: '#d4a843',
+	M: '#c9a55a', F: '#b8963e', W: '#a68535', P: '#d4a843',
+	// Polar (cool teal/sage)
+	S: '#6aab8d', T: '#5d9e80', N: '#6aab8d', Q: '#5d9e80',
+	Y: '#6aab8d', C: '#78b89a',
+	// Positive charge (blue)
+	K: '#5b8ec9', R: '#5b8ec9', H: '#7aa3d4',
+	// Negative charge (rose)
+	D: '#c97a8a', E: '#c97a8a',
+	// Special (grey)
+	G: '#999999', '*': '#999999',
+};
+
+/** Alias for protein colors */
+export const proteinColors = aminoAcidColors;
+
+/** Get the right color map for a sequence alphabet */
+export const sequenceColors: Record<string, Record<string, string>> = {
+	dna: nucleotideColors,
+	rna: nucleotideColors,
+	protein: aminoAcidColors,
 };
 
 /** Gel stain color schemes */
@@ -109,10 +129,10 @@ export function interpolateColor(value: number, min: number, max: number, scale:
 	return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-/** Default categorical color palette (10 distinct colors) */
+/** Default categorical color palette — biology-inspired (10 distinct colors) */
 export const categoricalColors = [
-	'#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
-	'#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+	'#4AAFB8', '#D4915E', '#7BAE6A', '#C75E7A', '#8A7FC0',
+	'#C4A54A', '#5B92CC', '#CF7F5F', '#6BBF9A', '#B07DB8',
 ];
 
 /** Get a feature color, falling back to a default */

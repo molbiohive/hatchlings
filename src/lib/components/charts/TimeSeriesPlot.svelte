@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { TimeSeriesLine, TimeSeriesEvent } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		series: TimeSeriesLine[];
@@ -12,6 +12,7 @@
 		width?: number;
 		height?: number;
 		showPoints?: boolean;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -21,14 +22,12 @@
 		width = 600,
 		height = 350,
 		showPoints = false,
+		onhoverinfo,
 	}: Props = $props();
 
 	const margin = { top: 20, right: 60, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
-
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
 
 	const xRange = $derived.by(() => {
 		const allX = series.flatMap(s => s.x);
@@ -68,15 +67,15 @@
 </script>
 
 <div class="hatch-time-series" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plot-bg, #1a1a2e)" rx="2" />
+			fill="var(--hatch-plot-bg, #141c26)" rx="2" />
 
 		<!-- Grid lines -->
 		{#each Array.from({length: 5}, (_, i) => i) as i}
 			{@const yVal = yRangeLeft.min + (i / 4) * (yRangeLeft.max - yRangeLeft.min)}
 			<line x1={margin.left} y1={scaleY(yVal)} x2={margin.left + plotW} y2={scaleY(yVal)}
-				stroke="var(--hatch-grid-color, #2a2a4a)" stroke-width="0.5" />
+				stroke="var(--hatch-grid-color, #1e2a38)" stroke-width="0.5" />
 		{/each}
 
 		<!-- Event markers -->
@@ -96,9 +95,9 @@
 				{#each s.x as xv, i}
 					<circle cx={scaleX(xv)} cy={scaleY(s.y[i], s.yAxis ?? 'left')} r="2.5" fill={color}
 						onmouseenter={(e) => {
-							tooltip = { visible: true, x: e.clientX, y: e.clientY, text: `${s.name}: ${s.y[i].toFixed(2)} at t=${xv.toFixed(1)}` };
+							onhoverinfo?.({ title: s.name, items: [{label: 'Time', value: xv.toFixed(1)}, {label: s.unit ?? 'Value', value: s.y[i].toFixed(2)}], position: { x: e.clientX, y: e.clientY } });
 						}}
-						onmouseleave={() => tooltip.visible = false}
+						onmouseleave={() => onhoverinfo?.(null)}
 					/>
 				{/each}
 			{/if}
@@ -119,14 +118,11 @@
 		{#each series as s, idx}
 			<g transform="translate({margin.left + 10}, {margin.top + 10 + idx * 16})">
 				<line x1="0" y1="0" x2="16" y2="0" stroke={lineColor(s, idx)} stroke-width="2" />
-				<text x="22" y="4" fill="var(--hatch-legend-color, #aaa)" font-size="10">{s.name}</text>
+				<text x="22" y="4" fill="var(--hatch-legend-color, #95a3b3)" font-size="10">{s.name}</text>
 			</g>
 		{/each}
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

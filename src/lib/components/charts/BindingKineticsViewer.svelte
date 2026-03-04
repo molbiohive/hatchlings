@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { KineticsData, KineticsCurve, KineticsStep, BindingParams } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		curves: KineticsCurve[];
@@ -16,6 +16,7 @@
 		yLabel?: string;
 		showFit?: boolean;
 		showParams?: boolean;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -29,14 +30,12 @@
 		yLabel = 'Response (nm)',
 		showFit = true,
 		showParams = true,
+		onhoverinfo,
 	}: Props = $props();
 
 	const margin = { top: 20, right: 20, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
-
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
 
 	const xRange = $derived.by(() => {
 		const allX = curves.flatMap(c => c.x);
@@ -81,9 +80,9 @@
 </script>
 
 <div class="hatch-kinetics" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plot-bg, #1a1a2e)" rx="2" />
+			fill="var(--hatch-plot-bg, #141c26)" rx="2" />
 
 		<!-- Step markers -->
 		{#each steps as step}
@@ -98,7 +97,7 @@
 				x={(scaleX(step.start) + scaleX(step.end)) / 2}
 				y={margin.top + 12}
 				text-anchor="middle"
-				fill="var(--hatch-axis-text, #666)"
+				fill="var(--hatch-axis-text, #7a8898)"
 				font-size="9"
 			>{step.name}</text>
 		{/each}
@@ -120,11 +119,11 @@
 		<!-- Kinetics params -->
 		{#if showParams && params}
 			<g transform="translate({margin.left + plotW - 140}, {margin.top + 10})">
-				<rect x="-4" y="-4" width="138" height="56" fill="var(--hatch-plot-bg, #1a1a2e)" opacity="0.9" rx="3"
-					stroke="var(--hatch-grid-color, #2a2a4a)" />
-				<text y="8" fill="var(--hatch-axis-text, #aaa)" font-size="10">ka = {params.ka.toExponential(2)} 1/Ms</text>
-				<text y="24" fill="var(--hatch-axis-text, #aaa)" font-size="10">kd = {params.kd.toExponential(2)} 1/s</text>
-				<text y="40" fill="var(--hatch-highlight, #7dd3fc)" font-size="11" font-weight="600">KD = {formatSI(params.KD)}M</text>
+				<rect x="-4" y="-4" width="138" height="56" fill="var(--hatch-plot-bg, #141c26)" opacity="0.9" rx="3"
+					stroke="var(--hatch-grid-color, #1e2a38)" />
+				<text y="8" fill="var(--hatch-axis-text, #95a3b3)" font-size="10">ka = {params.ka.toExponential(2)} 1/Ms</text>
+				<text y="24" fill="var(--hatch-axis-text, #95a3b3)" font-size="10">kd = {params.kd.toExponential(2)} 1/s</text>
+				<text y="40" fill="var(--hatch-highlight, #6ab8e0)" font-size="11" font-weight="600">KD = {formatSI(params.KD)}M</text>
 			</g>
 		{/if}
 
@@ -136,16 +135,13 @@
 			{@const color = categoricalColors[idx % categoricalColors.length]}
 			<g transform="translate({margin.left + 10}, {margin.top + 10 + idx * 16})">
 				<line x1="0" y1="0" x2="16" y2="0" stroke={color} stroke-width="2" />
-				<text x="22" y="4" fill="var(--hatch-legend-color, #aaa)" font-size="9">
+				<text x="22" y="4" fill="var(--hatch-legend-color, #95a3b3)" font-size="9">
 					{curve.name}{curve.concentration ? ` (${formatSI(curve.concentration)}M)` : ''}
 				</text>
 			</g>
 		{/each}
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

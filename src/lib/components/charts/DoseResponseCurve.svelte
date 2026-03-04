@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { DoseResponseData, DoseResponseCurveData } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
-	import Tooltip from '../shared/Tooltip.svelte';
 
 	interface Props {
 		curves: DoseResponseCurveData[];
@@ -14,6 +14,7 @@
 		width?: number;
 		height?: number;
 		showCI?: boolean;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -25,14 +26,12 @@
 		width = 500,
 		height = 350,
 		showCI = false,
+		onhoverinfo,
 	}: Props = $props();
 
 	const margin = { top: 20, right: 20, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
-
-	let tooltip = $state({ visible: false, x: 0, y: 0, text: '' });
-	let svgEl: SVGSVGElement | undefined = $state();
 
 	// Compute data ranges
 	const xRange = $derived.by(() => {
@@ -77,10 +76,10 @@
 </script>
 
 <div class="hatch-dose-response" style:position="relative">
-	<svg bind:this={svgEl} {width} {height}>
+	<svg {width} {height}>
 		<!-- Plot area background -->
 		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-			fill="var(--hatch-plot-bg, #1a1a2e)" rx="2" />
+			fill="var(--hatch-plot-bg, #141c26)" rx="2" />
 
 		<!-- Grid lines -->
 		{#each Array.from({length: 5}, (_, i) => i) as i}
@@ -88,7 +87,7 @@
 			<line
 				x1={margin.left} y1={scaleY(yVal)}
 				x2={margin.left + plotW} y2={scaleY(yVal)}
-				stroke="var(--hatch-grid-color, #2a2a4a)" stroke-width="0.5"
+				stroke="var(--hatch-grid-color, #1e2a38)" stroke-width="0.5"
 			/>
 		{/each}
 
@@ -122,17 +121,12 @@
 					cy={scaleY(point.y)}
 					r="4"
 					fill={color}
-					stroke="var(--hatch-plot-bg, #1a1a2e)"
+					stroke="var(--hatch-plot-bg, #141c26)"
 					stroke-width="1.5"
 					onmouseenter={(e) => {
-						tooltip = {
-							visible: true,
-							x: e.clientX,
-							y: e.clientY,
-							text: `${curve.label}: (${point.x.toExponential(2)}, ${point.y.toFixed(1)})`
-						};
+						onhoverinfo?.({ title: curve.label, items: [{label: 'Concentration', value: point.x.toExponential(2)}, {label: 'Response', value: point.y.toFixed(1)}], position: { x: e.clientX, y: e.clientY } });
 					}}
-					onmouseleave={() => tooltip.visible = false}
+					onmouseleave={() => onhoverinfo?.(null)}
 					style="cursor: pointer"
 				/>
 			{/each}
@@ -156,14 +150,11 @@
 			<g transform="translate({margin.left + plotW - 120}, {margin.top + 10 + idx * 20})">
 				<line x1="0" y1="0" x2="20" y2="0" stroke={color} stroke-width="2" />
 				<circle cx="10" cy="0" r="3" fill={color} />
-				<text x="26" y="4" fill="var(--hatch-legend-color, #aaa)" font-size="11">{curve.label}</text>
+				<text x="26" y="4" fill="var(--hatch-legend-color, #95a3b3)" font-size="11">{curve.label}</text>
 			</g>
 		{/each}
 	</svg>
 
-	<Tooltip x={tooltip.x} y={tooltip.y} visible={tooltip.visible}>
-		{tooltip.text}
-	</Tooltip>
 </div>
 
 <style>

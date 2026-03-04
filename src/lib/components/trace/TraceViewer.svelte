@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { TraceChannel, TraceAlignment } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import TracePeaks from './TracePeaks.svelte';
 	import BaseCallTrack from './BaseCallTrack.svelte';
 	import AlignmentView from './AlignmentView.svelte';
@@ -29,6 +30,7 @@
 		zoom?: number;
 		/** Callback when a base is selected */
 		onselect?: (index: number) => void;
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -44,6 +46,7 @@
 		highlightIndels = true,
 		zoom: initialZoom = 1,
 		onselect,
+		onhoverinfo,
 	}: Props = $props();
 
 	let zoom = $state(initialZoom);
@@ -143,9 +146,37 @@
 
 	/** Handle drag move */
 	function handleMouseMove(e: MouseEvent) {
-		if (!isDragging) return;
-		const dx = dragStartX - e.clientX;
-		scrollX = clampScroll(dragStartScrollX + dx);
+		if (isDragging) {
+			const dx = dragStartX - e.clientX;
+			scrollX = clampScroll(dragStartScrollX + dx);
+			return;
+		}
+		if (!onhoverinfo || !container) return;
+		const rect = container.getBoundingClientRect();
+		if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+			onhoverinfo(null);
+			return;
+		}
+		const hoverX = e.clientX - rect.left + scrollX;
+		let closestIdx = 0;
+		let closestDist = Infinity;
+		for (let i = 0; i < peakPositions.length; i++) {
+			const peakX = peakPositions[i] * zoom;
+			const dist = Math.abs(peakX - hoverX);
+			if (dist < closestDist) { closestDist = dist; closestIdx = i; }
+		}
+		if (closestDist > 20 * zoom) { onhoverinfo(null); return; }
+		const base = baseCalls[closestIdx] ?? '?';
+		const q = qualityScores[closestIdx] ?? 0;
+		onhoverinfo({
+			title: `Base ${closestIdx + 1}`,
+			items: [
+				{ label: 'Call', value: base },
+				{ label: 'Quality', value: `Q${q}` },
+				{ label: 'Position', value: String(peakPositions[closestIdx]) },
+			],
+			position: { x: e.clientX, y: e.clientY },
+		});
 	}
 
 	/** Handle drag end */
@@ -249,7 +280,7 @@
 								class="quality-bar"
 								style="
 									height: {bin.fraction * 100}%;
-									background: {bin.aboveThreshold ? 'var(--hatch-positive, #4daf4a)' : 'var(--hatch-negative, #e41a1c)'};
+									background: {bin.aboveThreshold ? 'var(--hatch-positive, #58b56a)' : 'var(--hatch-negative, #d45858)'};
 									opacity: {0.5 + bin.fraction * 0.5};
 								"
 							></div>
@@ -285,8 +316,8 @@
 
 <style>
 	.trace-viewer {
-		background: var(--hatch-bg, #0d1117);
-		border: 1px solid var(--hatch-border, #21262d);
+		background: var(--hatch-bg, #0c1018);
+		border: 1px solid var(--hatch-border, #2a3848);
 		border-radius: 6px;
 		overflow: hidden;
 	}
@@ -297,8 +328,8 @@
 	}
 
 	.quality-sidebar {
-		background: var(--hatch-plot-bg, #161b22);
-		border-left: 1px solid var(--hatch-border, #21262d);
+		background: var(--hatch-plot-bg, #141c26);
+		border-left: 1px solid var(--hatch-border, #2a3848);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -307,7 +338,7 @@
 	}
 
 	.quality-label {
-		color: var(--hatch-text-dim, #666);
+		color: var(--hatch-text-dim, #566070);
 		font-size: 10px;
 		font-weight: 600;
 		font-family: var(--hatch-font-mono, 'SF Mono', monospace);
@@ -337,34 +368,34 @@
 	}
 
 	.quality-avg {
-		color: var(--hatch-axis-label, #aaa);
+		color: var(--hatch-axis-label, #95a3b3);
 		font-size: 10px;
 		font-weight: 700;
 		font-family: var(--hatch-font-mono, 'SF Mono', monospace);
 	}
 
 	.quality-good {
-		color: var(--hatch-positive, #4daf4a);
+		color: var(--hatch-positive, #58b56a);
 		font-size: 9px;
 		font-family: var(--hatch-font-mono, 'SF Mono', monospace);
 	}
 
 	.scroll-track {
 		height: 4px;
-		background: var(--hatch-plot-bg, #161b22);
+		background: var(--hatch-plot-bg, #141c26);
 		position: relative;
-		border-top: 1px solid var(--hatch-border, #21262d);
+		border-top: 1px solid var(--hatch-border, #2a3848);
 	}
 
 	.scroll-thumb {
 		position: absolute;
 		height: 100%;
-		background: var(--hatch-border, #30363d);
+		background: var(--hatch-border, #2a3848);
 		border-radius: 2px;
 		transition: background 0.15s;
 	}
 
 	.scroll-thumb:hover {
-		background: var(--hatch-axis-text, #484f58);
+		background: var(--hatch-axis-text, #7a8898);
 	}
 </style>

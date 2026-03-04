@@ -76,7 +76,9 @@
 	{#each visibleAminoAcids as { aa, x, codonStart, index, isStart, isStop }}
 		{@const baseColor = aminoAcidColors[aa] ?? '#999'}
 		{@const color = isStart ? START_CODON_COLOR : isStop ? STOP_CODON_COLOR : baseColor}
-		{@const visibleWidth = Math.min(CODON_WIDTH, (end - Math.max(codonStart, start)) * charWidth)}
+		{@const visStart = Math.max(codonStart, start)}
+		{@const visEnd = Math.min(codonStart + 3, end)}
+		{@const visibleWidth = (visEnd - visStart) * charWidth}
 
 		<!-- Arrow-shaped amino acid background -->
 		<path

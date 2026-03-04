@@ -19,7 +19,6 @@
 	const TRACK_HEIGHT = 16;
 	const TRACK_GAP = 2;
 	const ARROW_WIDTH = 6;
-	const NOTCH_WIDTH = 4;
 
 	const visibleParts = $derived.by(() => {
 		return parts.filter((p) => p.start < end && p.end > start);
@@ -63,6 +62,7 @@
 		const fw = partWidth(part);
 		const fy = y + lane * (TRACK_HEIGHT + TRACK_GAP);
 		const h = TRACK_HEIGHT;
+		const r = h / 2;
 
 		const continuesLeft = part.start < start;
 		const continuesRight = part.end > end;
@@ -71,82 +71,50 @@
 			return `M ${fx} ${fy} L ${fx + fw} ${fy} L ${fx + fw} ${fy + h} L ${fx} ${fy + h} Z`;
 		}
 
-		if (continuesLeft && part.strand === 1) {
-			const pts: string[] = [];
-			pts.push(`M ${fx + NOTCH_WIDTH} ${fy}`);
-			if (continuesRight) {
-				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy}`);
-				pts.push(`L ${fx + fw} ${fy + h / 2}`);
-				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy + h}`);
-			} else {
-				const bodyEnd = fx + fw - ARROW_WIDTH;
-				pts.push(`L ${bodyEnd} ${fy}`);
-				pts.push(`L ${fx + fw} ${fy + h / 2}`);
-				pts.push(`L ${bodyEnd} ${fy + h}`);
-			}
-			pts.push(`L ${fx + NOTCH_WIDTH} ${fy + h}`);
-			pts.push(`L ${fx} ${fy + h / 2}`);
-			pts.push('Z');
-			return pts.join(' ');
-		}
+		const pts: string[] = [];
 
-		if (continuesLeft && part.strand === -1) {
-			const pts: string[] = [];
-			pts.push(`M ${fx} ${fy + h / 2}`);
-			pts.push(`L ${fx + ARROW_WIDTH} ${fy}`);
-			if (continuesRight) {
-				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy}`);
-				pts.push(`L ${fx + fw} ${fy + h / 2}`);
-				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy + h}`);
-			} else {
-				pts.push(`L ${fx + fw} ${fy}`);
-				pts.push(`L ${fx + fw} ${fy + h}`);
-			}
-			pts.push(`L ${fx + ARROW_WIDTH} ${fy + h}`);
-			pts.push('Z');
-			return pts.join(' ');
-		}
-
-		if (part.strand === 1) {
-			const pts: string[] = [];
+		// Left edge
+		if (continuesLeft) {
+			// Concave indent on left (half-circle subtraction, pairs with right bulge on prev row)
 			pts.push(`M ${fx} ${fy}`);
-			if (continuesRight) {
-				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy}`);
-				pts.push(`L ${fx + fw} ${fy + h / 2}`);
-				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy + h}`);
-			} else {
-				const bodyEnd = fx + fw - ARROW_WIDTH;
-				pts.push(`L ${bodyEnd} ${fy}`);
-				pts.push(`L ${fx + fw} ${fy + h / 2}`);
-				pts.push(`L ${bodyEnd} ${fy + h}`);
-			}
-			pts.push(`L ${fx} ${fy + h}`);
-			pts.push('Z');
-			return pts.join(' ');
+		} else if (part.strand === -1) {
+			// Reverse strand arrow tip on left
+			pts.push(`M ${fx} ${fy + r}`);
+			pts.push(`L ${fx + ARROW_WIDTH} ${fy}`);
 		} else {
-			const pts: string[] = [];
-			if (!continuesLeft) {
-				pts.push(`M ${fx} ${fy + h / 2}`);
-				pts.push(`L ${fx + ARROW_WIDTH} ${fy}`);
-			} else {
-				pts.push(`M ${fx} ${fy}`);
-			}
-			if (continuesRight) {
-				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy}`);
-				pts.push(`L ${fx + fw} ${fy + h / 2}`);
-				pts.push(`L ${fx + fw - NOTCH_WIDTH} ${fy + h}`);
-			} else {
-				pts.push(`L ${fx + fw} ${fy}`);
-				pts.push(`L ${fx + fw} ${fy + h}`);
-			}
-			if (!continuesLeft) {
-				pts.push(`L ${fx + ARROW_WIDTH} ${fy + h}`);
-			} else {
-				pts.push(`L ${fx} ${fy + h}`);
-			}
-			pts.push('Z');
-			return pts.join(' ');
+			pts.push(`M ${fx} ${fy}`);
 		}
+
+		// Top edge → right edge
+		if (continuesRight) {
+			pts.push(`L ${fx + fw} ${fy}`);
+			// Rightward semicircle (bulges right, "continues to next row")
+			pts.push(`A ${r} ${r} 0 0 1 ${fx + fw} ${fy + h}`);
+		} else if (part.strand === 1) {
+			// Forward strand arrow tip on right
+			const bodyEnd = fx + fw - ARROW_WIDTH;
+			pts.push(`L ${bodyEnd} ${fy}`);
+			pts.push(`L ${fx + fw} ${fy + r}`);
+			pts.push(`L ${bodyEnd} ${fy + h}`);
+		} else {
+			pts.push(`L ${fx + fw} ${fy}`);
+			pts.push(`L ${fx + fw} ${fy + h}`);
+		}
+
+		// Bottom edge → back to left
+		if (continuesLeft) {
+			pts.push(`L ${fx} ${fy + h}`);
+			// Concave arc: curves inward (right), creating half-circle subtraction on left
+			pts.push(`A ${r} ${r} 0 0 1 ${fx} ${fy}`);
+		} else if (part.strand === -1) {
+			pts.push(`L ${fx + ARROW_WIDTH} ${fy + h}`);
+			// Close to arrow tip
+		} else {
+			pts.push(`L ${fx} ${fy + h}`);
+		}
+
+		pts.push('Z');
+		return pts.join(' ');
 	}
 </script>
 
@@ -163,14 +131,14 @@
 		<g
 			class="annotation-part"
 			onclick={() => onpartclick?.(part)}
-			onmouseenter={(e) => onparthover?.(part, e)}
-			onmouseleave={() => onparthover?.(null)}
+			onmouseover={(e) => onparthover?.(part, e)}
+			onmouseout={(e) => { if (e.currentTarget?.contains(e.relatedTarget as Node)) return; onparthover?.(null); }}
 		>
 			<path
 				d={arrowPath(part, lane)}
 				fill={color}
 				fill-opacity="0.8"
-				stroke="#000"
+				stroke="var(--hatch-annotation-stroke, #fff)"
 				stroke-width="0.5"
 			/>
 
@@ -200,7 +168,7 @@
 	}
 
 	.annotation-part:hover path {
-		stroke: #fff;
-		stroke-width: 1;
+		stroke: var(--hatch-annotation-stroke-hover, #fff);
+		stroke-width: 1.5;
 	}
 </style>

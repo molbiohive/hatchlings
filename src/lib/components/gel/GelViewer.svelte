@@ -14,6 +14,8 @@
 		showSizeLabels?: boolean;
 		showLaneLabels?: boolean;
 		bandStyle?: 'realistic' | 'simple';
+		voltage?: string;
+		runTime?: string;
 		onbandclick?: (lane: GelLane, band: GelBand) => void;
 		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
@@ -27,6 +29,8 @@
 		showSizeLabels = true,
 		showLaneLabels = true,
 		bandStyle = 'realistic',
+		voltage,
+		runTime,
 		onbandclick,
 		onhoverinfo,
 	}: Props = $props();
@@ -162,10 +166,32 @@
 		{/each}
 	</svg>
 
+	{#if gelType || voltage || runTime}
+		<div class="gel-conditions">
+			{#if gelType}<span>{gelType === 'agarose' ? 'Agarose' : gelType === 'sds-page' ? 'SDS-PAGE' : 'Native PAGE'}</span>{/if}
+			{#if voltage}<span>{voltage}</span>{/if}
+			{#if runTime}<span>{runTime}</span>{/if}
+		</div>
+	{/if}
 </div>
 
 <style>
 	.gel-viewer {
 		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	}
+
+	.gel-conditions {
+		display: flex;
+		gap: 4px;
+		justify-content: center;
+		padding: 4px 0;
+		font-size: 10px;
+		color: var(--hatch-text-muted, #8a95a5);
+		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+	}
+
+	.gel-conditions span + span::before {
+		content: '\00b7';
+		margin-right: 4px;
 	}
 </style>

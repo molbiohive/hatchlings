@@ -18,6 +18,8 @@ export interface CutSite {
 	id?: string;
 	enzyme: string;
 	position: number;
+	/** End of the recognition site (position + recognition length) */
+	end?: number;
 	strand: 1 | -1;
 	overhang?: string;
 	cutPosition?: number;

@@ -7,57 +7,45 @@
 		cx: number;
 		cy: number;
 		showTicks?: boolean;
-		axisWidth?: number;
 		/** Current rotation of the map in degrees — used to counter-rotate tick labels */
 		rotation?: number;
 	}
 
-	let { size, radius, cx, cy, showTicks = true, axisWidth = 12, rotation = 0 }: Props = $props();
+	let { size, radius, cx, cy, showTicks = true, rotation = 0 }: Props = $props();
 
 	let ticks = $derived(generateTicks(size));
 
-	let innerR = $derived(radius - axisWidth / 2);
-	let outerR = $derived(radius + axisWidth / 2);
-
+	const TICK_LENGTH = 6;
 	const RAD_TO_DEG = 180 / Math.PI;
 </script>
 
 <g class="plasmid-ring">
-	<!-- Inner backbone circle -->
+	<!-- Single backbone circle -->
 	<circle
 		{cx}
 		{cy}
-		r={innerR}
-		fill="none"
-		stroke="var(--hatch-ring-color, #4a5a6a)"
-		stroke-width="1.5"
-	/>
-	<!-- Outer axis ring circle -->
-	<circle
-		{cx}
-		{cy}
-		r={outerR}
+		r={radius}
 		fill="none"
 		stroke="var(--hatch-ring-color, #4a5a6a)"
 		stroke-width="1.5"
 	/>
 
-	<!-- Tick marks between inner and outer circles -->
+	<!-- Tick marks extending inward from ring -->
 	{#if showTicks}
 		{#each ticks as tick}
 			{@const angle = bpToAngle(tick.position, size)}
-			{@const inner = angleToXY(angle, innerR, cx, cy)}
-			{@const outer = angleToXY(angle, outerR, cx, cy)}
+			{@const outer = angleToXY(angle, radius, cx, cy)}
+			{@const inner = angleToXY(angle, radius - TICK_LENGTH, cx, cy)}
 			<line
-				x1={inner.x}
-				y1={inner.y}
-				x2={outer.x}
-				y2={outer.y}
+				x1={outer.x}
+				y1={outer.y}
+				x2={inner.x}
+				y2={inner.y}
 				stroke={tick.major ? 'var(--hatch-tick-major, #5a6a7a)' : 'var(--hatch-tick-minor, #3a4858)'}
 				stroke-width={tick.major ? 1.5 : 0.75}
 			/>
 			{#if tick.major && tick.label}
-				{@const labelR = outerR + 14}
+				{@const labelR = radius - 14}
 				{@const labelPt = angleToXY(angle, labelR, cx, cy)}
 				<!-- Counter-rotate to keep label upright regardless of map rotation -->
 				<g transform="rotate({-rotation}, {labelPt.x}, {labelPt.y})">

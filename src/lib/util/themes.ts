@@ -30,11 +30,6 @@ export const darkTheme: HatchTheme = {
 	'--hatch-negative': '#d45858',
 	'--hatch-warning': '#d9953a',
 
-	// Tooltip
-	'--hatch-tooltip-bg': '#141c26',
-	'--hatch-tooltip-color': '#d4dce6',
-	'--hatch-tooltip-border': '#2a3848',
-
 	// Controls (buttons, zoom)
 	'--hatch-controls-bg': '#1e2a38',
 	'--hatch-controls-border': '#3a4858',
@@ -57,6 +52,9 @@ export const darkTheme: HatchTheme = {
 	// Selection
 	'--hatch-selection-fill': 'rgba(59, 130, 246, 0.15)',
 	'--hatch-selection-stroke': 'rgba(59, 130, 246, 0.6)',
+	'--hatch-selection-handle': 'rgba(59, 130, 246, 0.8)',
+	'--hatch-selection-outline': '#ffffff',
+	'--hatch-caret-color': '#ffffff',
 
 	// Plate heatmap
 	'--hatch-plate-bg': '#0c1018',
@@ -69,6 +67,8 @@ export const darkTheme: HatchTheme = {
 	'--hatch-primer-color': '#22d3ee',
 	'--hatch-primer-text': '#22d3ee',
 	'--hatch-annotation-text': '#ffffff',
+	'--hatch-annotation-stroke': '#ffffff',
+	'--hatch-annotation-stroke-hover': '#ffffff',
 
 	// Chain steps
 	'--hatch-step-completed': '#58b56a',
@@ -86,11 +86,11 @@ export const darkTheme: HatchTheme = {
 	// Conservation
 	'--hatch-conservation-bar': 'rgba(106, 184, 224, 0.6)',
 
-	// InfoBox
-	'--hatch-infobox-bg': '#141c26',
-	'--hatch-infobox-border': '#2a3848',
-	'--hatch-infobox-text': '#d4dce6',
-	'--hatch-infobox-label': '#8a95a5',
+	// Tooltip
+	'--hatch-tooltip-bg': '#141c26',
+	'--hatch-tooltip-border': '#2a3848',
+	'--hatch-tooltip-text': '#d4dce6',
+	'--hatch-tooltip-label': '#8a95a5',
 };
 
 /** Light theme — warm off-white base, muted biology-inspired tones */
@@ -121,11 +121,6 @@ export const lightTheme: HatchTheme = {
 	'--hatch-negative': '#c04040',
 	'--hatch-warning': '#b87a28',
 
-	// Tooltip
-	'--hatch-tooltip-bg': '#fafaf8',
-	'--hatch-tooltip-color': '#2a2e34',
-	'--hatch-tooltip-border': '#d8d6d2',
-
 	// Controls (buttons, zoom)
 	'--hatch-controls-bg': '#e8e6e2',
 	'--hatch-controls-border': '#c8ccd4',
@@ -148,6 +143,9 @@ export const lightTheme: HatchTheme = {
 	// Selection
 	'--hatch-selection-fill': 'rgba(59, 130, 246, 0.12)',
 	'--hatch-selection-stroke': 'rgba(59, 130, 246, 0.5)',
+	'--hatch-selection-handle': 'rgba(59, 130, 246, 0.8)',
+	'--hatch-selection-outline': '#000000',
+	'--hatch-caret-color': '#000000',
 
 	// Plate heatmap
 	'--hatch-plate-bg': '#f5f3f0',
@@ -160,6 +158,8 @@ export const lightTheme: HatchTheme = {
 	'--hatch-primer-color': '#1a8fa8',
 	'--hatch-primer-text': '#1a8fa8',
 	'--hatch-annotation-text': '#ffffff',
+	'--hatch-annotation-stroke': '#000000',
+	'--hatch-annotation-stroke-hover': '#000000',
 
 	// Chain steps
 	'--hatch-step-completed': '#3a8a4a',
@@ -177,11 +177,11 @@ export const lightTheme: HatchTheme = {
 	// Conservation
 	'--hatch-conservation-bar': 'rgba(58, 138, 176, 0.6)',
 
-	// InfoBox
-	'--hatch-infobox-bg': '#fafaf8',
-	'--hatch-infobox-border': '#d8d6d2',
-	'--hatch-infobox-text': '#2a2e34',
-	'--hatch-infobox-label': '#6a7080',
+	// Tooltip
+	'--hatch-tooltip-bg': '#fafaf8',
+	'--hatch-tooltip-border': '#d8d6d2',
+	'--hatch-tooltip-text': '#2a2e34',
+	'--hatch-tooltip-label': '#6a7080',
 };
 
 /** OVE-style light theme — matches Open Vector Editor's visual appearance */
@@ -211,11 +211,6 @@ export const oveTheme: HatchTheme = {
 	'--hatch-positive': '#2ecc71',
 	'--hatch-negative': '#e74c3c',
 	'--hatch-warning': '#f39c12',
-
-	// Tooltip
-	'--hatch-tooltip-bg': '#ffffff',
-	'--hatch-tooltip-color': '#333333',
-	'--hatch-tooltip-border': '#cccccc',
 
 	// Controls
 	'--hatch-controls-bg': '#f0f0f0',
@@ -263,6 +258,8 @@ export const oveTheme: HatchTheme = {
 	'--hatch-primer-color': '#1a8fa8',
 	'--hatch-primer-text': '#1a8fa8',
 	'--hatch-annotation-text': '#ffffff',
+	'--hatch-annotation-stroke': '#000000',
+	'--hatch-annotation-stroke-hover': '#000000',
 
 	// Label connector
 	'--hatch-label-connector': '#999999',
@@ -270,11 +267,11 @@ export const oveTheme: HatchTheme = {
 	// Conservation
 	'--hatch-conservation-bar': 'rgba(0, 130, 250, 0.5)',
 
-	// InfoBox
-	'--hatch-infobox-bg': '#ffffff',
-	'--hatch-infobox-border': '#cccccc',
-	'--hatch-infobox-text': '#333333',
-	'--hatch-infobox-label': '#666666',
+	// Tooltip
+	'--hatch-tooltip-bg': '#ffffff',
+	'--hatch-tooltip-border': '#cccccc',
+	'--hatch-tooltip-text': '#333333',
+	'--hatch-tooltip-label': '#666666',
 };
 
 /** Apply a theme to an HTML element by setting CSS custom properties */

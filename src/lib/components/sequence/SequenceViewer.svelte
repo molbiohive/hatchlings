@@ -306,7 +306,7 @@
 		}
 	}
 
-	/** Fire InfoBox on part hover */
+	/** Fire tooltip on part hover */
 	function handlePartHover(part: Part | null, e?: MouseEvent) {
 		if (!part || !e) {
 			onhoverinfo?.(null);
@@ -324,6 +324,41 @@
 			],
 			position: { x: e.clientX, y: e.clientY },
 		});
+	}
+
+	/** Fire tooltip on cut site hover */
+	function handleCutSiteHover(site: CutSite | null, e?: MouseEvent) {
+		if (!site || !e) {
+			onhoverinfo?.(null);
+			return;
+		}
+		onhoverinfo?.({
+			title: site.enzyme,
+			items: [
+				{ label: 'Position', value: site.position, unit: 'bp' },
+				{ label: 'Strand', value: site.strand === 1 ? 'Forward (+)' : 'Reverse (-)' },
+				...(site.overhang ? [{ label: 'Overhang', value: site.overhang }] : []),
+			],
+			position: { x: e.clientX, y: e.clientY },
+		});
+	}
+
+	/** Compute the end of a cut site's recognition sequence */
+	function cutSiteEnd(site: CutSite): number {
+		if (site.end !== undefined) return site.end;
+		return site.position + Math.max(site.cutPosition ?? 1, site.complementCutPosition ?? 1);
+	}
+
+	/** Select the full recognition site on click */
+	function handleCutSiteClick(site: CutSite) {
+		const end = cutSiteEnd(site);
+		if (selectionState) {
+			selectionState.setSelection(site.position, end);
+			onselect?.({ start: site.position, end, sequence: seq.slice(site.position, end) });
+		} else {
+			internalSelStart = site.position;
+			internalSelEnd = end - 1;
+		}
 	}
 
 	/** Compute the Y bounds of the forward+complement strands within a row.
@@ -475,7 +510,7 @@
 						/>
 					{/if}
 
-					<!-- Cut site markers — whiskers span only forward+complement strands, non-interactive -->
+					<!-- Cut site markers — interactive whiskers + labels -->
 					{#if effectiveShowComplement}
 					{@const sb = strandBounds(row.start, rowEnd)}
 					{#each effectiveCutSites as site}
@@ -486,25 +521,31 @@
 							{@const topX = SEQ_X + (site.position - row.start + topCut) * charWidth}
 							{@const botX = SEQ_X + (site.position - row.start + botCut) * charWidth}
 							{@const midY = (sb.seqY + sb.endY) / 2}
-							{#if isSticky}
-								<!-- Top snip line (forward strand) -->
-								<line x1={topX} y1={sb.seqY} x2={topX} y2={midY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" pointer-events="none" />
-								<!-- Horizontal connector showing overhang offset -->
-								<line x1={topX} y1={midY} x2={botX} y2={midY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" pointer-events="none" />
-								<!-- Bottom snip line (complement strand) -->
-								<line x1={botX} y1={midY} x2={botX} y2={sb.endY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" pointer-events="none" />
-							{:else}
-								<line x1={topX} y1={sb.seqY} x2={topX} y2={sb.endY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.5" pointer-events="none" />
-							{/if}
-							<text
-								x={topX}
-								y={sb.seqY - 3}
-								text-anchor="middle"
-								fill="var(--hatch-cutsite-text, #d45858)"
-								font-size="8"
-								font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
-								pointer-events="none"
-							>{site.enzyme}</text>
+							<g
+								class="cutsite-marker"
+								onmouseover={(e) => handleCutSiteHover(site, e)}
+								onmouseout={() => handleCutSiteHover(null)}
+								onclick={(e) => { e.stopPropagation(); handleCutSiteClick(site); }}
+							>
+								{#if isSticky}
+									<line x1={topX} y1={sb.seqY} x2={topX} y2={midY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
+									<line x1={topX} y1={midY} x2={botX} y2={midY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
+									<line x1={botX} y1={midY} x2={botX} y2={sb.endY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
+								{:else}
+									<line x1={topX} y1={sb.seqY} x2={topX} y2={sb.endY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.5" />
+								{/if}
+								<!-- Invisible wider hit area for easier clicking -->
+								<line x1={topX} y1={sb.seqY - 10} x2={topX} y2={sb.endY} stroke="transparent" stroke-width="8" />
+								<text
+									x={topX}
+									y={sb.seqY - 3}
+									text-anchor="middle"
+									fill="var(--hatch-cutsite-text, #d45858)"
+									font-size="8"
+									font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
+									class="cutsite-label"
+								>{site.enzyme}</text>
+							</g>
 						{/if}
 					{/each}
 					{/if}
@@ -569,5 +610,18 @@
 	.grab-handle {
 		cursor: ew-resize;
 		opacity: 0.8;
+	}
+
+	.cutsite-marker {
+		cursor: pointer;
+	}
+
+	.cutsite-marker:hover line {
+		stroke-opacity: 1;
+		stroke-width: 1.5;
+	}
+
+	.cutsite-marker:hover .cutsite-label {
+		font-weight: 700;
 	}
 </style>

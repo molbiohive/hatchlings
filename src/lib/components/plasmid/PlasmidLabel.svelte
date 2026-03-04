@@ -21,9 +21,15 @@
 		renderPart?: 'connector' | 'label' | 'all';
 		/** Counter-rotation in degrees to keep labels upright during map rotation */
 		counterRotation?: number;
+		/** Mouse enter callback */
+		onmouseenter?: (e: MouseEvent) => void;
+		/** Mouse leave callback */
+		onmouseleave?: (e: MouseEvent) => void;
+		/** Click callback */
+		onclick?: (e: MouseEvent) => void;
 	}
 
-	let { name, x, y, anchorX, anchorY, cx, cy, labelRadius = 100, color, renderPart = 'all', counterRotation = 0 }: Props = $props();
+	let { name, x, y, anchorX, anchorY, cx, cy, labelRadius = 100, color, renderPart = 'all', counterRotation = 0, onmouseenter, onmouseleave, onclick }: Props = $props();
 
 	/** Text anchor: right-aligned for left-side labels, left-aligned for right-side */
 	let isLeftSide = $derived(x < cx);
@@ -80,7 +86,13 @@
 
 {#if renderPart === 'label' || renderPart === 'all'}
 	<!-- Counter-rotate group to keep labels upright during map rotation -->
-	<g transform="rotate({counterRotation}, {x}, {y})">
+	<g
+		transform="rotate({counterRotation}, {x}, {y})"
+		class="plasmid-label-group"
+		onmouseover={onmouseenter}
+		onmouseout={(e) => { if (e.currentTarget?.contains(e.relatedTarget as Node)) return; onmouseleave?.(e); }}
+		onclick={onclick}
+	>
 		<text
 			{x}
 			{y}
@@ -95,10 +107,17 @@
 {/if}
 
 <style>
+	.plasmid-label-group {
+		cursor: pointer;
+	}
+
 	.plasmid-label {
 		font-size: 10px;
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
-		pointer-events: none;
+	}
+
+	.plasmid-label-group:hover .plasmid-label {
+		font-weight: 700;
 	}
 
 	.label-connector {

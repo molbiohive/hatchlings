@@ -41,17 +41,16 @@
 		{ name: 'Tet-seq', type: 'primer_bind', start: 500, end: 522, strand: 1, tm: 56.4, color: '#bcbd22' },
 	];
 	const plasmidCutSites: CutSite[] = [
-		{ enzyme: 'EcoRI', position: 4359, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-		{ enzyme: 'HindIII', position: 29, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-		{ enzyme: 'BamHI', position: 375, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-		{ enzyme: 'SalI', position: 651, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-		{ enzyme: 'PstI', position: 3607, strand: 1, cutPosition: 5, complementCutPosition: 1 },
-		{ enzyme: 'NdeI', position: 2295, strand: 1, cutPosition: 2, complementCutPosition: 4 },
+		{ enzyme: 'EcoRI', position: 4359, end: 4365, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		{ enzyme: 'HindIII', position: 29, end: 35, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		{ enzyme: 'BamHI', position: 375, end: 381, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		{ enzyme: 'SalI', position: 651, end: 657, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		{ enzyme: 'PstI', position: 3607, end: 3613, strand: 1, cutPosition: 5, complementCutPosition: 1 },
+		{ enzyme: 'NdeI', position: 2295, end: 2301, strand: 1, cutPosition: 2, complementCutPosition: 4 },
 	];
 	let plasmidShowLabels = $state(true);
 	let plasmidShowTicks = $state(true);
 	let plasmidShowInternal = $state(true);
-	let plasmidTopology: 'circular' | 'linear' = $state('circular');
 
 	// Shared selection state for cross-view sync (plasmid + sequence)
 	const sharedSelection = new SelectionState(4361);
@@ -148,6 +147,9 @@
 	let gelBandStyle: 'realistic'|'simple' = $state('realistic');
 	let gelStain: StainType = $state('ethidium');
 	let gelShowSizeLabels = $state(true);
+
+	// ========== RESTRICTION MAP CONTROLS ==========
+	let rmZoom = $state(1);
 
 	// ========== TRACE DATA ==========
 	const baseCalls = 'ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG';
@@ -287,10 +289,9 @@ END`;
 			<p class="data-note">pBR322 (4361 bp) &mdash; AmpR, TetR, ori, rop, bla</p>
 		</div>
 		<div class="component-col">
-			<PlasmidViewer name="pBR322" size={4361} topology={plasmidTopology} parts={plasmidParts} cutSites={plasmidCutSites} selectionState={sharedSelection} showLabels={plasmidShowLabels} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={hoverHandler('plasmid')} />
+			<PlasmidViewer name="pBR322" size={4361} parts={plasmidParts} cutSites={plasmidCutSites} selectionState={sharedSelection} showLabels={plasmidShowLabels} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={hoverHandler('plasmid')} />
 		</div>
 		<div class="controls-col">
-			<label>Topology <select bind:value={plasmidTopology}><option value="circular">Circular</option><option value="linear">Linear</option></select></label>
 			<label><input type="checkbox" bind:checked={plasmidShowLabels} /> Labels</label>
 			<label><input type="checkbox" bind:checked={plasmidShowTicks} /> Tick marks</label>
 			<label><input type="checkbox" bind:checked={plasmidShowInternal} /> Internal labels</label>
@@ -325,7 +326,7 @@ END`;
 			<p class="data-note">pUC19 restriction digest, 1% agarose</p>
 		</div>
 		<div class="component-col">
-			<GelViewer lanes={gelLanes} gelType="agarose" stain={gelStain} showSizeLabels={gelShowSizeLabels} showLaneLabels={true} bandStyle={gelBandStyle} width={380} height={440} onhoverinfo={hoverHandler('gel')} />
+			<GelViewer lanes={gelLanes} gelType="agarose" stain={gelStain} voltage="120V" runTime="45 min" showSizeLabels={gelShowSizeLabels} showLaneLabels={true} bandStyle={gelBandStyle} width={380} height={440} onhoverinfo={hoverHandler('gel')} />
 		</div>
 		<div class="controls-col">
 			<label>Ladder <select bind:value={selectedLadder}><option value="1kb">1 kb</option><option value="100bp">100 bp</option><option value="1kb+">1 kb Plus</option></select></label>
@@ -390,14 +391,14 @@ END`;
 	<section id="restriction" class="component-row">
 		<div class="info-col">
 			<h2>RestrictionMap</h2>
-			<p>Linear restriction enzyme map with staggered cut site labels above/below the backbone and feature blocks.</p>
+			<p>Linear restriction enzyme map with cut site labels above the backbone and feature blocks.</p>
 			<p class="data-note">pUC19 EcoRI, BamHI, HindIII</p>
 		</div>
 		<div class="component-col">
-			<RestrictionMap length={2686} cutSites={plasmidCutSites} features={plasmidParts} width={560} height={170} />
+			<RestrictionMap length={2686} cutSites={plasmidCutSites} features={plasmidParts} width={560} height={170} bind:zoom={rmZoom} />
 		</div>
 		<div class="controls-col">
-			<p class="hint">No interactive controls &mdash; data-driven display</p>
+			<label>Zoom <input type="range" min="0.5" max="10" step="0.1" bind:value={rmZoom} /> {rmZoom.toFixed(1)}x</label>
 		</div>
 	</section>
 

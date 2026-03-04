@@ -83,8 +83,8 @@
 	class:selected
 	role="button"
 	tabindex="0"
-	onmouseenter={onmouseenter}
-	onmouseleave={onmouseleave}
+	onmouseover={onmouseenter}
+	onmouseout={(e) => { if (e.currentTarget?.contains(e.relatedTarget as Node)) return; onmouseleave?.(e); }}
 	onclick={onclick}
 	onkeydown={(e) => { if (e.key === 'Enter' && onclick) onclick(e as unknown as MouseEvent); }}
 >
@@ -92,7 +92,7 @@
 		d={pathD}
 		fill={color}
 		fill-opacity="1.0"
-		stroke="#000"
+		stroke="var(--hatch-annotation-stroke, #fff)"
 		stroke-width="0.5"
 	/>
 
@@ -120,12 +120,12 @@
 	}
 
 	.part-arc:hover path {
-		stroke: #fff;
+		stroke: var(--hatch-annotation-stroke-hover, #fff);
 		stroke-width: 1.5;
 	}
 
 	.part-arc.selected path {
-		stroke: #fff;
+		stroke: var(--hatch-annotation-stroke-hover, #fff);
 		stroke-width: 2;
 	}
 

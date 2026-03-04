@@ -50,7 +50,7 @@
 </script>
 
 {#if bandStyle === 'realistic'}
-	<!-- Glow layer (blurred, lower opacity) -->
+	<!-- Glow layer (blurred, lower opacity) — no events, visual only -->
 	<rect
 		x={bandX}
 		y={bandY - bandThickness / 2}
@@ -61,15 +61,9 @@
 		fill={colors.glow}
 		fill-opacity={bandOpacity * 0.6}
 		filter="url(#gel-band-glow)"
-		class="gel-band"
-		role="button"
-		tabindex="0"
-		{onmouseenter}
-		{onmouseleave}
-		{onclick}
-		onkeydown={(e) => { if (e.key === 'Enter' && onclick) onclick(e as unknown as MouseEvent); }}
+		pointer-events="none"
 	/>
-	<!-- Sharp band on top -->
+	<!-- Sharp band on top — receives all events -->
 	<rect
 		x={bandX}
 		y={bandY - bandThickness / 2}
@@ -82,8 +76,8 @@
 		class="gel-band"
 		role="button"
 		tabindex="0"
-		{onmouseenter}
-		{onmouseleave}
+		onmouseover={onmouseenter}
+		onmouseout={onmouseleave}
 		{onclick}
 		onkeydown={(e) => { if (e.key === 'Enter' && onclick) onclick(e as unknown as MouseEvent); }}
 	/>
@@ -101,8 +95,8 @@
 		class="gel-band"
 		role="button"
 		tabindex="0"
-		{onmouseenter}
-		{onmouseleave}
+		onmouseover={onmouseenter}
+		onmouseout={onmouseleave}
 		{onclick}
 		onkeydown={(e) => { if (e.key === 'Enter' && onclick) onclick(e as unknown as MouseEvent); }}
 	/>

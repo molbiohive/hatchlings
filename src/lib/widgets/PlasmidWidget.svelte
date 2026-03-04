@@ -14,7 +14,6 @@
 <PlasmidViewer
 	name={data.name}
 	size={data.size}
-	topology={data.topology}
 	parts={data.parts}
 	cutSites={data.cutSites}
 	{width}

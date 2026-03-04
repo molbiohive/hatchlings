@@ -9,7 +9,6 @@
 	import CutSiteMarker from './CutSiteMarker.svelte';
 	import PlasmidLabel from './PlasmidLabel.svelte';
 	import CircularSelection from './CircularSelection.svelte';
-	import LinearPlasmidView from './LinearPlasmidView.svelte';
 	import type { HoverInfo } from '../../types/utility.js';
 
 	const TWO_PI = 2 * Math.PI;
@@ -17,7 +16,6 @@
 	interface Props {
 		name: string;
 		size: number;
-		topology?: 'circular' | 'linear';
 		parts?: Part[];
 		cutSites?: CutSite[];
 		selectionState?: SelectionState;
@@ -37,7 +35,6 @@
 	let {
 		name,
 		size,
-		topology = 'circular',
 		parts = [],
 		cutSites = [],
 		selectionState,
@@ -212,6 +209,20 @@
 		}
 	}
 
+	function cutSiteEnd(site: CutSite): number {
+		if (site.end !== undefined) return site.end;
+		return site.position + Math.max(site.cutPosition ?? 1, site.complementCutPosition ?? 1);
+	}
+
+	function handleCutSiteClick(cutSite: CutSite) {
+		const end = cutSiteEnd(cutSite);
+		if (selectionState) {
+			selectionState.setSelection(cutSite.position, end);
+			onselect?.({ start: cutSite.position, end });
+			onselectionchange?.({ start: cutSite.position, end });
+		}
+	}
+
 	let sizeLabel = $derived(formatBp(size));
 
 	/**
@@ -304,23 +315,7 @@
 	});
 </script>
 
-{#if topology === 'linear'}
-	<LinearPlasmidView
-		{name}
-		{size}
-		{parts}
-		{cutSites}
-		{selectionState}
-		{width}
-		{height}
-		{showLabels}
-		{showTicks}
-		onpartclick={handlePartClick}
-		onselect={onselect}
-		{onhoverinfo}
-	/>
-{:else}
-	<div class="plasmid-viewer" style:width="{width}px" style:height="{height}px" style:position="relative">
+<div class="plasmid-viewer" style:width="{width}px" style:height="{height}px" style:position="relative">
 		<svg
 			bind:this={svgElement}
 			{width}
@@ -380,6 +375,7 @@
 					{cy}
 					onmouseenter={(e) => handleCutSiteMouseEnter(e, cutSite)}
 					onmouseleave={handleMouseLeave}
+					onclick={() => handleCutSiteClick(cutSite)}
 				/>
 			{/each}
 
@@ -402,8 +398,9 @@
 
 			<!-- Layer 6: Label dots + text (on top of everything) -->
 			{#if showLabels}
-				{#each [...allLabels.part, ...allLabels.cutSite] as lbl (lbl.text + lbl.anchorX + '-lbl')}
+				{#each allLabels.part as lbl (lbl.text + lbl.anchorX + '-lbl')}
 					{@const rl = lbl as any}
+					{@const part = parts[rl.index]}
 					<PlasmidLabel
 						name={lbl.text}
 						x={lbl.x}
@@ -416,6 +413,29 @@
 						color={rl.color}
 						renderPart="label"
 						counterRotation={-rotationDeg}
+						onmouseenter={(e) => handlePartMouseEnter(e, part)}
+						onmouseleave={handleMouseLeave}
+						onclick={() => handlePartClick(part)}
+					/>
+				{/each}
+				{#each allLabels.cutSite as lbl (lbl.text + lbl.anchorX + '-lbl')}
+					{@const rl = lbl as any}
+					{@const cs = cutSites[rl.index]}
+					<PlasmidLabel
+						name={lbl.text}
+						x={lbl.x}
+						y={lbl.y}
+						anchorX={lbl.anchorX}
+						anchorY={lbl.anchorY}
+						{cx}
+						{cy}
+						labelRadius={labelRadius}
+						color={rl.color}
+						renderPart="label"
+						counterRotation={-rotationDeg}
+						onmouseenter={(e) => handleCutSiteMouseEnter(e, cs)}
+						onmouseleave={handleMouseLeave}
+						onclick={() => handleCutSiteClick(cs)}
 					/>
 				{/each}
 			{/if}
@@ -441,18 +461,8 @@
 			>
 				{sizeLabel} bp
 			</text>
-			<text
-				x={cx}
-				y={cy + 28}
-				text-anchor="middle"
-				dominant-baseline="central"
-				class="center-topology"
-			>
-				circular
-			</text>
-		</svg>
+			</svg>
 	</div>
-{/if}
 
 <style>
 	.plasmid-viewer {
@@ -475,11 +485,4 @@
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
 	}
 
-	.center-topology {
-		font-size: 10px;
-		fill: var(--hatch-text-dim, #566070);
-		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
-		text-transform: uppercase;
-		letter-spacing: 1px;
-	}
 </style>

@@ -24,6 +24,15 @@
 
 	let colorMap = $derived(alphabet === 'protein' ? aminoAcidColors : nucleotideColors);
 
+	const aminoAcid3Letter: Record<string, string> = {
+		A: 'Ala', R: 'Arg', N: 'Asn', D: 'Asp', C: 'Cys',
+		E: 'Glu', Q: 'Gln', G: 'Gly', H: 'His', I: 'Ile',
+		L: 'Leu', K: 'Lys', M: 'Met', F: 'Phe', P: 'Pro',
+		S: 'Ser', T: 'Thr', W: 'Trp', Y: 'Tyr', V: 'Val',
+		U: 'Sec', O: 'Pyl', B: 'Asx', Z: 'Glx', X: 'Xaa',
+		'*': 'Ter',
+	};
+
 	let total = $derived(Object.values(counts).reduce((s, v) => s + v, 0));
 
 	/** Sorted entries for bar chart */
@@ -32,6 +41,7 @@
 			.sort((a, b) => b[1] - a[1])
 			.map(([residue, count]) => ({
 				residue,
+				label: alphabet === 'protein' ? (aminoAcid3Letter[residue] ?? residue) : residue,
 				count,
 				fraction: total > 0 ? count / total : 0,
 				color: colorMap[residue] ?? '#999',
@@ -47,7 +57,7 @@
 	let donutWidth = 16;
 
 	/** Bar chart layout */
-	let barAreaX = $derived(showDonut ? 180 : 30);
+	let barAreaX = $derived(showDonut ? 180 : (alphabet === 'protein' ? 45 : 30));
 	let barAreaWidth = $derived(width - barAreaX - 20);
 	let barHeight = $derived(Math.min(20, (height - 40) / Math.max(entries.length, 1) - 4));
 
@@ -118,7 +128,8 @@
 			text-anchor="end"
 			dominant-baseline="middle"
 			class="bar-label"
-		>{entry.residue}</text>
+			font-size={alphabet === 'protein' ? '9' : '12'}
+		>{entry.label}</text>
 
 		<rect
 			x={barAreaX}

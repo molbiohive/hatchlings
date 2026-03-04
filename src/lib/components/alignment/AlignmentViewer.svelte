@@ -48,27 +48,52 @@
 
 	const NAME_PANEL_WIDTH = 120;
 	const CONSERVATION_HEIGHT = 40;
-	const HEADER_HEIGHT = 20;
 
 	let canvas: HTMLCanvasElement | undefined = $state(undefined);
-	let namePanel: HTMLDivElement | undefined = $state(undefined);
 	let scrollContainer: HTMLDivElement | undefined = $state(undefined);
 
 	let gridWidth = $derived(showNames ? width - NAME_PANEL_WIDTH : width);
 	let alignmentLength = $derived(sequences.length > 0 ? sequences[0].sequence.length : 0);
-	let totalCanvasWidth = $derived(alignmentLength * cellWidth);
+	let totalContentWidth = $derived(alignmentLength * cellWidth);
 	let consensusOffset = $derived(showConsensus ? cellHeight : 0);
-	let totalCanvasHeight = $derived(sequences.length * cellHeight + consensusOffset);
+	let totalContentHeight = $derived(sequences.length * cellHeight + consensusOffset + (showConservation ? CONSERVATION_HEIGHT : 0));
 
 	/** Scroll state for virtual rendering */
 	let scrollX = $state(0);
 	let scrollY = $state(0);
+
+	/** Drag-to-pan state */
+	let isDragging = $state(false);
+	let dragStartX = $state(0);
+	let dragStartY = $state(0);
+	let dragStartScrollX = $state(0);
+	let dragStartScrollY = $state(0);
 
 	function handleScroll() {
 		if (scrollContainer) {
 			scrollX = scrollContainer.scrollLeft;
 			scrollY = scrollContainer.scrollTop;
 		}
+	}
+
+	function handleMouseDown(e: MouseEvent) {
+		if (e.button !== 0) return;
+		isDragging = true;
+		dragStartX = e.clientX;
+		dragStartY = e.clientY;
+		dragStartScrollX = scrollContainer?.scrollLeft ?? 0;
+		dragStartScrollY = scrollContainer?.scrollTop ?? 0;
+		e.preventDefault();
+	}
+
+	function handleMouseMove(e: MouseEvent) {
+		if (!isDragging || !scrollContainer) return;
+		scrollContainer.scrollLeft = dragStartScrollX - (e.clientX - dragStartX);
+		scrollContainer.scrollTop = dragStartScrollY - (e.clientY - dragStartY);
+	}
+
+	function handleMouseUp() {
+		isDragging = false;
 	}
 
 	/** Compute consensus from sequences */
@@ -94,7 +119,6 @@
 		return result.join('');
 	});
 
-	/** Color cache for canvas rendering */
 	function hexToRgb(hex: string): [number, number, number] {
 		const r = parseInt(hex.slice(1, 3), 16);
 		const g = parseInt(hex.slice(3, 5), 16);
@@ -102,111 +126,122 @@
 		return [r, g, b];
 	}
 
-	/** Canvas rendering effect */
+	/** Canvas rendering — draws only visible cells, offset by scroll position */
 	$effect(() => {
 		if (!canvas) return;
 		const ctx = canvas.getContext('2d');
 		if (!ctx) return;
 
 		const dpr = typeof window !== 'undefined' ? window.devicePixelRatio ?? 1 : 1;
-		canvas.width = gridWidth * dpr;
-		canvas.height = (totalCanvasHeight + (showConservation ? CONSERVATION_HEIGHT : 0)) * dpr;
-		canvas.style.width = `${gridWidth}px`;
-		canvas.style.height = `${totalCanvasHeight + (showConservation ? CONSERVATION_HEIGHT : 0)}px`;
+		const canvasW = gridWidth;
+		const canvasH = Math.min(height, totalContentHeight);
+
+		canvas.width = canvasW * dpr;
+		canvas.height = canvasH * dpr;
+		canvas.style.width = `${canvasW}px`;
+		canvas.style.height = `${canvasH}px`;
 		ctx.scale(dpr, dpr);
 
-		// Compute visible range
+		// Visible range based on scroll
 		const startCol = Math.floor(scrollX / cellWidth);
 		const endCol = Math.min(alignmentLength, Math.ceil((scrollX + gridWidth) / cellWidth) + 1);
-		const startRow = Math.floor(scrollY / cellHeight);
-		const endRow = Math.min(sequences.length, Math.ceil((scrollY + height) / cellHeight) + 1);
+		const startRow = Math.max(0, Math.floor((scrollY - consensusOffset) / cellHeight));
+		const endRow = Math.min(sequences.length, Math.ceil((scrollY - consensusOffset + height) / cellHeight) + 1);
 
-		// Clear
-		ctx.clearRect(0, 0, gridWidth, totalCanvasHeight + CONSERVATION_HEIGHT);
+		// Clear entire canvas
+		ctx.clearRect(0, 0, canvasW, canvasH);
 
-		// Set font
-		ctx.font = `500 ${Math.min(cellHeight - 2, 13)}px "SF Mono", "Fira Code", monospace`;
+		const fontSize = Math.min(cellHeight - 2, 13);
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 
-		// Draw consensus row (if enabled) as first row
+		// Draw consensus row
 		if (showConsensus && consensus.length > 0) {
-			ctx.font = `700 ${Math.min(cellHeight - 2, 13)}px "SF Mono", "Fira Code", monospace`;
-			for (let col = startCol; col < endCol; col++) {
-				const ch = consensus[col]?.toUpperCase() ?? '-';
-				const x = col * cellWidth;
-				const color = colorMap[ch];
+			const consY = consensusOffset - scrollY;
+			if (consY + cellHeight > 0 && consY < height) {
+				ctx.font = `700 ${fontSize}px "SF Mono", "Fira Code", monospace`;
+				for (let col = startCol; col < endCol; col++) {
+					const ch = consensus[col]?.toUpperCase() ?? '-';
+					const drawX = col * cellWidth - scrollX;
+					const color = colorMap[ch];
 
-				if (color && ch !== '-') {
-					const [r, g, b] = hexToRgb(color);
-					ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
-					ctx.fillRect(x, 0, cellWidth, cellHeight);
-					ctx.fillStyle = color;
-				} else {
-					ctx.fillStyle = '#555';
+					if (color && ch !== '-') {
+						const [r, g, b] = hexToRgb(color);
+						ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.3)`;
+						ctx.fillRect(drawX, 0 - scrollY, cellWidth, cellHeight);
+						ctx.fillStyle = color;
+					} else {
+						ctx.fillStyle = '#555';
+					}
+					ctx.fillText(ch, drawX + cellWidth / 2, -scrollY + cellHeight / 2 + 1);
 				}
-
-				ctx.fillText(ch, x + cellWidth / 2, cellHeight / 2 + 1);
 			}
-			ctx.font = `500 ${Math.min(cellHeight - 2, 13)}px "SF Mono", "Fira Code", monospace`;
 		}
 
-		// Draw sequence cells (shifted down by consensusOffset)
+		// Draw sequence cells
+		ctx.font = `500 ${fontSize}px "SF Mono", "Fira Code", monospace`;
 		for (let row = startRow; row < endRow; row++) {
 			const seq = sequences[row];
-			const y = row * cellHeight + consensusOffset;
+			const drawY = row * cellHeight + consensusOffset - scrollY;
+
+			if (drawY + cellHeight < 0 || drawY > height) continue;
 
 			for (let col = startCol; col < endCol; col++) {
 				const ch = seq.sequence[col]?.toUpperCase() ?? '-';
-				const x = col * cellWidth;
+				const drawX = col * cellWidth - scrollX;
 				const color = colorMap[ch];
 
 				if (color && ch !== '-') {
 					const [r, g, b] = hexToRgb(color);
 					ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.2)`;
-					ctx.fillRect(x, y, cellWidth, cellHeight);
+					ctx.fillRect(drawX, drawY, cellWidth, cellHeight);
 					ctx.fillStyle = color;
 				} else {
 					ctx.fillStyle = '#555';
 				}
 
-				ctx.fillText(ch, x + cellWidth / 2, y + cellHeight / 2 + 1);
+				ctx.fillText(ch, drawX + cellWidth / 2, drawY + cellHeight / 2 + 1);
 			}
 		}
 
-		// Draw conservation bar at bottom (below all rows)
+		// Conservation bar at bottom
 		if (showConservation && conservation.length > 0) {
-			const barY = sequences.length * cellHeight + consensusOffset + 4;
+			const barBaseY = sequences.length * cellHeight + consensusOffset - scrollY + 4;
 			const maxScore = Math.max(...conservation.map(c => c.score), 1);
 
 			for (let col = startCol; col < endCol; col++) {
 				const c = conservation[col];
 				if (!c) continue;
 				const barH = (c.score / maxScore) * (CONSERVATION_HEIGHT - 8);
-				const x = col * cellWidth;
+				const drawX = col * cellWidth - scrollX;
 
 				ctx.fillStyle = 'rgba(106, 184, 224, 0.6)';
-				ctx.fillRect(x + 1, barY + CONSERVATION_HEIGHT - 8 - barH, cellWidth - 2, barH);
+				ctx.fillRect(drawX + 1, barBaseY + CONSERVATION_HEIGHT - 8 - barH, cellWidth - 2, barH);
 			}
 		}
 
-		// Draw annotations as colored bars above alignment
+		// Annotation bars
 		for (const ann of annotations) {
 			if (ann.end < startCol || ann.start > endCol) continue;
-			const x = ann.start * cellWidth;
+			const drawX = ann.start * cellWidth - scrollX;
 			const w = (ann.end - ann.start) * cellWidth;
 			ctx.fillStyle = ann.color ?? 'rgba(255, 165, 0, 0.3)';
-			ctx.fillRect(x, 0, w, 3);
+			ctx.fillRect(drawX, -scrollY, w, 3);
 		}
 	});
 </script>
 
-<div class="hatch-alignment-viewer" style:width="{width}px" style:height="{height}px">
+<svelte:window onmousemove={handleMouseMove} onmouseup={handleMouseUp} />
+
+<div
+	class="hatch-alignment-viewer"
+	class:dragging={isDragging}
+	style:width="{width}px"
+	style:height="{height}px"
+>
 	{#if showNames}
-		<!-- Name panel (fixed left, synced via CSS transform) -->
 		<div
 			class="name-panel"
-			bind:this={namePanel}
 			style:width="{NAME_PANEL_WIDTH}px"
 			style:height="{height}px"
 		>
@@ -220,7 +255,7 @@
 						Consensus
 					</div>
 				{/if}
-				{#each sequences as seq, i}
+				{#each sequences as seq}
 					<div
 						class="seq-name"
 						style:height="{cellHeight}px"
@@ -239,19 +274,21 @@
 		class="grid-container"
 		bind:this={scrollContainer}
 		onscroll={handleScroll}
+		onmousedown={handleMouseDown}
 		style:width="{gridWidth}px"
 		style:height="{height}px"
 	>
+		<!-- Invisible sizer for scroll bounds -->
 		<div
 			class="grid-sizer"
-			style:width="{totalCanvasWidth}px"
-			style:height="{totalCanvasHeight + (showConservation ? CONSERVATION_HEIGHT : 0)}px"
-		>
-			<canvas
-				bind:this={canvas}
-				class="alignment-canvas"
-			></canvas>
-		</div>
+			style:width="{totalContentWidth}px"
+			style:height="{totalContentHeight}px"
+		></div>
+		<!-- Canvas renders at viewport position, draws scroll-offset cells -->
+		<canvas
+			bind:this={canvas}
+			class="alignment-canvas"
+		></canvas>
 	</div>
 </div>
 
@@ -288,15 +325,24 @@
 	.grid-container {
 		overflow: auto;
 		position: relative;
+		cursor: grab;
+	}
+
+	.dragging .grid-container {
+		cursor: grabbing;
 	}
 
 	.grid-sizer {
-		position: relative;
+		position: absolute;
+		top: 0;
+		left: 0;
 	}
 
 	.alignment-canvas {
 		position: sticky;
 		top: 0;
 		left: 0;
+		display: block;
+		/* Canvas floats above the sizer at viewport origin */
 	}
 </style>

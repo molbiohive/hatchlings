@@ -11,8 +11,6 @@ export * from './util/index.js';
 // Shared components
 export {
 	Tooltip,
-	SelectionOverlay,
-	ContextMenu,
 	AxisX,
 	AxisY,
 	ZoomControls,
@@ -28,12 +26,6 @@ export { GelViewer, GelBand, GelLane, GelLadder } from './components/gel/index.j
 export { TraceViewer, TracePeaks, BaseCallTrack, AlignmentView } from './components/trace/index.js';
 export { ProteinViewer } from './components/protein/index.js';
 export { AlignmentViewer } from './components/alignment/index.js';
-
-// InfoBox component
-export { default as InfoBox } from './components/shared/InfoBox.svelte';
-
-// Editor components
-export { FeatureEditDialog } from './components/editor/index.js';
 
 // Scientific chart components
 export {

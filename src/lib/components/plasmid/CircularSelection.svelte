@@ -82,7 +82,7 @@
 			cy={handleStart.y}
 			r="3.5"
 			fill="var(--hatch-selection-handle, rgba(0, 130, 250, 0.8))"
-			stroke="#fff"
+			stroke="var(--hatch-selection-outline, #fff)"
 			stroke-width="0.5"
 			class="grab-handle"
 		/>
@@ -91,7 +91,7 @@
 			cy={handleEnd.y}
 			r="3.5"
 			fill="var(--hatch-selection-handle, rgba(0, 130, 250, 0.8))"
-			stroke="#fff"
+			stroke="var(--hatch-selection-outline, #fff)"
 			stroke-width="0.5"
 			class="grab-handle"
 		/>

@@ -10,9 +10,10 @@
 		cy: number;
 		onmouseenter?: (e: MouseEvent) => void;
 		onmouseleave?: (e: MouseEvent) => void;
+		onclick?: (e: MouseEvent) => void;
 	}
 
-	let { cutSite, totalSize, radius, cx, cy, onmouseenter, onmouseleave }: Props = $props();
+	let { cutSite, totalSize, radius, cx, cy, onmouseenter, onmouseleave, onclick }: Props = $props();
 
 	const TRI_HEIGHT = 7;
 	const TRI_HALF_BASE = 3;
@@ -42,15 +43,18 @@
 
 <g
 	class="cut-site-marker"
-	role="img"
+	role="button"
+	tabindex="0"
 	aria-label="{cutSite.enzyme} cut site at position {cutSite.position}"
-	onmouseenter={onmouseenter}
-	onmouseleave={onmouseleave}
+	onmouseover={onmouseenter}
+	onmouseout={(e) => { if (e.currentTarget?.contains(e.relatedTarget as Node)) return; onmouseleave?.(e); }}
+	{onclick}
+	onkeydown={(e) => { if (e.key === 'Enter' && onclick) onclick(e as unknown as MouseEvent); }}
 >
 	<!-- Small filled triangle pointing inward toward center -->
 	<polygon
 		points={trianglePoints}
-		fill="var(--hatch-cut-site-marker, #1a1a2e)"
+		fill="var(--hatch-cutsite-color, #d45858)"
 		stroke="none"
 	/>
 </g>

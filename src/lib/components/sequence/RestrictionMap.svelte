@@ -10,10 +10,12 @@
 		cutSites: CutSite[];
 		/** Optional feature annotations to display as colored blocks */
 		features?: Part[];
-		/** Width of the SVG */
+		/** Width of the container */
 		width?: number;
 		/** Height of the SVG */
 		height?: number;
+		/** Zoom level (bindable) */
+		zoom?: number;
 	}
 
 	let {
@@ -22,6 +24,7 @@
 		features = [],
 		width = 700,
 		height = 200,
+		zoom = $bindable(1),
 	}: Props = $props();
 
 	const MARGIN_LEFT = 40;
@@ -29,38 +32,34 @@
 	const BACKBONE_Y = 100;
 	const BACKBONE_WIDTH = $derived(width - MARGIN_LEFT - MARGIN_RIGHT);
 
-	/** Zoom and pan state */
-	let currentZoom = $state(1);
-	let currentPanX = $state(0);
-	let isDragging = $state(false);
-	let dragStartX = $state(0);
-	let panStartX = $state(0);
+	/** Scaled content width */
+	let scaledWidth = $derived(BACKBONE_WIDTH * zoom + MARGIN_LEFT + MARGIN_RIGHT);
 
 	function bpToX(bp: number): number {
-		return MARGIN_LEFT + (bp / length) * BACKBONE_WIDTH;
+		return MARGIN_LEFT + (bp / length) * BACKBONE_WIDTH * zoom;
 	}
 
-	/** Stagger overlapping cut site labels above/below */
+	/** All labels above backbone, skip overlapping ones */
 	let cutSitePositions = $derived.by(() => {
 		const sorted = [...cutSites].sort((a, b) => a.position - b.position);
-		const positions: { site: CutSite; x: number; above: boolean; labelY: number }[] = [];
+		const positions: { site: CutSite; x: number; labelY: number; visible: boolean }[] = [];
+
+		let lastLabelEnd = -Infinity;
 
 		for (let i = 0; i < sorted.length; i++) {
 			const x = bpToX(sorted[i].position);
-			// Alternate above/below, but also check proximity
-			let above = i % 2 === 0;
-			if (i > 0) {
-				const prevX = bpToX(sorted[i - 1].position);
-				if (Math.abs(x - prevX) < 40) {
-					above = !positions[i - 1].above;
-				}
+			const labelWidth = sorted[i].enzyme.length * 7 + 10;
+			const visible = x - labelWidth / 2 > lastLabelEnd;
+
+			if (visible) {
+				lastLabelEnd = x + labelWidth / 2;
 			}
 
 			positions.push({
 				site: sorted[i],
 				x,
-				above,
-				labelY: above ? BACKBONE_Y - 30 : BACKBONE_Y + 35,
+				labelY: BACKBONE_Y - 30,
+				visible,
 			});
 		}
 		return positions;
@@ -91,22 +90,6 @@
 		return result;
 	});
 
-	/** Pan / zoom handlers */
-	function handleMouseDown(e: MouseEvent) {
-		isDragging = true;
-		dragStartX = e.clientX;
-		panStartX = currentPanX;
-	}
-
-	function handleMouseMove(e: MouseEvent) {
-		if (!isDragging) return;
-		currentPanX = panStartX + (e.clientX - dragStartX);
-	}
-
-	function handleMouseUp() {
-		isDragging = false;
-	}
-
 	/** Tooltip state for cut site hover */
 	let hoveredSite: CutSite | null = $state(null);
 	let hoverX = $state(0);
@@ -114,23 +97,19 @@
 </script>
 
 <div class="restriction-map-container" style:width="{width}px">
-	<svg
-		{width}
-		{height}
-		class="hatch-restriction-map"
-		role="img"
-		aria-label="Restriction map"
-		onmousedown={handleMouseDown}
-		onmousemove={handleMouseMove}
-		onmouseup={handleMouseUp}
-		onmouseleave={handleMouseUp}
-	>
-		<g transform="translate({currentPanX}, 0) scale({currentZoom}, 1)">
+	<div class="scroll-wrapper" style:width="{width}px">
+		<svg
+			width={scaledWidth}
+			{height}
+			class="hatch-restriction-map"
+			role="img"
+			aria-label="Restriction map"
+		>
 			<!-- Backbone line -->
 			<line
-				x1={MARGIN_LEFT}
+				x1={bpToX(0)}
 				y1={BACKBONE_Y}
-				x2={MARGIN_LEFT + BACKBONE_WIDTH}
+				x2={bpToX(length)}
 				y2={BACKBONE_Y}
 				stroke="var(--hatch-ring-color, #4a5a6a)"
 				stroke-width="3"
@@ -176,15 +155,15 @@
 				{/if}
 			{/each}
 
-			<!-- Cut site markers (OVE-style snip triangles) -->
+			<!-- Cut site markers -->
 			{#each cutSitePositions as cs}
 				<!-- Top snip triangle (pointing down) -->
 				<path
 					d="M {cs.x} {BACKBONE_Y - 2} L {cs.x - 3.5} {BACKBONE_Y - 8} L {cs.x + 3.5} {BACKBONE_Y - 8} Z"
 					fill="var(--hatch-cutsite-color, #d45858)"
 					fill-opacity="0.85"
-					onmouseenter={(e) => { hoveredSite = cs.site; hoverX = cs.x; hoverY = cs.above ? BACKBONE_Y - 45 : BACKBONE_Y + 50; }}
-					onmouseleave={() => { hoveredSite = null; }}
+					onmouseover={() => { hoveredSite = cs.site; hoverX = cs.x; hoverY = BACKBONE_Y - 45; }}
+					onmouseout={() => { hoveredSite = null; }}
 				/>
 				<!-- Bottom snip triangle (pointing up) -->
 				<path
@@ -193,70 +172,57 @@
 					fill-opacity="0.85"
 				/>
 
-				<!-- Connector line to label -->
-				<line
-					x1={cs.x}
-					y1={cs.above ? BACKBONE_Y - 8 : BACKBONE_Y + 8}
-					x2={cs.x}
-					y2={cs.labelY + (cs.above ? 8 : -8)}
-					stroke="var(--hatch-cutsite-color, #d45858)"
-					stroke-width="0.8"
-					stroke-opacity="0.4"
-				/>
+				{#if cs.visible}
+					<!-- Connector line to label -->
+					<line
+						x1={cs.x}
+						y1={BACKBONE_Y - 8}
+						x2={cs.x}
+						y2={cs.labelY + 8}
+						stroke="var(--hatch-cutsite-color, #d45858)"
+						stroke-width="0.8"
+						stroke-opacity="0.4"
+					/>
 
-				<!-- Enzyme name -->
-				<text
-					x={cs.x}
-					y={cs.labelY}
-					text-anchor="middle"
-					class="enzyme-label"
-				>{cs.site.enzyme}</text>
+					<!-- Enzyme name -->
+					<text
+						x={cs.x}
+						y={cs.labelY}
+						text-anchor="middle"
+						class="enzyme-label"
+					>{cs.site.enzyme}</text>
 
-				<!-- Position -->
-				<text
-					x={cs.x}
-					y={cs.labelY + (cs.above ? -11 : 12)}
-					text-anchor="middle"
-					class="position-label"
-				>{cs.site.position}</text>
+					<!-- Position -->
+					<text
+						x={cs.x}
+						y={cs.labelY - 11}
+						text-anchor="middle"
+						class="position-label"
+					>{cs.site.position}</text>
+				{/if}
 			{/each}
-		</g>
 
-		<!-- Hover tooltip for recognition sequence -->
-		{#if hoveredSite}
-			<g transform="translate({hoverX + currentPanX}, {hoverY})">
-				<rect
-					x={-40}
-					y={-10}
-					width={80}
-					height={20}
-					fill="var(--hatch-bg, #0c1018)"
-					stroke="var(--hatch-border, #2a3848)"
-					rx="3"
-				/>
-				<text
-					x={0}
-					y={4}
-					text-anchor="middle"
-					class="hover-label"
-				>{hoveredSite.enzyme} @ {hoveredSite.position}</text>
-			</g>
-		{/if}
-	</svg>
-
-	<!-- Zoom slider -->
-	<div class="zoom-controls">
-		<label class="zoom-label">
-			Zoom
-			<input
-				type="range"
-				min="0.5"
-				max="5"
-				step="0.1"
-				bind:value={currentZoom}
-			/>
-			<span class="zoom-value">{currentZoom.toFixed(1)}x</span>
-		</label>
+			<!-- Hover tooltip -->
+			{#if hoveredSite}
+				<g transform="translate({hoverX}, {hoverY})">
+					<rect
+						x={-40}
+						y={-10}
+						width={80}
+						height={20}
+						fill="var(--hatch-bg, #0c1018)"
+						stroke="var(--hatch-border, #2a3848)"
+						rx="3"
+					/>
+					<text
+						x={0}
+						y={4}
+						text-anchor="middle"
+						class="hover-label"
+					>{hoveredSite.enzyme} @ {hoveredSite.position}</text>
+				</g>
+			{/if}
+		</svg>
 	</div>
 </div>
 
@@ -264,17 +230,23 @@
 	.restriction-map-container {
 		display: flex;
 		flex-direction: column;
-	}
-
-	.hatch-restriction-map {
-		background: var(--hatch-bg, #0c1018);
-		border-radius: 6px;
-		cursor: grab;
 		overflow: hidden;
 	}
 
-	.hatch-restriction-map:active {
+	.scroll-wrapper {
+		overflow-x: auto;
+		overflow-y: hidden;
+		border-radius: 6px;
+		background: var(--hatch-bg, #0c1018);
+		cursor: grab;
+	}
+
+	.scroll-wrapper:active {
 		cursor: grabbing;
+	}
+
+	.hatch-restriction-map {
+		display: block;
 	}
 
 	.tick-label {
@@ -306,31 +278,5 @@
 		font-size: 9px;
 		fill: var(--hatch-text, #d4dce6);
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
-	}
-
-	.zoom-controls {
-		padding: 6px 8px;
-		display: flex;
-		align-items: center;
-	}
-
-	.zoom-label {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 11px;
-		color: var(--hatch-text-muted, #8a95a5);
-		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
-	}
-
-	.zoom-label input[type='range'] {
-		width: 80px;
-		accent-color: var(--hatch-highlight, #6ab8e0);
-	}
-
-	.zoom-value {
-		font-size: 10px;
-		color: var(--hatch-highlight, #6ab8e0);
-		min-width: 30px;
 	}
 </style>

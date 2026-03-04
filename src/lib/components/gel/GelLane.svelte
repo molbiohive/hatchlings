@@ -101,12 +101,12 @@
 			onclick={(e) => onbandclick?.(band, e)}
 		/>
 
-		<!-- Size labels -->
+		<!-- Size labels (centered above band) -->
 		{#if shouldShowLabels}
 			<text
-				x={x + width - 2}
-				y={band.position * gelHeight + 3}
-				text-anchor="end"
+				x={x + width / 2}
+				y={band.position * gelHeight - 4}
+				text-anchor="middle"
 				fill={labelColor}
 				font-size="8"
 				font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"

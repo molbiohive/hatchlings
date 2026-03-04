@@ -123,11 +123,14 @@
 					stroke="var(--hatch-well-border, #2a3848)"
 					stroke-width="0.5"
 					style="cursor: pointer"
+					role="button"
+					tabindex="-1"
 					use:hover={{
 						over: (e) => onhoverinfo?.({ title: id, items: [...(well ? [{label: 'Value', value: well.value.toFixed(2)}, ...(well.group ? [{label: 'Group', value: well.group}] : [])] : [])], position: { x: e.clientX, y: e.clientY } }),
 						out: () => onhoverinfo?.(null)
 					}}
 					onclick={() => well && onwellclick?.(well)}
+					onkeydown={(e) => { if (e.key === 'Enter' && well) onwellclick?.(well); }}
 				/>
 				{#if showLabels && format <= 48 && well?.label}
 					<text

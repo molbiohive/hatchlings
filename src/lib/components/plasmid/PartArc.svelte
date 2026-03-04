@@ -78,6 +78,7 @@
 	let showInternal = $derived(showInternalLabel && arcLengthPx > 40);
 </script>
 
+<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 <g
 	class="part-arc"
 	class:selected

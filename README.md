@@ -4,13 +4,11 @@ Svelte 5 molecular biology component library. Pure rendering components for scie
 
 ## Install
 
-Not yet published to npm. To use from source:
-
 ```bash
-git clone https://github.com/molbiohive/hatchlings.git
-cd hatchlings
-bun install
+bun add hatchlings
 ```
+
+Only the components you import are included in your bundle — tree-shaking works out of the box.
 
 ## Components
 

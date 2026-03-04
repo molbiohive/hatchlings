@@ -24,6 +24,8 @@
 		showLabels?: boolean;
 		showTicks?: boolean;
 		showInternalLabels?: boolean;
+		/** Sequence topology */
+		topology?: 'circular' | 'linear';
 		onselect?: (selection: { start: number; end: number }) => void;
 		onselectionchange?: (selection: { start: number; end: number } | null) => void;
 		oncaretmove?: (position: number) => void;
@@ -43,6 +45,7 @@
 		showLabels = true,
 		showTicks = true,
 		showInternalLabels = true,
+		topology = 'circular',
 		onselect,
 		onselectionchange,
 		oncaretmove,
@@ -316,12 +319,15 @@
 </script>
 
 <div class="plasmid-viewer" style:width="{width}px" style:height="{height}px" style:position="relative">
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<svg
 			bind:this={svgElement}
 			{width}
 			{height}
 			viewBox="0 0 {width} {height}"
 			xmlns="http://www.w3.org/2000/svg"
+			role="application"
+			aria-label="Circular plasmid map for {name}"
 			onwheel={handleWheel}
 			onmousedown={handleMouseDown}
 			onmousemove={handleMouseMove}

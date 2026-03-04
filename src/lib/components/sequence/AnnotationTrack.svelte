@@ -128,9 +128,13 @@
 		{@const labelText = part.label ?? part.name}
 		{@const displayLabel = truncateLabel(labelText, fw - 8)}
 
+		<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 		<g
 			class="annotation-part"
+			role="button"
+			tabindex="-1"
 			onclick={() => onpartclick?.(part)}
+			onkeydown={(e) => { if (e.key === 'Enter') onpartclick?.(part); }}
 			onmouseover={(e) => onparthover?.(part, e)}
 			onmouseout={(e) => { if (e.currentTarget?.contains(e.relatedTarget as Node)) return; onparthover?.(null); }}
 		>

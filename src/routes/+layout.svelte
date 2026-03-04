@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { base } from '$app/paths';
 	import ThemeProvider from '$lib/components/shared/ThemeProvider.svelte';
 
 	interface Props {
@@ -17,7 +18,7 @@
 <ThemeProvider {theme}>
 	<div class="app">
 		<nav>
-			<a href="/" class="brand">hatchlings</a>
+			<a href="{base}/" class="brand">hatchlings</a>
 			<span class="tagline">Svelte 5 molecular biology components</span>
 			<button class="theme-toggle" onclick={toggleTheme} title="Toggle dark/light theme">
 				{theme === 'dark' ? 'Light' : 'Dark'}

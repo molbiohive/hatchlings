@@ -270,8 +270,11 @@
 	{/if}
 
 	<!-- Scrollable grid area -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="grid-container"
+		role="application"
+		aria-label="Sequence alignment grid"
 		bind:this={scrollContainer}
 		onscroll={handleScroll}
 		onmousedown={handleMouseDown}

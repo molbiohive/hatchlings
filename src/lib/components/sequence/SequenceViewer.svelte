@@ -3,13 +3,10 @@
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import SequenceRow from './SequenceRow.svelte';
-	import Ruler from './Ruler.svelte';
 
 	interface Props {
 		/** Full sequence string */
 		seq: string;
-		/** Sequence alphabet */
-		alphabet?: 'dna' | 'rna' | 'protein';
 		/** Part annotations (unified features + primers) */
 		parts?: Part[];
 		/** Restriction enzyme cut sites */
@@ -32,10 +29,12 @@
 		showTranslations?: boolean;
 		/** Show position numbers */
 		showNumbers?: boolean;
-		/** Show complement strand (default: auto for DNA) */
+		/** Show complement strand */
 		showComplement?: boolean;
-		/** Color bases (default: false for DNA, true for RNA/protein) */
+		/** Color bases */
 		colorBases?: boolean;
+		/** Sequence topology (circular allows wrapping cut site selection) */
+		topology?: 'circular' | 'linear';
 		/** Selection callback */
 		onselect?: (selection: { start: number; end: number; sequence: string }) => void;
 		/** Part click callback */
@@ -48,7 +47,6 @@
 
 	let {
 		seq,
-		alphabet = 'dna',
 		parts = [],
 		cutSites = [],
 		translations = [],
@@ -60,24 +58,20 @@
 		showAnnotations = true,
 		showTranslations = true,
 		showNumbers = true,
-		showComplement,
-		colorBases,
+		showComplement = true,
+		colorBases = false,
+		topology = 'linear',
 		onselect,
 		onpartclick,
 		oncopysequence,
 		onhoverinfo,
 	}: Props = $props();
 
-	/** For protein, suppress DNA-specific tracks */
-	let effectiveShowTranslations = $derived(alphabet === 'protein' ? false : showTranslations);
-	let effectiveCutSites = $derived(alphabet === 'protein' ? [] : cutSites);
-	let effectiveShowComplement = $derived(showComplement ?? (alphabet === 'dna'));
-	let effectiveColorBases = $derived(colorBases ?? (alphabet !== 'dna'));
-
 	const NUMBER_WIDTH = 50;
 	const SEQ_X = $derived(showNumbers ? NUMBER_WIDTH : 0);
 	const ROW_PADDING = 12;
 	const BUFFER_ROWS = 2;
+	const CUTSITE_LABEL_H = 14;
 
 	/** Split the sequence into rows */
 	const rows = $derived.by(() => {
@@ -91,42 +85,48 @@
 		return result;
 	});
 
+	/** Check if a row has any cut sites */
+	function rowHasCutSites(rowStart: number, rowEnd: number): boolean {
+		return cutSites.some((cs) => cs.position >= rowStart && cs.position < rowEnd);
+	}
+
+	/** Count annotation lanes for a row */
+	function countAnnotationLanes(rowStart: number, rowEnd: number): number {
+		if (!showAnnotations) return 0;
+		const visParts = parts.filter((p) => p.start < rowEnd && p.end > rowStart);
+		if (visParts.length === 0) return 0;
+		const sorted = [...visParts].sort((a, b) => a.start - b.start);
+		const lanes: { end: number }[] = [];
+		for (const part of sorted) {
+			let assigned = false;
+			for (const lane of lanes) {
+				if (part.start >= lane.end) {
+					lane.end = part.end;
+					assigned = true;
+					break;
+				}
+			}
+			if (!assigned) lanes.push({ end: part.end });
+		}
+		return lanes.length;
+	}
+
 	/** Compute estimated height per row based on visible tracks */
 	function estimateRowHeight(rowStart: number, rowEnd: number): number {
 		let h = 14; // base sequence height
 
-		if (effectiveShowComplement) {
-			h += 14 + 2;
-		}
+		if (showComplement) h += 14 + 2;
 
-		if (showAnnotations) {
-			const visParts = parts.filter((p) => p.start < rowEnd && p.end > rowStart);
-			if (visParts.length > 0) {
-				const sorted = [...visParts].sort((a, b) => a.start - b.start);
-				const lanes: { end: number }[] = [];
-				for (const part of sorted) {
-					let assigned = false;
-					for (const lane of lanes) {
-						if (part.start >= lane.end) {
-							lane.end = part.end;
-							assigned = true;
-							break;
-						}
-					}
-					if (!assigned) {
-						lanes.push({ end: part.end });
-					}
-				}
-				h += lanes.length * 18 + 4;
-			}
-		}
+		const annotLanes = countAnnotationLanes(rowStart, rowEnd);
+		if (annotLanes > 0) h += annotLanes * 18 + 4;
 
-		if (effectiveShowTranslations) {
+		if (showTranslations) {
 			const visTrans = translations.filter((t) => t.start < rowEnd && t.end > rowStart);
-			if (visTrans.length > 0) {
-				h += 24;
-			}
+			if (visTrans.length > 0) h += 24;
 		}
+
+		// Add space for cut site enzyme labels above annotations
+		if (rowHasCutSites(rowStart, rowEnd)) h += CUTSITE_LABEL_H;
 
 		return h;
 	}
@@ -157,36 +157,28 @@
 	let containerEl: HTMLDivElement | undefined = $state(undefined);
 
 	function handleScroll() {
-		if (containerEl) {
-			scrollTop = containerEl.scrollTop;
-		}
+		if (containerEl) scrollTop = containerEl.scrollTop;
 	}
 
 	/** Compute visible row indices based on scroll position */
 	const visibleRange = $derived.by(() => {
 		if (rows.length === 0) return { start: 0, end: 0 };
-
 		const viewTop = scrollTop;
 		const viewBottom = scrollTop + height;
-
 		let startIdx = 0;
 		let endIdx = rows.length;
-
 		for (let i = 0; i < rowPositions.length; i++) {
-			const rp = rowPositions[i];
-			if (rp.y + rp.height >= viewTop) {
+			if (rowPositions[i].y + rowPositions[i].height >= viewTop) {
 				startIdx = Math.max(0, i - BUFFER_ROWS);
 				break;
 			}
 		}
-
 		for (let i = startIdx; i < rowPositions.length; i++) {
 			if (rowPositions[i].y > viewBottom) {
 				endIdx = Math.min(rows.length, i + BUFFER_ROWS);
 				break;
 			}
 		}
-
 		return { start: startIdx, end: endIdx };
 	});
 
@@ -195,11 +187,8 @@
 	let internalSelEnd = $state(-1);
 	let isSelecting = $state(false);
 
-	// Derived: effective selection range (from SelectionState or internal)
 	const selRange = $derived.by(() => {
-		if (selectionState) {
-			return selectionState.range;
-		}
+		if (selectionState) return selectionState.range;
 		if (internalSelStart < 0 || internalSelEnd < 0) return null;
 		return {
 			start: Math.min(internalSelStart, internalSelEnd),
@@ -207,7 +196,6 @@
 		};
 	});
 
-	// Derived: caret position
 	const caretPos = $derived.by(() => {
 		if (selectionState) return selectionState.caretPosition;
 		if (internalSelStart >= 0 && internalSelStart === internalSelEnd) return internalSelStart;
@@ -219,10 +207,7 @@
 		if (!svgEl) return -1;
 		const rect = svgEl.getBoundingClientRect();
 		const mouseX = e.clientX - rect.left;
-		// getBoundingClientRect already accounts for parent scroll —
-		// do NOT add scrollTop (that double-counts the offset)
 		const mouseY = e.clientY - rect.top;
-
 		for (let i = 0; i < rows.length; i++) {
 			const rp = rowPositions[i];
 			if (mouseY >= rp.y && mouseY <= rp.y + rp.height) {
@@ -267,51 +252,35 @@
 				selectionState.endDrag();
 				const range = selectionState.range;
 				if (range) {
-					onselect?.({
-						start: range.start,
-						end: range.end,
-						sequence: seq.slice(range.start, range.end),
-					});
+					onselect?.({ start: range.start, end: range.end, sequence: seq.slice(range.start, range.end) });
 				}
 			} else {
 				if (internalSelStart >= 0 && internalSelEnd >= 0 && internalSelStart !== internalSelEnd) {
 					const sStart = Math.min(internalSelStart, internalSelEnd);
 					const sEnd = Math.max(internalSelStart, internalSelEnd) + 1;
-					onselect?.({
-						start: sStart,
-						end: sEnd,
-						sequence: seq.slice(sStart, sEnd),
-					});
+					onselect?.({ start: sStart, end: sEnd, sequence: seq.slice(sStart, sEnd) });
 				}
 			}
 		}
 	}
 
-	/** Selection info for display */
 	let selectionInfo = $derived.by(() => {
 		if (!selRange) return '';
 		const len = selRange.end - selRange.start;
 		if (len <= 0) return '';
-		const unit = alphabet === 'protein' ? 'aa' : 'bp';
-		return `${selRange.start + 1}..${selRange.end} (${len} ${unit})`;
+		return `${selRange.start + 1}..${selRange.end} (${len} bp)`;
 	});
 
-	/** Wrapped part click: select sequence + fire callbacks */
 	function handlePartClick(part: Part) {
 		onpartclick?.(part);
 		if (selectionState) {
 			selectionState.setSelection(part.start, part.end);
-			const range = { start: part.start, end: part.end };
-			onselect?.({ ...range, sequence: seq.slice(range.start, range.end) });
+			onselect?.({ start: part.start, end: part.end, sequence: seq.slice(part.start, part.end) });
 		}
 	}
 
-	/** Fire tooltip on part hover */
 	function handlePartHover(part: Part | null, e?: MouseEvent) {
-		if (!part || !e) {
-			onhoverinfo?.(null);
-			return;
-		}
+		if (!part || !e) { onhoverinfo?.(null); return; }
 		const bpLen = part.end - part.start;
 		onhoverinfo?.({
 			title: part.name,
@@ -326,12 +295,8 @@
 		});
 	}
 
-	/** Fire tooltip on cut site hover */
 	function handleCutSiteHover(site: CutSite | null, e?: MouseEvent) {
-		if (!site || !e) {
-			onhoverinfo?.(null);
-			return;
-		}
+		if (!site || !e) { onhoverinfo?.(null); return; }
 		onhoverinfo?.({
 			title: site.enzyme,
 			items: [
@@ -343,13 +308,11 @@
 		});
 	}
 
-	/** Compute the end of a cut site's recognition sequence */
 	function cutSiteEnd(site: CutSite): number {
 		if (site.end !== undefined) return site.end;
 		return site.position + Math.max(site.cutPosition ?? 1, site.complementCutPosition ?? 1);
 	}
 
-	/** Select the full recognition site on click */
 	function handleCutSiteClick(site: CutSite) {
 		const end = cutSiteEnd(site);
 		if (selectionState) {
@@ -361,35 +324,16 @@
 		}
 	}
 
-	/** Compute the Y bounds of the forward+complement strands within a row.
-	 *  Matches SequenceRow's internal layout: annotations above, then seq, then complement. */
-	function strandBounds(rowStart: number, rowEnd: number): { seqY: number; endY: number } {
+	/** Compute strand Y bounds WITHIN SequenceRow (relative to its own origin) */
+	function strandBounds(rowStart: number, rowEnd: number): { seqY: number; endY: number; annotH: number } {
 		const LINE_HEIGHT = 14;
-		let annotLanes = 0;
-		if (showAnnotations) {
-			const visParts = parts.filter((p) => p.start < rowEnd && p.end > rowStart);
-			if (visParts.length > 0) {
-				const sorted = [...visParts].sort((a, b) => a.start - b.start);
-				const lanes: { end: number }[] = [];
-				for (const part of sorted) {
-					let assigned = false;
-					for (const lane of lanes) {
-						if (part.start >= lane.end) {
-							lane.end = part.end;
-							assigned = true;
-							break;
-						}
-					}
-					if (!assigned) lanes.push({ end: part.end });
-				}
-				annotLanes = lanes.length;
-			}
-		}
-		const annotH = annotLanes * 18;
-		const seqY = annotH + (annotLanes > 0 ? 4 : 0);
+		const annotLanes = countAnnotationLanes(rowStart, rowEnd);
+		const annotH = annotLanes * 18 + (annotLanes > 0 ? 4 : 0);
+		const csGap = rowHasCutSites(rowStart, rowEnd) ? CUTSITE_LABEL_H : 0;
+		const seqY = annotH + csGap;
 		const compY = seqY + LINE_HEIGHT + 2;
-		const endY = effectiveShowComplement ? compY + LINE_HEIGHT : seqY + LINE_HEIGHT;
-		return { seqY, endY };
+		const endY = showComplement ? compY + LINE_HEIGHT : seqY + LINE_HEIGHT;
+		return { seqY, endY, annotH };
 	}
 
 	function rowParts(rowStart: number, rowEnd: number): Part[] {
@@ -403,20 +347,11 @@
 		});
 	}
 
-	let ariaLabel = $derived.by(() => {
-		switch (alphabet) {
-			case 'protein': return 'Protein sequence viewer';
-			case 'rna': return 'RNA sequence viewer';
-			default: return 'DNA sequence viewer';
-		}
-	});
-
 	/** Auto-scroll to selection when it changes externally */
 	$effect(() => {
 		if (!selectionState || !containerEl) return;
 		const range = selectionState.range;
 		if (!range) return;
-
 		const targetRow = Math.floor(range.start / charsPerRow);
 		if (targetRow >= 0 && targetRow < rowPositions.length) {
 			const rp = rowPositions[targetRow];
@@ -436,19 +371,19 @@
 	bind:this={containerEl}
 	onscroll={handleScroll}
 >
-	<!-- Selection info bar -->
 	{#if selectionInfo}
 		<div class="selection-bar">
 			Selection: {selectionInfo}
 		</div>
 	{/if}
 
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<svg
 		width={svgWidth}
 		height={totalSvgHeight}
 		class="hatch-sequence-svg"
-		role="img"
-		aria-label={ariaLabel}
+		role="application"
+		aria-label="DNA sequence viewer"
 		onmousedown={handleMouseDown}
 		onmousemove={handleMouseMove}
 		onmouseup={handleMouseUp}
@@ -458,6 +393,7 @@
 			{#if i >= visibleRange.start && i < visibleRange.end}
 				{@const rowEnd = row.start + row.seq.length}
 				{@const rp = rowPositions[i]}
+				{@const hasCutSites = rowHasCutSites(row.start, rowEnd)}
 
 				<g transform="translate(0, {rp.y})">
 					<!-- Selection highlight -->
@@ -472,7 +408,6 @@
 							fill="var(--hatch-selection-fill, rgba(0, 130, 250, 0.3))"
 							rx="2"
 						/>
-						<!-- Grab handles at selection boundaries -->
 						{#if hlStart === (selRange?.start ?? -1)}
 							<rect
 								x={SEQ_X + (hlStart - row.start) * charWidth - 2}
@@ -510,61 +445,72 @@
 						/>
 					{/if}
 
-					<!-- Cut site markers — interactive whiskers + labels -->
-					{#if effectiveShowComplement}
+					<!-- SequenceRow (cutsiteGap pushes sequence below annotation+label zone) -->
+					<SequenceRow
+						seq={row.seq}
+						start={row.start}
+						parts={rowParts(row.start, rowEnd)}
+						translations={rowTranslations(row.start, rowEnd)}
+						{charWidth}
+						{showNumbers}
+						{showAnnotations}
+						{showTranslations}
+						{showComplement}
+						{colorBases}
+						cutsiteGap={hasCutSites ? CUTSITE_LABEL_H : 0}
+						onpartclick={handlePartClick}
+						onparthover={handlePartHover}
+					/>
+
+					<!-- Cut site markers — labels in the gap between annotations and sequence -->
+					{#if hasCutSites}
 					{@const sb = strandBounds(row.start, rowEnd)}
-					{#each effectiveCutSites as site}
+					{#each cutSites as site}
 						{#if site.position >= row.start && site.position < rowEnd}
 							{@const topCut = site.cutPosition ?? 0}
 							{@const botCut = site.complementCutPosition ?? 0}
 							{@const isSticky = topCut !== botCut}
 							{@const topX = SEQ_X + (site.position - row.start + topCut) * charWidth}
 							{@const botX = SEQ_X + (site.position - row.start + botCut) * charWidth}
-							{@const midY = (sb.seqY + sb.endY) / 2}
+							{@const labelY = sb.annotH + CUTSITE_LABEL_H / 2}
+							{@const whiskerTop = sb.seqY}
+							{@const whiskerBot = sb.endY}
+							{@const midY = (whiskerTop + whiskerBot) / 2}
+							<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 							<g
 								class="cutsite-marker"
+								role="button"
+								tabindex="-1"
 								onmouseover={(e) => handleCutSiteHover(site, e)}
 								onmouseout={() => handleCutSiteHover(null)}
 								onclick={(e) => { e.stopPropagation(); handleCutSiteClick(site); }}
+								onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); handleCutSiteClick(site); } }}
 							>
-								{#if isSticky}
-									<line x1={topX} y1={sb.seqY} x2={topX} y2={midY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
-									<line x1={topX} y1={midY} x2={botX} y2={midY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
-									<line x1={botX} y1={midY} x2={botX} y2={sb.endY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
-								{:else}
-									<line x1={topX} y1={sb.seqY} x2={topX} y2={sb.endY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.5" />
-								{/if}
-								<!-- Invisible wider hit area for easier clicking -->
-								<line x1={topX} y1={sb.seqY - 10} x2={topX} y2={sb.endY} stroke="transparent" stroke-width="8" />
+								<!-- Enzyme label between annotations and sequence -->
 								<text
 									x={topX}
-									y={sb.seqY - 3}
+									y={labelY}
 									text-anchor="middle"
+									dominant-baseline="middle"
 									fill="var(--hatch-cutsite-text, #d45858)"
 									font-size="8"
 									font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 									class="cutsite-label"
 								>{site.enzyme}</text>
+								<!-- Whisker lines through the strands -->
+								{#if isSticky}
+									<line x1={topX} y1={whiskerTop} x2={topX} y2={midY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
+									<line x1={topX} y1={midY} x2={botX} y2={midY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
+									<line x1={botX} y1={midY} x2={botX} y2={whiskerBot} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
+								{:else}
+									<line x1={topX} y1={whiskerTop} x2={topX} y2={whiskerBot} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.5" />
+								{/if}
+								<!-- Invisible wider hit area -->
+								<line x1={topX} y1={labelY - 6} x2={topX} y2={whiskerBot} stroke="transparent" stroke-width="8" />
 							</g>
 						{/if}
 					{/each}
 					{/if}
-
-					<SequenceRow
-						seq={row.seq}
-						start={row.start}
-						{alphabet}
-						parts={rowParts(row.start, rowEnd)}
-						translations={rowTranslations(row.start, rowEnd)}
-						{charWidth}
-						{showNumbers}
-						showAnnotations={showAnnotations}
-						showTranslations={effectiveShowTranslations}
-						showComplement={effectiveShowComplement}
-						colorBases={effectiveColorBases}
-						onpartclick={handlePartClick}
-						onparthover={handlePartHover}
-					/>
 				</g>
 			{/if}
 		{/each}

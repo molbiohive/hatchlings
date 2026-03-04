@@ -99,7 +99,6 @@
 	};
 	function trDNA(dna: string): string { let p=''; for(let i=0;i+2<dna.length;i+=3) p+=codonTable[dna.slice(i,i+3).toUpperCase()]??'?'; return p; }
 	const seqTranslations: Translation[] = [{ start:86,end:1276,strand:1,aminoAcids:trDNA(sequence.slice(86,1276)),frame:0 }];
-	let seqAlphabet: 'dna'|'rna'|'protein' = $state('dna');
 	let seqShowAnnotations = $state(true);
 	let seqShowTranslations = $state(true);
 	let seqShowNumbers = $state(true);
@@ -289,7 +288,7 @@ END`;
 			<p class="data-note">pBR322 (4361 bp) &mdash; AmpR, TetR, ori, rop, bla</p>
 		</div>
 		<div class="component-col">
-			<PlasmidViewer name="pBR322" size={4361} parts={plasmidParts} cutSites={plasmidCutSites} selectionState={sharedSelection} showLabels={plasmidShowLabels} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={hoverHandler('plasmid')} />
+			<PlasmidViewer name="pBR322" size={4361} parts={plasmidParts} cutSites={plasmidCutSites} topology="circular" selectionState={sharedSelection} showLabels={plasmidShowLabels} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={hoverHandler('plasmid')} />
 		</div>
 		<div class="controls-col">
 			<label><input type="checkbox" bind:checked={plasmidShowLabels} /> Labels</label>
@@ -306,10 +305,9 @@ END`;
 			<p class="data-note">pBR322 ({sequence.length} bp) &mdash; synced with PlasmidViewer</p>
 		</div>
 		<div class="component-col">
-			<SequenceViewer seq={sequence} alphabet={seqAlphabet} parts={seqParts} cutSites={seqCutSites} translations={seqTranslations} selectionState={sharedSelection} showAnnotations={seqShowAnnotations} showTranslations={seqShowTranslations} showNumbers={seqShowNumbers} showComplement={seqShowComplement} colorBases={seqColorBases} width={560} height={350} charsPerRow={50} onhoverinfo={hoverHandler('sequence')} />
+			<SequenceViewer seq={sequence} topology="circular" parts={seqParts} cutSites={seqCutSites} translations={seqTranslations} selectionState={sharedSelection} showAnnotations={seqShowAnnotations} showTranslations={seqShowTranslations} showNumbers={seqShowNumbers} showComplement={seqShowComplement} colorBases={seqColorBases} width={560} height={350} charsPerRow={50} onhoverinfo={hoverHandler('sequence')} />
 		</div>
 		<div class="controls-col">
-			<label>Alphabet <select bind:value={seqAlphabet}><option value="dna">DNA</option><option value="rna">RNA</option><option value="protein">Protein</option></select></label>
 			<label><input type="checkbox" bind:checked={seqShowAnnotations} /> Annotations</label>
 			<label><input type="checkbox" bind:checked={seqShowTranslations} /> Translations</label>
 			<label><input type="checkbox" bind:checked={seqShowNumbers} /> Line numbers</label>
@@ -395,7 +393,7 @@ END`;
 			<p class="data-note">pUC19 EcoRI, BamHI, HindIII</p>
 		</div>
 		<div class="component-col">
-			<RestrictionMap length={2686} cutSites={plasmidCutSites} features={plasmidParts} width={560} height={170} bind:zoom={rmZoom} />
+			<RestrictionMap length={2686} cutSites={plasmidCutSites} features={plasmidParts} width={560} height={170} bind:zoom={rmZoom} onhoverinfo={hoverHandler('restriction')} />
 		</div>
 		<div class="controls-col">
 			<label>Zoom <input type="range" min="0.5" max="10" step="0.1" bind:value={rmZoom} /> {rmZoom.toFixed(1)}x</label>

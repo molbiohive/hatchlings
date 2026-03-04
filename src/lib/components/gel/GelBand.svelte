@@ -63,6 +63,7 @@
 		filter="url(#gel-band-glow)"
 		pointer-events="none"
 	/>
+	<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 	<!-- Sharp band on top — receives all events -->
 	<rect
 		x={bandX}
@@ -82,6 +83,7 @@
 		onkeydown={(e) => { if (e.key === 'Enter' && onclick) onclick(e as unknown as MouseEvent); }}
 	/>
 {:else}
+	<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 	<!-- Simple mode: single solid rectangle -->
 	<rect
 		x={bandX}

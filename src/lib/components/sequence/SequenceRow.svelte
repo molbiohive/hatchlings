@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Part, Translation } from '../../types/index.js';
-	import { nucleotideColors, aminoAcidColors } from '../../util/colors.js';
+	import { nucleotideColors } from '../../util/colors.js';
 	import AnnotationTrack from './AnnotationTrack.svelte';
 	import TranslationTrack from './TranslationTrack.svelte';
 
@@ -9,8 +9,6 @@
 		seq: string;
 		/** Bp position of the first base in this row (0-based) */
 		start: number;
-		/** Sequence alphabet */
-		alphabet?: 'dna' | 'rna' | 'protein';
 		/** Parts overlapping this row (unified features + primers) */
 		parts?: Part[];
 		/** Translations overlapping this row */
@@ -27,6 +25,8 @@
 		showComplement?: boolean;
 		/** Color individual bases */
 		colorBases?: boolean;
+		/** Extra vertical gap between annotations and sequence (for cut site labels) */
+		cutsiteGap?: number;
 		/** Part click callback */
 		onpartclick?: (part: Part) => void;
 		/** Part hover callback */
@@ -36,22 +36,21 @@
 	let {
 		seq,
 		start,
-		alphabet = 'dna',
 		parts = [],
 		translations = [],
 		charWidth = 10,
 		showNumbers = true,
 		showAnnotations = true,
 		showTranslations = true,
-		showComplement = false,
-		colorBases = true,
+		showComplement = true,
+		colorBases = false,
+		cutsiteGap = 0,
 		onpartclick,
 		onparthover,
 	}: Props = $props();
 
 	const COMPLEMENT_MAP: Record<string, string> = {
 		A: 'T', T: 'A', G: 'C', C: 'G',
-		U: 'A',
 	};
 	function complementBase(b: string): string {
 		return COMPLEMENT_MAP[b.toUpperCase()] ?? b;
@@ -59,7 +58,7 @@
 
 	const MONO_COLOR = 'var(--hatch-seq-base-mono, #8a95a5)';
 
-	let colorMap = $derived(alphabet === 'protein' ? aminoAcidColors : nucleotideColors);
+	const colorMap = nucleotideColors;
 
 	const end = $derived(start + seq.length);
 	const NUMBER_WIDTH = 50;
@@ -93,7 +92,7 @@
 	const ANNOTATION_TRACK_HEIGHT = $derived(annotationLanes * 18);
 
 	const annotationY = 0;
-	const seqY = $derived(ANNOTATION_TRACK_HEIGHT + (annotationLanes > 0 ? 4 : 0));
+	const seqY = $derived(ANNOTATION_TRACK_HEIGHT + (annotationLanes > 0 ? 4 : 0) + cutsiteGap);
 	const complementY = $derived(seqY + LINE_HEIGHT + 2);
 	const complementOffset = $derived(showComplement ? LINE_HEIGHT + 2 : 0);
 	const translationY = $derived(seqY + LINE_HEIGHT + complementOffset + 4);
@@ -159,8 +158,7 @@
 	<g transform="translate({SEQ_X}, {seqY})">
 		{#each seq.split('') as base, i}
 			{@const upper = base.toUpperCase()}
-			{@const displayChar = alphabet === 'rna' && upper === 'T' ? 'U' : upper}
-			{@const color = colorBases ? (colorMap[displayChar] ?? colorMap[upper] ?? '#999') : MONO_COLOR}
+			{@const color = colorBases ? (colorMap[upper] ?? '#999') : MONO_COLOR}
 			<text
 				x={i * charWidth + charWidth / 2}
 				y={LINE_HEIGHT / 2 + 1}
@@ -170,7 +168,7 @@
 				font-size="12"
 				font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 				font-weight="500"
-			>{displayChar}</text>
+			>{upper}</text>
 		{/each}
 	</g>
 
@@ -179,7 +177,7 @@
 		<g transform="translate({SEQ_X}, {complementY})">
 			{#each seq.split('') as base, i}
 				{@const upper = base.toUpperCase()}
-				{@const comp = complementBase(alphabet === 'rna' && upper === 'T' ? 'U' : upper)}
+				{@const comp = complementBase(upper)}
 				{@const color = colorBases ? (colorMap[comp] ?? '#999') : MONO_COLOR}
 				<text
 					x={i * charWidth + charWidth / 2}

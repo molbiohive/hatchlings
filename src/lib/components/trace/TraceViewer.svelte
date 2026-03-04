@@ -49,7 +49,9 @@
 		onhoverinfo,
 	}: Props = $props();
 
-	let zoom = $state(initialZoom);
+	let zoom = $state(0);
+	// Initialize zoom from prop; $effect syncs prop changes
+	$effect(() => { zoom = initialZoom; }); // eslint-disable-line -- intentional prop→state sync
 	let scrollX = $state(0);
 	let isDragging = $state(false);
 	let dragStartX = $state(0);
@@ -204,11 +206,6 @@
 		onselect(closestIdx);
 	}
 
-	/** Sync zoom prop changes */
-	$effect(() => {
-		zoom = initialZoom;
-	});
-
 	/** Effective width for trace content (excluding quality bar) */
 	let contentWidth = $derived(width - qualityBarWidth);
 </script>
@@ -221,10 +218,12 @@
 >
 	<div class="trace-body" style="display: flex;">
 		<!-- Main trace content -->
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<div
 			class="trace-content"
 			bind:this={container}
-			role="img"
+			role="application"
 			aria-label="Sanger sequencing trace chromatogram"
 			onwheel={handleWheel}
 			onmousedown={handleMouseDown}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { CutSite, Part } from '../../types/index.js';
+	import type { HoverInfo } from '../../types/utility.js';
 	import { getFeatureColor } from '../../util/colors.js';
 	import { formatBp } from '../../util/coordinates.js';
 
@@ -16,6 +17,8 @@
 		height?: number;
 		/** Zoom level (bindable) */
 		zoom?: number;
+		/** Hover info callback (tooltip) */
+		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
 	let {
@@ -25,6 +28,7 @@
 		width = 700,
 		height = 200,
 		zoom = $bindable(1),
+		onhoverinfo,
 	}: Props = $props();
 
 	const MARGIN_LEFT = 40;
@@ -90,14 +94,59 @@
 		return result;
 	});
 
-	/** Tooltip state for cut site hover */
-	let hoveredSite: CutSite | null = $state(null);
-	let hoverX = $state(0);
-	let hoverY = $state(0);
+	/** Drag-to-pan state */
+	let scrollWrapper: HTMLDivElement | undefined = $state(undefined);
+	let isDragging = $state(false);
+	let dragStartX = $state(0);
+	let dragStartScrollX = $state(0);
+
+	function handleMouseDown(e: MouseEvent) {
+		if (e.button !== 0 || !scrollWrapper) return;
+		isDragging = true;
+		dragStartX = e.clientX;
+		dragStartScrollX = scrollWrapper.scrollLeft;
+		e.preventDefault();
+	}
+
+	function handleMouseMove(e: MouseEvent) {
+		if (!isDragging || !scrollWrapper) return;
+		scrollWrapper.scrollLeft = dragStartScrollX - (e.clientX - dragStartX);
+	}
+
+	function handleMouseUp() {
+		isDragging = false;
+	}
+
+	function handleCutSiteEnter(site: CutSite, e: MouseEvent) {
+		onhoverinfo?.({
+			title: site.enzyme,
+			items: [
+				{ label: 'Position', value: site.position, unit: 'bp' },
+				{ label: 'Strand', value: site.strand === 1 ? 'Forward (+)' : 'Reverse (-)' },
+				...(site.overhang ? [{ label: 'Overhang', value: site.overhang }] : []),
+			],
+			position: { x: e.clientX, y: e.clientY },
+		});
+	}
+
+	function handleCutSiteLeave() {
+		onhoverinfo?.(null);
+	}
 </script>
 
+<svelte:window onmousemove={handleMouseMove} onmouseup={handleMouseUp} />
+
 <div class="restriction-map-container" style:width="{width}px">
-	<div class="scroll-wrapper" style:width="{width}px">
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		class="scroll-wrapper"
+		class:dragging={isDragging}
+		style:width="{width}px"
+		role="application"
+		aria-label="Restriction enzyme map"
+		bind:this={scrollWrapper}
+		onmousedown={handleMouseDown}
+	>
 		<svg
 			width={scaledWidth}
 			{height}
@@ -157,71 +206,66 @@
 
 			<!-- Cut site markers -->
 			{#each cutSitePositions as cs}
-				<!-- Top snip triangle (pointing down) -->
-				<path
-					d="M {cs.x} {BACKBONE_Y - 2} L {cs.x - 3.5} {BACKBONE_Y - 8} L {cs.x + 3.5} {BACKBONE_Y - 8} Z"
-					fill="var(--hatch-cutsite-color, #d45858)"
-					fill-opacity="0.85"
-					onmouseover={() => { hoveredSite = cs.site; hoverX = cs.x; hoverY = BACKBONE_Y - 45; }}
-					onmouseout={() => { hoveredSite = null; }}
-				/>
-				<!-- Bottom snip triangle (pointing up) -->
-				<path
-					d="M {cs.x} {BACKBONE_Y + 2} L {cs.x - 3.5} {BACKBONE_Y + 8} L {cs.x + 3.5} {BACKBONE_Y + 8} Z"
-					fill="var(--hatch-cutsite-color, #d45858)"
-					fill-opacity="0.85"
-				/>
-
-				{#if cs.visible}
-					<!-- Connector line to label -->
-					<line
-						x1={cs.x}
-						y1={BACKBONE_Y - 8}
-						x2={cs.x}
-						y2={cs.labelY + 8}
-						stroke="var(--hatch-cutsite-color, #d45858)"
-						stroke-width="0.8"
-						stroke-opacity="0.4"
+				<g
+					class="cutsite-group"
+					role="button"
+					tabindex="-1"
+					onmouseover={(e) => handleCutSiteEnter(cs.site, e)}
+					onmouseout={handleCutSiteLeave}
+					onfocus={(e) => handleCutSiteEnter(cs.site, e as unknown as MouseEvent)}
+					onblur={handleCutSiteLeave}
+				>
+					<!-- Top snip triangle (pointing down) -->
+					<path
+						d="M {cs.x} {BACKBONE_Y - 2} L {cs.x - 3.5} {BACKBONE_Y - 8} L {cs.x + 3.5} {BACKBONE_Y - 8} Z"
+						fill="var(--hatch-cutsite-color, #d45858)"
+						fill-opacity="0.85"
 					/>
-
-					<!-- Enzyme name -->
-					<text
-						x={cs.x}
-						y={cs.labelY}
-						text-anchor="middle"
-						class="enzyme-label"
-					>{cs.site.enzyme}</text>
-
-					<!-- Position -->
-					<text
-						x={cs.x}
-						y={cs.labelY - 11}
-						text-anchor="middle"
-						class="position-label"
-					>{cs.site.position}</text>
-				{/if}
-			{/each}
-
-			<!-- Hover tooltip -->
-			{#if hoveredSite}
-				<g transform="translate({hoverX}, {hoverY})">
+					<!-- Bottom snip triangle (pointing up) -->
+					<path
+						d="M {cs.x} {BACKBONE_Y + 2} L {cs.x - 3.5} {BACKBONE_Y + 8} L {cs.x + 3.5} {BACKBONE_Y + 8} Z"
+						fill="var(--hatch-cutsite-color, #d45858)"
+						fill-opacity="0.85"
+					/>
+					<!-- Invisible wider hit area -->
 					<rect
-						x={-40}
-						y={-10}
-						width={80}
+						x={cs.x - 6}
+						y={BACKBONE_Y - 10}
+						width={12}
 						height={20}
-						fill="var(--hatch-bg, #0c1018)"
-						stroke="var(--hatch-border, #2a3848)"
-						rx="3"
+						fill="transparent"
 					/>
-					<text
-						x={0}
-						y={4}
-						text-anchor="middle"
-						class="hover-label"
-					>{hoveredSite.enzyme} @ {hoveredSite.position}</text>
+
+					{#if cs.visible}
+						<!-- Connector line to label -->
+						<line
+							x1={cs.x}
+							y1={BACKBONE_Y - 8}
+							x2={cs.x}
+							y2={cs.labelY + 8}
+							stroke="var(--hatch-cutsite-color, #d45858)"
+							stroke-width="0.8"
+							stroke-opacity="0.4"
+						/>
+
+						<!-- Enzyme name -->
+						<text
+							x={cs.x}
+							y={cs.labelY}
+							text-anchor="middle"
+							class="enzyme-label"
+						>{cs.site.enzyme}</text>
+
+						<!-- Position -->
+						<text
+							x={cs.x}
+							y={cs.labelY - 11}
+							text-anchor="middle"
+							class="position-label"
+						>{cs.site.position}</text>
+					{/if}
 				</g>
-			{/if}
+			{/each}
 		</svg>
 	</div>
 </div>
@@ -241,7 +285,7 @@
 		cursor: grab;
 	}
 
-	.scroll-wrapper:active {
+	.scroll-wrapper.dragging {
 		cursor: grabbing;
 	}
 
@@ -274,9 +318,12 @@
 		font-family: var(--hatch-font, -apple-system, sans-serif);
 	}
 
-	.hover-label {
-		font-size: 9px;
-		fill: var(--hatch-text, #d4dce6);
-		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+	.cutsite-group {
+		cursor: pointer;
+		outline: none;
+	}
+
+	.cutsite-group:hover .enzyme-label {
+		font-weight: 800;
 	}
 </style>

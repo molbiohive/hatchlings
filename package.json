@@ -1,5 +1,5 @@
 {
-	"name": "hatchlings",
+	"name": "@molbiohive/hatchlings",
 	"version": "0.1.0",
 	"description": "Svelte 5 molecular biology component library — pure rendering components for scientific visualizations",
 	"scripts": {

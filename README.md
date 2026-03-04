@@ -5,7 +5,7 @@ Svelte 5 molecular biology component library. Pure rendering components for scie
 ## Install
 
 ```bash
-bun add hatchlings
+bun add @molbiohive/hatchlings
 ```
 
 Only the components you import are included in your bundle — tree-shaking works out of the box.
@@ -40,7 +40,7 @@ Only the components you import are included in your bundle — tree-shaking work
 
 ```svelte
 <script>
-  import { PlasmidViewer, GelViewer } from 'hatchlings';
+  import { PlasmidViewer, GelViewer } from '@molbiohive/hatchlings';
 </script>
 
 <PlasmidViewer

@@ -86,4 +86,4 @@ bun run check      # svelte-check type checking
 
 ## License
 
-[MIT](LICENSE)
+Distributed under the MIT License. See `LICENSE` for more information.

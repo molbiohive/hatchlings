@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { MeltingCurveData } from '../../types/index.js';
-	import type { HoverInfo } from '../../types/utility.js';
+	import type { HoverInfo, InfoItem } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
+	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -69,6 +70,31 @@
 			`${i === 0 ? 'M' : 'L'} ${scaleX(t)} ${scaleYDeriv(c.derivative[i])}`
 		).join(' ');
 	}
+
+	function handleMouseMove(e: MouseEvent) {
+		if (!onhoverinfo) return;
+		const svg = (e.currentTarget as SVGElement).closest('svg');
+		if (!svg) return;
+		const rect = svg.getBoundingClientRect();
+		const mx = e.clientX - rect.left;
+		if (mx < margin.left || mx > margin.left + plotW) { onhoverinfo(null); return; }
+		const temp = xRange.min + ((mx - margin.left) / plotW) * (xRange.max - xRange.min);
+		const items: InfoItem[] = [
+			{ label: 'Temperature', value: `${temp.toFixed(1)}\u00B0C` },
+		];
+		for (let ci = 0; ci < curves.length; ci++) {
+			const c = curves[ci];
+			let closest = 0;
+			let minDist = Infinity;
+			for (let i = 0; i < c.temp.length; i++) {
+				const d = Math.abs(c.temp[i] - temp);
+				if (d < minDist) { minDist = d; closest = i; }
+			}
+			const color = categoricalColors[ci % categoricalColors.length];
+			items.push({ label: c.name, value: c.ratio[closest].toFixed(3), color });
+		}
+		onhoverinfo({ title: 'Melting Curve', items, position: { x: e.clientX, y: e.clientY } });
+	}
 </script>
 
 <div class="hatch-melting-curve" style:position="relative">
@@ -97,6 +123,11 @@
 				</text>
 			{/if}
 		{/each}
+
+		<!-- Hover overlay -->
+		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
+			fill="transparent" style="cursor: crosshair"
+			use:hover={{ move: handleMouseMove, out: () => onhoverinfo?.(null) }} />
 
 		<AxisX min={xRange.min} max={xRange.max} width={plotW} y={margin.top + plotH} x={margin.left} label="Temperature (&deg;C)" />
 		<AxisY min={yRangeRatio.min} max={yRangeRatio.max} height={plotH} x={margin.left} y={margin.top} label="Ratio (350/330)" />

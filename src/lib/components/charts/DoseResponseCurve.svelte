@@ -1,7 +1,8 @@
 <script lang="ts">
-	import type { DoseResponseData, DoseResponseCurveData } from '../../types/index.js';
+	import type { DoseResponseCurveData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
+	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -73,6 +74,33 @@
 	function curveColor(idx: number, curve: DoseResponseCurveData): string {
 		return curve.color ?? categoricalColors[idx % categoricalColors.length];
 	}
+
+	function handleMouseMove(e: MouseEvent) {
+		if (!onhoverinfo) return;
+		const svg = (e.currentTarget as SVGElement).closest('svg');
+		if (!svg) return;
+		const rect = svg.getBoundingClientRect();
+		const mx = e.clientX - rect.left;
+		const my = e.clientY - rect.top;
+
+		let closestCurve: DoseResponseCurveData | null = null;
+		let closestPoint: { x: number; y: number } | null = null;
+		let minDist = 400;
+		for (const curve of curves) {
+			for (const point of curve.points) {
+				const px = scaleX(point.x);
+				const py = scaleY(point.y);
+				const dist = (mx - px) ** 2 + (my - py) ** 2;
+				if (dist < minDist) { minDist = dist; closestCurve = curve; closestPoint = point; }
+			}
+		}
+
+		if (closestCurve && closestPoint) {
+			onhoverinfo({ title: closestCurve.label, items: [{ label: 'Concentration', value: closestPoint.x.toExponential(2) }, { label: 'Response', value: closestPoint.y.toFixed(1) }], position: { x: e.clientX, y: e.clientY } });
+		} else {
+			onhoverinfo(null);
+		}
+	}
 </script>
 
 <div class="hatch-dose-response" style:position="relative">
@@ -121,16 +149,15 @@
 					cy={scaleY(point.y)}
 					r="4"
 					fill={color}
-					stroke="var(--hatch-plot-bg, #141c26)"
-					stroke-width="1.5"
-					onmouseenter={(e) => {
-						onhoverinfo?.({ title: curve.label, items: [{label: 'Concentration', value: point.x.toExponential(2)}, {label: 'Response', value: point.y.toFixed(1)}], position: { x: e.clientX, y: e.clientY } });
-					}}
-					onmouseleave={() => onhoverinfo?.(null)}
-					style="cursor: pointer"
+					pointer-events="none"
 				/>
 			{/each}
 		{/each}
+
+		<!-- Hover overlay — nearest-point detection -->
+		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
+			fill="transparent" style="cursor: crosshair"
+			use:hover={{ move: handleMouseMove, out: () => onhoverinfo?.(null) }} />
 
 		<!-- Axes -->
 		<AxisX

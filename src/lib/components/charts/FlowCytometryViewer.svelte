@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { FlowData, Gate } from '../../types/index.js';
+	import type { Gate } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 
 	interface Props {

@@ -1,6 +1,7 @@
 <script lang="ts">
-	import type { ElectropherogramData, ElectropherogramPeak } from '../../types/index.js';
+	import type { ElectropherogramPeak } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
+	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -59,6 +60,8 @@
 	const areaPath = $derived.by(() => {
 		return `${linePath} L ${scaleX(x[x.length - 1])} ${scaleY(0)} L ${scaleX(x[0])} ${scaleY(0)} Z`;
 	});
+
+
 </script>
 
 <div class="hatch-electropherogram" style:position="relative">
@@ -82,18 +85,11 @@
 					{peak.size ? `${peak.size} bp` : peak.label ?? ''}
 				</text>
 				<circle cx={px} cy={py} r="2.5" fill={color}
-					onmouseenter={(e) => {
-						onhoverinfo?.({
-							title: peak.label ?? 'Peak',
-							items: [
-								...(peak.size ? [{ label: 'Size', value: peak.size + ' bp' }] : []),
-								{ label: 'Height', value: peak.height.toFixed(0) },
-								...(peak.area ? [{ label: 'Area', value: peak.area.toFixed(0) }] : []),
-							],
-							position: { x: e.clientX, y: e.clientY },
-						});
+					use:hover={{
+						over: (e) => onhoverinfo?.({title: peak.label ?? 'Peak', items: [...(peak.size ? [{label: 'Size', value: peak.size + ' bp'}] : []), {label: 'Height', value: peak.height.toFixed(0)}, ...(peak.area ? [{label: 'Area', value: peak.area.toFixed(0)}] : [])], position: {x: e.clientX, y: e.clientY}}),
+						out: () => onhoverinfo?.(null)
 					}}
-					onmouseleave={() => onhoverinfo?.(null)}
+					style="cursor: pointer"
 				/>
 			{/each}
 		{/if}

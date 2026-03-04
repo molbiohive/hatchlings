@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { HeatmapData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { interpolateColor, type colorScales } from '../../util/colors.js';
+	import { hover } from '../../util/hover.js';
 
 	interface Props {
 		rows: string[];
@@ -90,10 +90,10 @@
 					fill={cellColor(val)}
 					stroke={cellBorder ? 'var(--hatch-plot-bg, #141c26)' : 'none'}
 					stroke-width="0.5"
-					onmouseenter={(e) => {
-						onhoverinfo?.({ title: `${rows[ri]} × ${cols[ci]}`, items: [{label: 'Value', value: val.toFixed(2)}], position: { x: e.clientX, y: e.clientY } });
+					use:hover={{
+						over: (e) => onhoverinfo?.({ title: `${rows[ri]} × ${cols[ci]}`, items: [{label: 'Value', value: val.toFixed(2)}], position: { x: e.clientX, y: e.clientY } }),
+						out: () => onhoverinfo?.(null)
 					}}
-					onmouseleave={() => onhoverinfo?.(null)}
 					style="cursor: crosshair"
 				/>
 			{/each}

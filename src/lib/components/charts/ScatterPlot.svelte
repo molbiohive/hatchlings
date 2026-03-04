@@ -2,6 +2,7 @@
 	import type { DataPoint, Gate } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
+	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -71,6 +72,30 @@
 		}
 		return '#1f77b4';
 	}
+
+	function handleMouseMove(e: MouseEvent) {
+		if (!onhoverinfo) return;
+		const svg = (e.currentTarget as SVGElement).closest('svg');
+		if (!svg) return;
+		const rect = svg.getBoundingClientRect();
+		const mx = e.clientX - rect.left;
+		const my = e.clientY - rect.top;
+
+		let closest: DataPoint | null = null;
+		let minDist = 400;
+		for (const point of points) {
+			const px = scaleX(point.x);
+			const py = scaleY(point.y);
+			const dist = (mx - px) ** 2 + (my - py) ** 2;
+			if (dist < minDist) { minDist = dist; closest = point; }
+		}
+
+		if (closest) {
+			onhoverinfo({ title: closest.label ?? 'Point', items: [{ label: xLabel, value: closest.x.toFixed(2) }, { label: yLabel, value: closest.y.toFixed(2) }], position: { x: e.clientX, y: e.clientY } });
+		} else {
+			onhoverinfo(null);
+		}
+	}
 </script>
 
 <div class="hatch-scatter" style:position="relative">
@@ -113,12 +138,14 @@
 				r={pointSize}
 				fill={pointColor(point, idx)}
 				opacity="0.6"
-				onmouseenter={(e) => {
-					onhoverinfo?.({ title: point.label ?? 'Point', items: [{label: xLabel, value: point.x.toFixed(2)}, {label: yLabel, value: point.y.toFixed(2)}], position: { x: e.clientX, y: e.clientY } });
-				}}
-				onmouseleave={() => onhoverinfo?.(null)}
+				pointer-events="none"
 			/>
 		{/each}
+
+		<!-- Hover overlay — nearest-point detection -->
+		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
+			fill="transparent" style="cursor: crosshair"
+			use:hover={{ move: handleMouseMove, out: () => onhoverinfo?.(null) }} />
 
 		<AxisX min={xRange.min} max={xRange.max} width={plotW} y={margin.top + plotH} x={margin.left} label={xLabel} log={logX} />
 		<AxisY min={yRange.min} max={yRange.max} height={plotH} x={margin.left} y={margin.top} label={yLabel} />

@@ -21,14 +21,6 @@ export interface Point2D {
 	y: number;
 }
 
-/** @deprecated Use HoverInfo from utility.ts instead for rich hover panels */
-export interface ChartHoverInfo {
-	position: Point2D;
-	label: string;
-	value?: string | number;
-	color?: string;
-}
-
 /** Volcano / scatter point */
 export interface DataPoint {
 	x: number;

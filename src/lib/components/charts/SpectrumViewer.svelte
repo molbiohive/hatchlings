@@ -1,6 +1,7 @@
 <script lang="ts">
-	import type { SpectrumData, SpectrumPeak } from '../../types/index.js';
+	import type { SpectrumPeak } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
+	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -56,6 +57,8 @@
 			`${i === 0 ? 'M' : 'L'} ${scaleX(xv)} ${scaleY(y[i])}`
 		).join(' ');
 	});
+
+
 </script>
 
 <div class="hatch-spectrum" style:position="relative">
@@ -94,10 +97,11 @@
 					{peak.label ?? peak.x.toFixed(1)}
 				</text>
 				<circle cx={scaleX(peak.x)} cy={scaleY(peak.y)} r="3" fill={color}
-					onmouseenter={(e) => {
-						onhoverinfo?.({ title: peak.label ?? 'Peak', items: [{label: xLabel, value: peak.x.toFixed(1)}, {label: yLabel, value: peak.y.toFixed(3)}], position: { x: e.clientX, y: e.clientY } });
+					use:hover={{
+						over: (e) => onhoverinfo?.({ title: peak.label ?? 'Peak', items: [{label: xLabel, value: peak.x.toFixed(1)}, {label: yLabel, value: peak.y.toFixed(3)}], position: { x: e.clientX, y: e.clientY } }),
+						out: () => onhoverinfo?.(null)
 					}}
-					onmouseleave={() => onhoverinfo?.(null)}
+					style="cursor: pointer"
 				/>
 			{/each}
 		{/if}

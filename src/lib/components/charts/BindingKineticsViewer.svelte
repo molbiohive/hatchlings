@@ -1,7 +1,8 @@
 <script lang="ts">
-	import type { KineticsData, KineticsCurve, KineticsStep, BindingParams } from '../../types/index.js';
-	import type { HoverInfo } from '../../types/utility.js';
+	import type { KineticsCurve, KineticsStep, BindingParams } from '../../types/index.js';
+	import type { HoverInfo, InfoItem } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
+	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -65,6 +66,31 @@
 		).join(' ');
 	}
 
+	function handleMouseMove(e: MouseEvent) {
+		if (!onhoverinfo) return;
+		const svg = (e.currentTarget as SVGElement).closest('svg');
+		if (!svg) return;
+		const rect = svg.getBoundingClientRect();
+		const mx = e.clientX - rect.left;
+		if (mx < margin.left || mx > margin.left + plotW) { onhoverinfo(null); return; }
+		const time = xRange.min + ((mx - margin.left) / plotW) * (xRange.max - xRange.min);
+		const items: InfoItem[] = [
+			{ label: 'Time', value: `${time.toFixed(1)} s` },
+		];
+		for (let ci = 0; ci < curves.length; ci++) {
+			const c = curves[ci];
+			let closest = 0;
+			let minDist = Infinity;
+			for (let i = 0; i < c.x.length; i++) {
+				const d = Math.abs(c.x[i] - time);
+				if (d < minDist) { minDist = d; closest = i; }
+			}
+			const color = categoricalColors[ci % categoricalColors.length];
+			items.push({ label: c.name, value: c.y[closest].toFixed(2), unit: 'nm', color });
+		}
+		onhoverinfo({ title: 'Sensorgram', items, position: { x: e.clientX, y: e.clientY } });
+	}
+
 	function formatSI(val: number): string {
 		if (val === 0) return '0';
 		const exp = Math.floor(Math.log10(Math.abs(val)));
@@ -126,6 +152,11 @@
 				<text y="40" fill="var(--hatch-highlight, #6ab8e0)" font-size="11" font-weight="600">KD = {formatSI(params.KD)}M</text>
 			</g>
 		{/if}
+
+		<!-- Hover overlay -->
+		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
+			fill="transparent" style="cursor: crosshair"
+			use:hover={{ move: handleMouseMove, out: () => onhoverinfo?.(null) }} />
 
 		<AxisX min={xRange.min} max={xRange.max} width={plotW} y={margin.top + plotH} x={margin.left} label={xLabel} />
 		<AxisY min={yRange.min} max={yRange.max} height={plotH} x={margin.left} y={margin.top} label={yLabel} />

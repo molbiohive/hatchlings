@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { SeqLogoData, LogoPosition } from '../../types/index.js';
+	import type { LogoPosition } from '../../types/index.js';
 	import { nucleotideColors, aminoAcidColors } from '../../util/colors.js';
 
 	interface Props {

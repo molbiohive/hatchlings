@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { TimeSeriesLine, TimeSeriesEvent } from '../../types/index.js';
-	import type { HoverInfo } from '../../types/utility.js';
+	import type { HoverInfo, InfoItem } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
+	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -64,6 +65,28 @@
 	function lineColor(s: TimeSeriesLine, idx: number): string {
 		return s.color ?? categoricalColors[idx % categoricalColors.length];
 	}
+
+	function handleMouseMove(e: MouseEvent) {
+		if (!onhoverinfo) return;
+		const svg = (e.currentTarget as SVGElement).closest('svg');
+		if (!svg) return;
+		const rect = svg.getBoundingClientRect();
+		const mx = e.clientX - rect.left;
+		if (mx < margin.left || mx > margin.left + plotW) { onhoverinfo(null); return; }
+		const xVal = xRange.min + ((mx - margin.left) / plotW) * (xRange.max - xRange.min);
+		const items: InfoItem[] = [];
+		for (let si = 0; si < series.length; si++) {
+			const s = series[si];
+			let closest = 0;
+			let minDist = Infinity;
+			for (let i = 0; i < s.x.length; i++) {
+				const d = Math.abs(s.x[i] - xVal);
+				if (d < minDist) { minDist = d; closest = i; }
+			}
+			items.push({ label: s.name, value: s.y[closest].toFixed(2), unit: s.unit, color: lineColor(s, si) });
+		}
+		onhoverinfo({ title: `${xLabel}: ${xVal.toFixed(1)}`, items, position: { x: e.clientX, y: e.clientY } });
+	}
 </script>
 
 <div class="hatch-time-series" style:position="relative">
@@ -93,15 +116,15 @@
 
 			{#if showPoints}
 				{#each s.x as xv, i}
-					<circle cx={scaleX(xv)} cy={scaleY(s.y[i], s.yAxis ?? 'left')} r="2.5" fill={color}
-						onmouseenter={(e) => {
-							onhoverinfo?.({ title: s.name, items: [{label: 'Time', value: xv.toFixed(1)}, {label: s.unit ?? 'Value', value: s.y[i].toFixed(2)}], position: { x: e.clientX, y: e.clientY } });
-						}}
-						onmouseleave={() => onhoverinfo?.(null)}
-					/>
+					<circle cx={scaleX(xv)} cy={scaleY(s.y[i], s.yAxis ?? 'left')} r="2.5" fill={color} />
 				{/each}
 			{/if}
 		{/each}
+
+		<!-- Hover overlay -->
+		<rect x={margin.left} y={margin.top} width={plotW} height={plotH}
+			fill="transparent" style="cursor: crosshair"
+			use:hover={{ move: handleMouseMove, out: () => onhoverinfo?.(null) }} />
 
 		<!-- Axes -->
 		<AxisX min={xRange.min} max={xRange.max} width={plotW} y={margin.top + plotH} x={margin.left} label={xLabel} />

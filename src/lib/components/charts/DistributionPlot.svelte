@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { DistributionData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
+	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -80,10 +80,10 @@
 					height={Math.max(0, bh)}
 					fill={color}
 					opacity="0.7"
-					onmouseenter={(e) => {
-						onhoverinfo?.({ title: 'Bin', items: [{label: 'Range', value: bin.start.toFixed(1) + ' – ' + bin.end.toFixed(1)}, {label: 'Count', value: String(bin.count)}], position: { x: e.clientX, y: e.clientY } });
+					use:hover={{
+						over: (e) => onhoverinfo?.({ title: 'Bin', items: [{label: 'Range', value: bin.start.toFixed(1) + ' – ' + bin.end.toFixed(1)}, {label: 'Count', value: String(bin.count)}], position: { x: e.clientX, y: e.clientY } }),
+						out: () => onhoverinfo?.(null)
 					}}
-					onmouseleave={() => onhoverinfo?.(null)}
 				/>
 			{/each}
 		{/if}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { WaterfallBar } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
-	import { categoricalColors } from '../../util/colors.js';
+	import { hover } from '../../util/hover.js';
 	import AxisY from '../shared/AxisY.svelte';
 
 	interface Props {
@@ -47,7 +47,7 @@
 
 	const barWidth = $derived(Math.max(2, plotW / Math.max(sortedBars.length, 1) - 2));
 
-	function barColor(bar: WaterfallBar, idx: number): string {
+	function barColor(bar: WaterfallBar): string {
 		if (bar.color) return bar.color;
 		if (bar.value > 0) return 'var(--hatch-positive, #58b56a)';
 		return 'var(--hatch-negative, #d45858)';
@@ -73,13 +73,13 @@
 				y={by}
 				width={barWidth}
 				height={Math.max(1, bh)}
-				fill={barColor(bar, idx)}
+				fill={barColor(bar)}
 				opacity="0.85"
 				rx="1"
-				onmouseenter={(e) => {
-					onhoverinfo?.({ title: bar.label, items: [{label: 'Value', value: bar.value.toFixed(2)}], position: { x: e.clientX, y: e.clientY } });
+				use:hover={{
+					over: (e) => onhoverinfo?.({ title: bar.label, items: [{label: 'Value', value: bar.value.toFixed(2)}], position: { x: e.clientX, y: e.clientY } }),
+					out: () => onhoverinfo?.(null)
 				}}
-				onmouseleave={() => onhoverinfo?.(null)}
 				style="cursor: pointer"
 			/>
 		{/each}

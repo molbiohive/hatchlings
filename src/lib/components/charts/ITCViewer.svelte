@@ -1,6 +1,7 @@
 <script lang="ts">
-	import type { ITCData, ITCParams } from '../../types/index.js';
+	import type { ITCParams } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
+	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -77,6 +78,8 @@
 			`${i === 0 ? 'M' : 'L'} ${scaleTopX(t)} ${scaleTopY(rawThermogram.power[i])}`
 		).join(' ');
 	});
+
+
 </script>
 
 <div class="hatch-itc" style:position="relative">
@@ -100,12 +103,11 @@
 				cy={scaleBotY(isotherm.heat[i])}
 				r="4"
 				fill="#e41a1c"
-				stroke="var(--hatch-plot-bg, #141c26)"
-				stroke-width="1.5"
-				onmouseenter={(e) => {
-					onhoverinfo?.({ title: 'Injection', items: [{label: 'Molar Ratio', value: r.toFixed(2)}, {label: '\u0394H', value: isotherm.heat[i].toFixed(1), unit: 'kcal/mol'}], position: { x: e.clientX, y: e.clientY } });
+				use:hover={{
+					over: (e) => onhoverinfo?.({title: 'Injection', items: [{label: 'Molar Ratio', value: r.toFixed(2)}, {label: '\u0394H', value: isotherm.heat[i].toFixed(1), unit: 'kcal/mol'}], position: {x: e.clientX, y: e.clientY}}),
+					out: () => onhoverinfo?.(null)
 				}}
-				onmouseleave={() => onhoverinfo?.(null)}
+				style="cursor: pointer"
 			/>
 		{/each}
 

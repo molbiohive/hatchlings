@@ -26,7 +26,7 @@
 		DoseResponseCurveData,
 		HoverInfo,
 	} from '$lib/types/index.js';
-	import { InfoBox } from '$lib/components/shared/index.js';
+	import { Tooltip } from '$lib/components/shared/index.js';
 
 	// ========== PLASMID DATA (pBR322-derived, 4361 bp) ==========
 	const plasmidParts: Part[] = [
@@ -56,8 +56,21 @@
 	// Shared selection state for cross-view sync (plasmid + sequence)
 	const sharedSelection = new SelectionState(4361);
 
-	// InfoBox hover state
+	// Tooltip hover state — source tracking ensures only the widget that SET it can CLEAR it
 	let hoverInfo: HoverInfo | null = $state(null);
+	let hoverSource: string | null = $state(null);
+
+	function hoverHandler(source: string) {
+		return (info: HoverInfo | null) => {
+			if (info) {
+				hoverSource = source;
+				hoverInfo = info;
+			} else if (hoverSource === source) {
+				hoverSource = null;
+				hoverInfo = null;
+			}
+		};
+	}
 
 	// ========== SEQUENCE DATA (pBR322, 4361 bp — same construct as plasmid view for cross-view sync) ==========
 	// Generate a deterministic pseudo-random pBR322 sequence (Math.imul avoids JS integer overflow)
@@ -274,7 +287,7 @@ END`;
 			<p class="data-note">pBR322 (4361 bp) &mdash; AmpR, TetR, ori, rop, bla</p>
 		</div>
 		<div class="component-col">
-			<PlasmidViewer name="pBR322" size={4361} topology={plasmidTopology} parts={plasmidParts} cutSites={plasmidCutSites} selectionState={sharedSelection} showLabels={plasmidShowLabels} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={(info) => hoverInfo = info} />
+			<PlasmidViewer name="pBR322" size={4361} topology={plasmidTopology} parts={plasmidParts} cutSites={plasmidCutSites} selectionState={sharedSelection} showLabels={plasmidShowLabels} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={hoverHandler('plasmid')} />
 		</div>
 		<div class="controls-col">
 			<label>Topology <select bind:value={plasmidTopology}><option value="circular">Circular</option><option value="linear">Linear</option></select></label>
@@ -292,7 +305,7 @@ END`;
 			<p class="data-note">pBR322 ({sequence.length} bp) &mdash; synced with PlasmidViewer</p>
 		</div>
 		<div class="component-col">
-			<SequenceViewer seq={sequence} alphabet={seqAlphabet} parts={seqParts} cutSites={seqCutSites} translations={seqTranslations} selectionState={sharedSelection} showAnnotations={seqShowAnnotations} showTranslations={seqShowTranslations} showNumbers={seqShowNumbers} showComplement={seqShowComplement} colorBases={seqColorBases} width={560} height={350} charsPerRow={50} onhoverinfo={(info) => hoverInfo = info} />
+			<SequenceViewer seq={sequence} alphabet={seqAlphabet} parts={seqParts} cutSites={seqCutSites} translations={seqTranslations} selectionState={sharedSelection} showAnnotations={seqShowAnnotations} showTranslations={seqShowTranslations} showNumbers={seqShowNumbers} showComplement={seqShowComplement} colorBases={seqColorBases} width={560} height={350} charsPerRow={50} onhoverinfo={hoverHandler('sequence')} />
 		</div>
 		<div class="controls-col">
 			<label>Alphabet <select bind:value={seqAlphabet}><option value="dna">DNA</option><option value="rna">RNA</option><option value="protein">Protein</option></select></label>
@@ -312,7 +325,7 @@ END`;
 			<p class="data-note">pUC19 restriction digest, 1% agarose</p>
 		</div>
 		<div class="component-col">
-			<GelViewer lanes={gelLanes} gelType="agarose" stain={gelStain} showSizeLabels={gelShowSizeLabels} showLaneLabels={true} bandStyle={gelBandStyle} width={380} height={440} onhoverinfo={(info) => hoverInfo = info} />
+			<GelViewer lanes={gelLanes} gelType="agarose" stain={gelStain} showSizeLabels={gelShowSizeLabels} showLaneLabels={true} bandStyle={gelBandStyle} width={380} height={440} onhoverinfo={hoverHandler('gel')} />
 		</div>
 		<div class="controls-col">
 			<label>Ladder <select bind:value={selectedLadder}><option value="1kb">1 kb</option><option value="100bp">100 bp</option><option value="1kb+">1 kb Plus</option></select></label>
@@ -330,7 +343,7 @@ END`;
 			<p class="data-note">{numBases} bases, simulated AB1 data</p>
 		</div>
 		<div class="component-col">
-			<TraceViewer baseCalls={baseCalls} qualityScores={qualityScores} channels={traceChannels} peakPositions={peakPositions} alignment={traceAlignment} width={560} height={260} showQuality={traceShowQuality} trimQuality={traceTrimQ} zoom={traceZoom} onhoverinfo={(info) => hoverInfo = info} />
+			<TraceViewer baseCalls={baseCalls} qualityScores={qualityScores} channels={traceChannels} peakPositions={peakPositions} alignment={traceAlignment} width={560} height={260} showQuality={traceShowQuality} trimQuality={traceTrimQ} zoom={traceZoom} onhoverinfo={hoverHandler('trace')} />
 		</div>
 		<div class="controls-col">
 			<label>Zoom <input type="range" min="0.5" max="10" step="0.1" bind:value={traceZoom} /><span class="val">{traceZoom.toFixed(1)}x</span></label>
@@ -422,49 +435,49 @@ END`;
 
 	<section id="dose" class="component-row">
 		<div class="info-col"><h2>DoseResponseCurve</h2><p>Log-scale dose-response with 4-parameter fit curves, IC50 markers, and confidence intervals.</p></div>
-		<div class="component-col"><DoseResponseCurve curves={doseResponseCurves} xLabel="Concentration (\u00B5M)" yLabel="% Viability" onhoverinfo={(info) => hoverInfo = info} /></div>
+		<div class="component-col"><DoseResponseCurve curves={doseResponseCurves} xLabel="Concentration (\u00B5M)" yLabel="% Viability" onhoverinfo={hoverHandler('dose')} /></div>
 		<div class="controls-col"><p class="hint">Data-driven display</p></div>
 	</section>
 
 	<section id="chrom" class="component-row">
 		<div class="info-col"><h2>ChromatogramViewer</h2><p>SEC/HPLC chromatogram with dual Y axes, gradient overlay, and fraction highlighting.</p></div>
-		<div class="component-col"><ChromatogramViewer traces={chromTraces} fractions={chromFractions} xLabel="Volume (mL)" onhoverinfo={(info) => hoverInfo = info} /></div>
+		<div class="component-col"><ChromatogramViewer traces={chromTraces} fractions={chromFractions} xLabel="Volume (mL)" onhoverinfo={hoverHandler('chrom')} /></div>
 		<div class="controls-col"><p class="hint">Data-driven display</p></div>
 	</section>
 
 	<section id="plate" class="component-row">
 		<div class="info-col"><h2>PlateHeatmap</h2><p>96/384-well plate heatmap with well grouping, Z-factor, and configurable color scale.</p></div>
-		<div class="component-col"><PlateHeatmap format={96} wells={plateWells} zFactor={0.62} title="Viability Assay" colorScale={plateColorScale} onhoverinfo={(info) => hoverInfo = info} /></div>
+		<div class="component-col"><PlateHeatmap format={96} wells={plateWells} zFactor={0.62} title="Viability Assay" colorScale={plateColorScale} onhoverinfo={hoverHandler('plate')} /></div>
 		<div class="controls-col"><label>Color scale <select bind:value={plateColorScale}><option value="viridis">Viridis</option><option value="plasma">Plasma</option><option value="blues">Blues</option><option value="reds">Reds</option></select></label></div>
 	</section>
 
 	<section id="growth" class="component-row">
 		<div class="info-col"><h2>TimeSeriesPlot</h2><p>Time-series line chart for growth curves, kinetic reads, and multi-series data.</p></div>
-		<div class="component-col"><TimeSeriesPlot series={growthSeries} xLabel="Time (h)" showPoints={true} onhoverinfo={(info) => hoverInfo = info} /></div>
+		<div class="component-col"><TimeSeriesPlot series={growthSeries} xLabel="Time (h)" showPoints={true} onhoverinfo={hoverHandler('growth')} /></div>
 		<div class="controls-col"><p class="hint">Data-driven display</p></div>
 	</section>
 
 	<section id="spectrum" class="component-row">
 		<div class="info-col"><h2>SpectrumViewer</h2><p>UV/Vis absorption spectrum with annotated peaks and axis labels.</p></div>
-		<div class="component-col"><SpectrumViewer x={specX} y={specY} peaks={[{x:280,y:0.8,label:'A280'},{x:220,y:0.3,label:'A220'}]} xLabel="Wavelength (nm)" yLabel="Absorbance (AU)" title="BSA UV Spectrum" onhoverinfo={(info) => hoverInfo = info} /></div>
+		<div class="component-col"><SpectrumViewer x={specX} y={specY} peaks={[{x:280,y:0.8,label:'A280'},{x:220,y:0.3,label:'A220'}]} xLabel="Wavelength (nm)" yLabel="Absorbance (AU)" title="BSA UV Spectrum" onhoverinfo={hoverHandler('spectrum')} /></div>
 		<div class="controls-col"><p class="hint">Data-driven display</p></div>
 	</section>
 
 	<section id="melting" class="component-row">
 		<div class="info-col"><h2>MeltingCurve</h2><p>Thermal stability (nanoDSF) with ratio and derivative curves, Tm markers.</p></div>
-		<div class="component-col"><MeltingCurve curves={meltCurves} onhoverinfo={(info) => hoverInfo = info} /></div>
+		<div class="component-col"><MeltingCurve curves={meltCurves} onhoverinfo={hoverHandler('melting')} /></div>
 		<div class="controls-col"><p class="hint">Data-driven display</p></div>
 	</section>
 
 	<section id="volcano" class="component-row">
 		<div class="info-col"><h2>VolcanoPlot</h2><p>Differential expression volcano with fold-change vs significance, threshold lines, and gene labels.</p></div>
-		<div class="component-col"><VolcanoPlot points={volcanoPoints} onhoverinfo={(info) => hoverInfo = info} /></div>
+		<div class="component-col"><VolcanoPlot points={volcanoPoints} onhoverinfo={hoverHandler('volcano')} /></div>
 		<div class="controls-col"><p class="hint">Data-driven display</p></div>
 	</section>
 
 	<section id="heatmap" class="component-row">
 		<div class="info-col"><h2>HeatmapViewer</h2><p>Clustered expression heatmap with row/column labels and diverging color scale.</p></div>
-		<div class="component-col"><HeatmapViewer rows={heatRows} cols={heatCols} values={heatValues} colorScale={heatColorScale} onhoverinfo={(info) => hoverInfo = info} /></div>
+		<div class="component-col"><HeatmapViewer rows={heatRows} cols={heatCols} values={heatValues} colorScale={heatColorScale} onhoverinfo={hoverHandler('heatmap')} /></div>
 		<div class="controls-col"><label>Color scale <select bind:value={heatColorScale}><option value="diverging">Diverging</option><option value="viridis">Viridis</option><option value="blues">Blues</option><option value="reds">Reds</option></select></label></div>
 	</section>
 
@@ -477,13 +490,13 @@ END`;
 	<section id="kinetics" class="component-row">
 		<div class="info-col"><h2>BindingKineticsViewer</h2><p>SPR/BLI sensorgram with association/dissociation phases and kinetic parameters.</p></div>
 		<div class="component-col">
-			<BindingKineticsViewer curves={kineticsCurves} steps={[{name:'Baseline',start:0,end:30,type:'baseline'},{name:'Association',start:30,end:130,type:'association'},{name:'Dissociation',start:130,end:200,type:'dissociation'}]} params={{ka:1e5,kd:1e-3,KD:1e-8}} onhoverinfo={(info) => hoverInfo = info} />
+			<BindingKineticsViewer curves={kineticsCurves} steps={[{name:'Baseline',start:0,end:30,type:'baseline'},{name:'Association',start:30,end:130,type:'association'},{name:'Dissociation',start:130,end:200,type:'dissociation'}]} params={{ka:1e5,kd:1e-3,KD:1e-8}} onhoverinfo={hoverHandler('kinetics')} />
 		</div>
 		<div class="controls-col"><p class="hint">Data-driven display</p></div>
 	</section>
 
-	<!-- Universal hover InfoBox -->
-	<InfoBox
+	<!-- Universal hover tooltip -->
+	<Tooltip
 		visible={!!hoverInfo}
 		x={hoverInfo?.position.x ?? 0}
 		y={hoverInfo?.position.y ?? 0}

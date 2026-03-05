@@ -48,19 +48,3 @@ export {
 	CompositionChart,
 } from './components/charts/index.js';
 
-// Widget wrappers (for hive-browser integration)
-export {
-	PlasmidWidget,
-	SequenceWidget,
-	GelWidget,
-	TraceWidget,
-	PlateWidget,
-	DoseResponseWidget,
-	ChromatogramWidget,
-	KineticsWidget,
-	TimeSeriesWidget,
-	VolcanoWidget,
-	HeatmapWidget,
-	ElectropherogramWidget,
-	SeqLogoWidget,
-} from './widgets/index.js';

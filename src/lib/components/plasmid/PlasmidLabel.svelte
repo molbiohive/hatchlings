@@ -118,6 +118,7 @@
 	.plasmid-label {
 		font-size: 10px;
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+		user-select: none;
 	}
 
 	.plasmid-label-group:hover .plasmid-label {

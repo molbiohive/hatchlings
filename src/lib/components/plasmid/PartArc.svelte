@@ -118,6 +118,7 @@
 	.part-arc {
 		cursor: pointer;
 		outline: none;
+		user-select: none;
 	}
 
 	.part-arc:hover path {
@@ -136,5 +137,6 @@
 		font-family: var(--hatch-font, -apple-system, sans-serif);
 		font-weight: 600;
 		pointer-events: none;
+		user-select: none;
 	}
 </style>

@@ -483,12 +483,14 @@
 		font-weight: 700;
 		fill: var(--hatch-text, #d4dce6);
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+		user-select: none;
 	}
 
 	.center-size {
 		font-size: 12px;
 		fill: var(--hatch-text-muted, #8a95a5);
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+		user-select: none;
 	}
 
 </style>

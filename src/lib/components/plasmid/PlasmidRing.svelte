@@ -70,5 +70,6 @@
 		fill: var(--hatch-axis-text, #7a8898);
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
 		pointer-events: none;
+		user-select: none;
 	}
 </style>

@@ -23,7 +23,7 @@ export {
 export { PlasmidViewer, PlasmidRing, PartArc, CutSiteMarker, PlasmidLabel, CircularSelection } from './components/plasmid/index.js';
 export { SequenceViewer, SequenceRow, AnnotationTrack, TranslationTrack, Ruler, RestrictionMap, DiffViewer } from './components/sequence/index.js';
 export { GelViewer, GelBand, GelLane, GelLadder } from './components/gel/index.js';
-export { TraceViewer, TracePeaks, BaseCallTrack, AlignmentView } from './components/trace/index.js';
+export { TraceViewer, MultiTraceViewer, TracePeaks, BaseCallTrack, AlignmentView } from './components/trace/index.js';
 export { ProteinViewer } from './components/protein/index.js';
 export { AlignmentViewer } from './components/alignment/index.js';
 

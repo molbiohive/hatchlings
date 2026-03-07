@@ -22,9 +22,13 @@ export interface TraceAlignment {
 }
 
 export interface TraceData {
+	/** Optional lane label (e.g. "Forward", "Reverse") */
+	label?: string;
 	baseCalls: string;
 	qualityScores: number[];
 	channels: TraceChannel;
 	peakPositions: number[];
 	alignment?: TraceAlignment;
+	/** Per-trace quality trim threshold override */
+	trimQuality?: number;
 }

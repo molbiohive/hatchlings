@@ -28,9 +28,19 @@
 		highlightIndels?: boolean;
 		/** Horizontal zoom factor */
 		zoom?: number;
+		/** External scroll position (for synchronized scrolling) */
+		scrollX?: number;
 		/** Callback when a base is selected */
 		onselect?: (index: number) => void;
 		onhoverinfo?: (info: HoverInfo | null) => void;
+		/** Callback when zoom changes (for multi-trace sync) */
+		onzoomchange?: (zoom: number) => void;
+		/** Callback when scroll position changes (for multi-trace sync) */
+		onscrollchange?: (scrollX: number) => void;
+		/** Hide scrollbar (when parent provides a shared one) */
+		showScrollbar?: boolean;
+		/** Embedded mode — no border/background (used inside MultiTraceViewer) */
+		embedded?: boolean;
 	}
 
 	let {
@@ -45,14 +55,21 @@
 		trimQuality = 20,
 		highlightIndels = true,
 		zoom: initialZoom = 1,
+		scrollX: externalScrollX,
 		onselect,
 		onhoverinfo,
+		onzoomchange,
+		onscrollchange,
+		showScrollbar = true,
+		embedded = false,
 	}: Props = $props();
 
 	let zoom = $state(0);
 	// Initialize zoom from prop; $effect syncs prop changes
 	$effect(() => { zoom = initialZoom; }); // eslint-disable-line -- intentional prop→state sync
 	let scrollX = $state(0);
+	// Sync external scroll position when provided
+	$effect(() => { if (externalScrollX !== undefined) scrollX = externalScrollX; });
 	let isDragging = $state(false);
 	let dragStartX = $state(0);
 	let dragStartScrollX = $state(0);
@@ -132,9 +149,12 @@
 				zoom = newZoom;
 				scrollX = clampScroll(dataX * newZoom - cursorX);
 			}
+			onzoomchange?.(zoom);
+			onscrollchange?.(scrollX);
 		} else {
 			// Horizontal scroll
 			scrollX = clampScroll(scrollX + e.deltaX + e.deltaY);
+			onscrollchange?.(scrollX);
 		}
 	}
 
@@ -151,6 +171,7 @@
 		if (isDragging) {
 			const dx = dragStartX - e.clientX;
 			scrollX = clampScroll(dragStartScrollX + dx);
+			onscrollchange?.(scrollX);
 			return;
 		}
 		if (!onhoverinfo || !container) return;
@@ -214,6 +235,7 @@
 
 <div
 	class="trace-viewer"
+	class:embedded
 	style="width: {width}px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"
 >
 	<div class="trace-body" style="display: flex;">
@@ -300,7 +322,7 @@
 	</div>
 
 	<!-- Scrollbar indicator -->
-	{#if totalDataWidth > contentWidth}
+	{#if showScrollbar && totalDataWidth > contentWidth}
 		<div class="scroll-track" style="width: {contentWidth}px;">
 			<div
 				class="scroll-thumb"
@@ -319,6 +341,12 @@
 		border: 1px solid var(--hatch-border, #2a3848);
 		border-radius: 6px;
 		overflow: hidden;
+	}
+
+	.trace-viewer.embedded {
+		border: none;
+		border-radius: 0;
+		background: none;
 	}
 
 	.trace-content {

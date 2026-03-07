@@ -4,7 +4,7 @@
 	import { PlasmidViewer } from '$lib/components/plasmid/index.js';
 	import { SequenceViewer, RestrictionMap, DiffViewer } from '$lib/components/sequence/index.js';
 	import { GelViewer } from '$lib/components/gel/index.js';
-	import { TraceViewer } from '$lib/components/trace/index.js';
+	import { TraceViewer, MultiTraceViewer } from '$lib/components/trace/index.js';
 	import { AlignmentViewer } from '$lib/components/alignment/index.js';
 	import { ProteinViewer } from '$lib/components/protein/index.js';
 	import DoseResponseCurve from '$lib/components/charts/DoseResponseCurve.svelte';
@@ -28,32 +28,48 @@
 	} from '$lib/types/index.js';
 	import { Tooltip } from '$lib/components/shared/index.js';
 
-	// ========== PLASMID DATA (pBR322-derived, 4361 bp) ==========
+	// ========== PLASMID DATA (pUC19, 2686 bp — classic cloning vector with dense MCS) ==========
 	const plasmidParts: Part[] = [
-		{ name: 'AmpR', type: 'CDS', start: 3293, end: 4153, strand: -1, color: '#4dc3ff' },
-		{ name: 'TetR', type: 'CDS', start: 86, end: 1276, strand: 1, color: '#e6a24c' },
-		{ name: 'ori', type: 'rep_origin', start: 1915, end: 2535, strand: 1, color: '#9467bd' },
-		{ name: 'AmpR promoter', type: 'promoter', start: 4154, end: 4258, strand: 1, color: '#31a354' },
-		{ name: 'rop', type: 'CDS', start: 1915, end: 2106, strand: -1, color: '#d4915e' },
-		{ name: 'bla', type: 'CDS', start: 2778, end: 3293, strand: -1, color: '#7aa3d4' },
-		{ name: 'pBR322-F', type: 'primer_bind', start: 3200, end: 3224, strand: 1, tm: 58.1, color: '#bcbd22' },
-		{ name: 'pBR322-R', type: 'primer_bind', start: 3400, end: 3424, strand: -1, tm: 57.8, color: '#bcbd22' },
-		{ name: 'Tet-seq', type: 'primer_bind', start: 500, end: 522, strand: 1, tm: 56.4, color: '#bcbd22' },
+		{ name: 'AmpR', type: 'CDS', start: 1629, end: 2489, strand: -1, color: '#4dc3ff' },
+		{ name: 'AmpR promoter', type: 'promoter', start: 2490, end: 2594, strand: 1, color: '#31a354' },
+		{ name: 'ori', type: 'rep_origin', start: 836, end: 1424, strand: -1, color: '#9467bd' },
+		{ name: 'lacZα', type: 'CDS', start: 217, end: 508, strand: 1, color: '#e6a24c' },
+		{ name: 'MCS', type: 'misc_feature', start: 396, end: 452, strand: 1, color: '#d4915e' },
+		{ name: 'lac promoter', type: 'promoter', start: 168, end: 198, strand: 1, color: '#31a354' },
+		{ name: 'M13 fwd', type: 'primer_bind', start: 361, end: 378, strand: 1, tm: 56.2, color: '#bcbd22' },
+		{ name: 'M13 rev', type: 'primer_bind', start: 488, end: 505, strand: -1, tm: 55.8, color: '#bcbd22' },
+		{ name: 'CAP site', type: 'protein_bind', start: 145, end: 166, strand: 1, color: '#e377c2' },
+		{ name: 'f1 ori', type: 'rep_origin', start: 2574, end: 2686, strand: 1, color: '#8c564b' },
 	];
+	// Dense MCS cut sites (unique cutters clustered in the MCS region) plus a few outside
 	const plasmidCutSites: CutSite[] = [
-		{ enzyme: 'EcoRI', position: 4359, end: 4365, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-		{ enzyme: 'HindIII', position: 29, end: 35, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-		{ enzyme: 'BamHI', position: 375, end: 381, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-		{ enzyme: 'SalI', position: 651, end: 657, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-		{ enzyme: 'PstI', position: 3607, end: 3613, strand: 1, cutPosition: 5, complementCutPosition: 1 },
-		{ enzyme: 'NdeI', position: 2295, end: 2301, strand: 1, cutPosition: 2, complementCutPosition: 4 },
+		// MCS sites (all unique cutters, tightly clustered 396–452)
+		{ enzyme: 'EcoRI', position: 396, end: 402, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		{ enzyme: 'SacI', position: 402, end: 408, strand: 1, cutPosition: 5, complementCutPosition: 1 },
+		{ enzyme: 'KpnI', position: 408, end: 414, strand: 1, cutPosition: 5, complementCutPosition: 1 },
+		{ enzyme: 'AvaI', position: 408, end: 414, strand: 1, cutPosition: 3, complementCutPosition: 3 },
+		{ enzyme: 'XmaI', position: 414, end: 420, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		{ enzyme: 'SmaI', position: 414, end: 420, strand: 1, cutPosition: 3, complementCutPosition: 3 },
+		{ enzyme: 'BamHI', position: 417, end: 423, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		{ enzyme: 'XbaI', position: 423, end: 429, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		{ enzyme: 'AccI', position: 429, end: 435, strand: 1, cutPosition: 2, complementCutPosition: 4 },
+		{ enzyme: 'HincII', position: 429, end: 435, strand: 1, cutPosition: 3, complementCutPosition: 3 },
+		{ enzyme: 'SalI', position: 429, end: 435, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		{ enzyme: 'SbfI', position: 435, end: 441, strand: 1, cutPosition: 6, complementCutPosition: 2 },
+		{ enzyme: 'PstI', position: 439, end: 445, strand: 1, cutPosition: 5, complementCutPosition: 1 },
+		{ enzyme: 'SphI', position: 445, end: 451, strand: 1, cutPosition: 5, complementCutPosition: 1 },
+		{ enzyme: 'HindIII', position: 447, end: 453, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		// Sites outside MCS
+		{ enzyme: 'NdeI', position: 183, end: 189, strand: 1, cutPosition: 2, complementCutPosition: 4 },
+		{ enzyme: 'AatII', position: 2617, end: 2623, strand: 1, cutPosition: 5, complementCutPosition: 1 },
+		{ enzyme: 'ScaI', position: 2177, end: 2183, strand: 1, cutPosition: 3, complementCutPosition: 3 },
 	];
 	let plasmidShowLabels = $state(true);
 	let plasmidShowTicks = $state(true);
 	let plasmidShowInternal = $state(true);
 
 	// Shared selection state for cross-view sync (plasmid + sequence)
-	const sharedSelection = new SelectionState(4361);
+	const sharedSelection = new SelectionState(2686);
 
 	// Tooltip hover state — source tracking ensures only the widget that SET it can CLEAR it
 	let hoverInfo: HoverInfo | null = $state(null);
@@ -71,19 +87,19 @@
 		};
 	}
 
-	// ========== SEQUENCE DATA (pBR322, 4361 bp — same construct as plasmid view for cross-view sync) ==========
-	// Generate a deterministic pseudo-random pBR322 sequence (Math.imul avoids JS integer overflow)
-	const pBR322seq = (() => {
+	// ========== SEQUENCE DATA (pUC19, 2686 bp — same construct as plasmid view for cross-view sync) ==========
+	// Generate a deterministic pseudo-random pUC19 sequence (Math.imul avoids JS integer overflow)
+	const pUC19seq = (() => {
 		const bases = 'ATGC';
 		let s = '';
-		let seed = 322;
-		for (let i = 0; i < 4361; i++) {
+		let seed = 19;
+		for (let i = 0; i < 2686; i++) {
 			seed = (Math.imul(seed, 1103515245) + 12345) | 0;
 			s += bases[((seed >>> 16) & 0x7fff) % 4];
 		}
 		return s;
 	})();
-	const sequence = pBR322seq;
+	const sequence = pUC19seq;
 	// Reuse the same parts and cut sites as the plasmid viewer
 	const seqParts: Part[] = plasmidParts;
 	const seqCutSites: CutSite[] = plasmidCutSites;
@@ -98,7 +114,7 @@
 		AGT:'S',AGC:'S',AGA:'R',AGG:'R',GGT:'G',GGC:'G',GGA:'G',GGG:'G',
 	};
 	function trDNA(dna: string): string { let p=''; for(let i=0;i+2<dna.length;i+=3) p+=codonTable[dna.slice(i,i+3).toUpperCase()]??'?'; return p; }
-	const seqTranslations: Translation[] = [{ start:86,end:1276,strand:1,aminoAcids:trDNA(sequence.slice(86,1276)),frame:0 }];
+	const seqTranslations: Translation[] = [{ start:2533,end:2686,strand:1,aminoAcids:trDNA(sequence.slice(2533,2686)),frame:0 }];
 	let seqShowAnnotations = $state(true);
 	let seqShowTranslations = $state(true);
 	let seqShowNumbers = $state(true);
@@ -168,6 +184,55 @@
 	let traceZoom = $state(2);
 	let traceShowQuality = $state(true);
 	let traceTrimQ = $state(20);
+
+	// ========== MULTI-TRACE DATA (3 lanes: forward, reverse, resequencing) ==========
+	function generateTrace(seed: number, label: string, baseStr: string): import('$lib/types/index.js').TraceData {
+		const nb = baseStr.length;
+		const totalPts = nb * ppb;
+		const qs: number[] = [];
+		for (let i = 0; i < nb; i++) {
+			let q = 28 + Math.floor(((seed * (i + 1) * 7) % 100) / 100 * 18);
+			if (i < 3) q = Math.max(12, q - (3 - i) * 5);
+			if (i > nb - 4) q = Math.max(14, q - (i - nb + 4) * 4);
+			qs.push(q);
+		}
+		const pk = Array.from({ length: nb }, (_, i) => 5 + i * ppb);
+		const cA = new Array(totalPts).fill(0), cC = new Array(totalPts).fill(0), cG = new Array(totalPts).fill(0), cT = new Array(totalPts).fill(0);
+		const cm: Record<string, number[]> = { A: cA, C: cC, G: cG, T: cT };
+		for (let i = 0; i < nb; i++) {
+			const b = baseStr[i], ctr = pk[i];
+			const amp = 780 * (0.55 + (qs[i] / 60) * 0.45) * (0.8 + ((seed * (i + 3) * 13) % 100) / 100 * 0.35);
+			for (let x = Math.max(0, ctr - 12); x < Math.min(totalPts, ctr + 12); x++) {
+				cm[b][x] += gauss(x, ctr, amp, 2.2 + seed * 0.01);
+				for (const o of ['A', 'C', 'G', 'T']) if (o !== b) cm[o][x] += gauss(x, ctr, amp * (0.03 + ((seed * x) % 100) / 100 * 0.07), 2.9);
+			}
+		}
+		for (let x = 0; x < totalPts; x++) for (const c of [cA, cC, cG, cT]) c[x] = Math.max(0, Math.round(c[x] + ((seed * x * 3) % 10)));
+		return { label, baseCalls: baseStr, qualityScores: qs, channels: { A: cA, C: cC, G: cG, T: cT }, peakPositions: pk };
+	}
+	const refSeqStr = baseCalls; // reference is the forward read
+	// Forward: matches ref except pos 12 and 30 (from traceAlignment)
+	const fwdTrace = { ...generateTrace(1, 'Forward', baseCalls), alignment: traceAlignment };
+	// Reverse: a few differences at pos 8 and 45
+	const revQueryBases = baseCalls.split('').map((b: string, i: number) => i === 8 || i === 45 ? ({ A: 'C', T: 'G', G: 'T', C: 'A' }[b] ?? b) : b).join('');
+	const revTrace: import('$lib/types/index.js').TraceData = {
+		...generateTrace(2, 'Reverse', revQueryBases),
+		alignment: { refSeq: refSeqStr, querySeq: revQueryBases, mismatches: [
+			{ pos: 8, type: 'substitution', refBase: refSeqStr[8], queryBase: revQueryBases[8] },
+			{ pos: 45, type: 'substitution', refBase: refSeqStr[45], queryBase: revQueryBases[45] },
+		], identity: (numBases - 2) / numBases },
+	};
+	// Resequencing: differences at pos 15 and 40
+	const reseqBases = baseCalls.split('').map((b: string, i: number) => i === 15 || i === 40 ? ({ A: 'G', T: 'C', G: 'A', C: 'T' }[b] ?? b) : b).join('');
+	const reseqTrace: import('$lib/types/index.js').TraceData = {
+		...generateTrace(3, 'Resequencing', reseqBases),
+		alignment: { refSeq: refSeqStr, querySeq: reseqBases, mismatches: [
+			{ pos: 15, type: 'substitution', refBase: refSeqStr[15], queryBase: reseqBases[15] },
+			{ pos: 40, type: 'substitution', refBase: refSeqStr[40], queryBase: reseqBases[40] },
+		], identity: (numBases - 2) / numBases },
+	};
+	const multiTraces: import('$lib/types/index.js').TraceData[] = [fwdTrace, revTrace, reseqTrace];
+	let multiTraceZoom = $state(2);
 
 	// ========== ALIGNMENT DATA ==========
 	const alignSeqs:AlignmentSequence[]=[
@@ -285,10 +350,10 @@ END`;
 		<div class="info-col">
 			<h2>PlasmidViewer</h2>
 			<p>Circular plasmid map with feature stacking, tapered directional arcs, internal textPath labels, and relaxed outer label layout with polyline connectors.</p>
-			<p class="data-note">pBR322 (4361 bp) &mdash; AmpR, TetR, ori, rop, bla</p>
+			<p class="data-note">pUC19 (2686 bp) &mdash; AmpR, lacZ&alpha;, MCS with 15 cut sites</p>
 		</div>
 		<div class="component-col">
-			<PlasmidViewer name="pBR322" size={4361} parts={plasmidParts} cutSites={plasmidCutSites} topology="circular" selectionState={sharedSelection} showLabels={plasmidShowLabels} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={hoverHandler('plasmid')} />
+			<PlasmidViewer name="pUC19" size={2686} parts={plasmidParts} cutSites={plasmidCutSites} topology="circular" selectionState={sharedSelection} showLabels={plasmidShowLabels} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={hoverHandler('plasmid')} />
 		</div>
 		<div class="controls-col">
 			<label><input type="checkbox" bind:checked={plasmidShowLabels} /> Labels</label>
@@ -302,7 +367,7 @@ END`;
 		<div class="info-col">
 			<h2>SequenceViewer</h2>
 			<p>Linear sequence display with multi-track annotations, translations, primers, cut sites, virtual scrolling, and multi-alphabet support (DNA/RNA/protein).</p>
-			<p class="data-note">pBR322 ({sequence.length} bp) &mdash; synced with PlasmidViewer</p>
+			<p class="data-note">pUC19 ({sequence.length} bp) &mdash; synced with PlasmidViewer</p>
 		</div>
 		<div class="component-col">
 			<SequenceViewer seq={sequence} topology="circular" parts={seqParts} cutSites={seqCutSites} translations={seqTranslations} selectionState={sharedSelection} showAnnotations={seqShowAnnotations} showTranslations={seqShowTranslations} showNumbers={seqShowNumbers} showComplement={seqShowComplement} colorBases={seqColorBases} width={560} height={350} charsPerRow={50} onhoverinfo={hoverHandler('sequence')} />
@@ -348,6 +413,21 @@ END`;
 			<label>Zoom <input type="range" min="0.5" max="10" step="0.1" bind:value={traceZoom} /><span class="val">{traceZoom.toFixed(1)}x</span></label>
 			<label>Trim Q <input type="range" min="0" max="50" step="1" bind:value={traceTrimQ} /><span class="val">Q{traceTrimQ}</span></label>
 			<label><input type="checkbox" bind:checked={traceShowQuality} /> Quality sidebar</label>
+		</div>
+	</section>
+
+	<!-- =============================== MULTI-TRACE =============================== -->
+	<section id="multi-trace" class="component-row">
+		<div class="info-col">
+			<h2>MultiTraceViewer</h2>
+			<p>Synchronized multi-lane Sanger trace viewer. All lanes share zoom and scroll with a single scrollbar.</p>
+			<p class="data-note">3 lanes, shared zoom/scroll</p>
+		</div>
+		<div class="component-col">
+			<MultiTraceViewer traces={multiTraces} width={560} laneHeight={140} showQuality={traceShowQuality} trimQuality={traceTrimQ} zoom={multiTraceZoom} onhoverinfo={hoverHandler('trace')} />
+		</div>
+		<div class="controls-col">
+			<label>Zoom <input type="range" min="0.5" max="10" step="0.1" bind:value={multiTraceZoom} /><span class="val">{multiTraceZoom.toFixed(1)}x</span></label>
 		</div>
 	</section>
 

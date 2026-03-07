@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Part, CutSite } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
-	import { formatBp, computeAnnotationLayers, arcMidpoint, bpToXY, bpToAngle, relaxLabels } from '../../util/coordinates.js';
+	import { formatBp, computeCircularAnnotationLayers, arcMidpoint, bpToXY, bpToAngle, relaxLabels } from '../../util/coordinates.js';
 	import type { LabelPosition } from '../../util/coordinates.js';
 	import { getFeatureColor } from '../../util/colors.js';
 	import PlasmidRing from './PlasmidRing.svelte';
@@ -65,29 +65,101 @@
 
 	const PART_WIDTH = 14;
 	const PART_GAP = 4;
-	const CUTSITE_SPACE = 8;
+	const CUTSITE_SPACE = 14;
 	const LABEL_PADDING = 16;
 
-	/** Compute part stacking offsets */
-	let partOffsets = $derived.by(() => {
-		const intervals = parts.map(p => ({ start: p.start, end: p.end }));
-		return computeAnnotationLayers(intervals);
+	/** Split parts into forward (+) and reverse (-) groups with original indices */
+	let forwardParts = $derived(parts.map((p, i) => ({ part: p, index: i })).filter(x => x.part.strand !== -1));
+	let reverseParts = $derived(parts.map((p, i) => ({ part: p, index: i })).filter(x => x.part.strand === -1));
+
+	/** Compute stacking layers for each group separately (circular-aware for wrapping parts) */
+	let forwardOffsets = $derived.by(() => {
+		const intervals = forwardParts.map(x => ({ start: x.part.start, end: x.part.end }));
+		return computeCircularAnnotationLayers(intervals, size);
+	});
+	let reverseOffsets = $derived.by(() => {
+		const intervals = reverseParts.map(x => ({ start: x.part.start, end: x.part.end }));
+		return computeCircularAnnotationLayers(intervals, size);
 	});
 
-	/** Max stacking depth for parts */
-	let maxPartLayer = $derived.by(() => {
+	/** Max stacking depth per group */
+	let maxForwardLayer = $derived.by(() => {
 		let max = 0;
-		for (const v of partOffsets.values()) {
-			if (v > max) max = v;
-		}
+		for (const v of forwardOffsets.values()) if (v > max) max = v;
+		return max;
+	});
+	let maxReverseLayer = $derived.by(() => {
+		let max = 0;
+		for (const v of reverseOffsets.values()) if (v > max) max = v;
 		return max;
 	});
 
-	/** Cumulative radii: backbone → cut sites → parts → labels */
-	let partRadius = $derived(baseRadius + CUTSITE_SPACE + (cutSites.length > 0 ? 4 : 0));
+	/** Scale band width — ticks and labels live between two circles */
+	const SCALE_BAND = 16;
+
+	/** Forward parts: outward from backbone (past cut site space) */
+	let forwardRadius = $derived(baseRadius + CUTSITE_SPACE + (cutSites.length > 0 ? 4 : 0));
+	/** Reverse parts: inward from scale band inner circle + gap */
+	let reverseRadius = $derived(baseRadius - SCALE_BAND - 10);
+
+	/** Outer label radius (above forward features) */
 	let labelRadius = $derived(
-		partRadius + (maxPartLayer + 1) * (PART_WIDTH + PART_GAP) + 12
+		forwardRadius + (maxForwardLayer + 1) * (PART_WIDTH + PART_GAP) + 12
 	);
+
+	/** Build a unified partOffsets map: original index → { radius, layer } for PartArc rendering */
+	let partRenderInfo = $derived.by(() => {
+		const info = new Map<number, { radius: number; yOffset: number }>();
+		for (let fi = 0; fi < forwardParts.length; fi++) {
+			const origIdx = forwardParts[fi].index;
+			const layer = forwardOffsets.get(fi) ?? 0;
+			info.set(origIdx, { radius: forwardRadius, yOffset: layer });
+		}
+		for (let ri = 0; ri < reverseParts.length; ri++) {
+			const origIdx = reverseParts[ri].index;
+			const layer = reverseOffsets.get(ri) ?? 0;
+			// Negative yOffset pushes inward from reverseRadius
+			info.set(origIdx, { radius: reverseRadius, yOffset: -layer });
+		}
+		return info;
+	});
+
+	/** Unique cutter enzymes (appear exactly once) */
+	let uniqueCutters = $derived.by(() => {
+		const counts = new Map<string, number>();
+		for (const cs of cutSites) {
+			counts.set(cs.enzyme, (counts.get(cs.enzyme) ?? 0) + 1);
+		}
+		const unique = new Set<string>();
+		for (const [enzyme, count] of counts) {
+			if (count === 1) unique.add(enzyme);
+		}
+		return unique;
+	});
+
+	/** Cluster nearby cut sites for label display */
+	const CLUSTER_BP = 30; // bp threshold for grouping
+	type CutSiteCluster = { primary: CutSite; primaryIndex: number; enzymes: string[]; indices: number[] };
+	let cutSiteClusters = $derived.by(() => {
+		if (cutSites.length === 0) return [] as CutSiteCluster[];
+		const sorted = cutSites.map((cs, i) => ({ cs, i })).sort((a, b) => a.cs.position - b.cs.position);
+		const clusters: CutSiteCluster[] = [];
+		for (const entry of sorted) {
+			const last = clusters[clusters.length - 1];
+			if (last && entry.cs.position - last.primary.position <= CLUSTER_BP) {
+				last.enzymes.push(entry.cs.enzyme);
+				last.indices.push(entry.i);
+			} else {
+				clusters.push({
+					primary: entry.cs,
+					primaryIndex: entry.i,
+					enzymes: [entry.cs.enzyme],
+					indices: [entry.i],
+				});
+			}
+		}
+		return clusters;
+	});
 
 	let selectedPart: Part | null = $state(null);
 
@@ -194,6 +266,30 @@
 		});
 	}
 
+	function handleClusterMouseEnter(e: MouseEvent, cluster: CutSiteCluster) {
+		onhoverinfo?.({
+			title: cluster.enzymes.length === 1 ? cluster.primary.enzyme : `${cluster.primary.enzyme} +${cluster.enzymes.length - 1}`,
+			items: [
+				{ label: 'Position', value: cluster.primary.position, unit: 'bp' },
+				...(cluster.enzymes.length > 1
+					? [{ label: 'Enzymes', value: cluster.enzymes.join(', ') }]
+					: [{ label: 'Strand', value: cluster.primary.strand === 1 ? 'Forward (+)' : 'Reverse (-)' }]),
+			],
+			position: { x: e.clientX, y: e.clientY },
+		});
+	}
+
+	function handleClusterClick(cluster: CutSiteCluster) {
+		const start = cluster.primary.position;
+		const last = cutSites[cluster.indices[cluster.indices.length - 1]];
+		const end = cutSiteEnd(last);
+		if (selectionState) {
+			selectionState.setSelection(start, end);
+			onselect?.({ start, end });
+			onselectionchange?.({ start, end });
+		}
+	}
+
 	function handleMouseLeave() {
 		onhoverinfo?.(null);
 	}
@@ -229,35 +325,47 @@
 	let sizeLabel = $derived(formatBp(size));
 
 	/**
-	 * Unified label positions: parts + cut sites
-	 * all go through one relaxation pass so they don't overlap each other.
+	 * Unified label positions: parts + cut sites.
+	 * Forward parts + cut sites go to outer labels; reverse parts go to inner labels.
+	 * Each group is relaxed separately.
 	 */
 	let allLabels = $derived.by(() => {
-		if (!showLabels) return { part: [], cutSite: [] };
+		if (!showLabels) return { part: [] as any[], cutSite: [] as any[] };
 
 		type RawLabel = LabelPosition & {
 			kind: 'part' | 'cutSite';
 			color: string;
 			index: number;
+			bold?: boolean;
 		};
 
 		const raw: RawLabel[] = [];
 
-		// Part labels
+		// Part labels — only when internal label can't fit the full name
+		const CHAR_WIDTH = 5.5; // approximate px per char at font-size 9px
 		for (let i = 0; i < parts.length; i++) {
 			const p = parts[i];
-			const yOff = partOffsets.get(i) ?? 0;
-			const effectiveR = partRadius + yOff * (PART_WIDTH + PART_GAP);
+			const ri = partRenderInfo.get(i);
+			if (!ri) continue;
+			const effectiveR = ri.radius + ri.yOffset * (PART_WIDTH + PART_GAP);
+			// Skip external label if arc is wide enough for internal text
+			let bpLen = p.end - p.start;
+			if (bpLen < 0) bpLen += size;
+			const arcLenPx = (bpLen / size) * TWO_PI * effectiveR;
+			const labelText = p.label ?? p.name;
+			const textWidthPx = labelText.length * CHAR_WIDTH + 8;
+			if (showInternalLabels && arcLenPx >= textWidthPx) continue;
+
 			const mid = arcMidpoint(p.start, p.end, size, effectiveR, cx, cy);
 			const dx = mid.x - cx;
 			const dy = mid.y - cy;
-			const dist = Math.sqrt(dx * dx + dy * dy);
+			const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 			const pushR = labelRadius + LABEL_PADDING;
 			raw.push({
 				x: cx + (dx / dist) * pushR,
 				y: cy + (dy / dist) * pushR,
 				angle: mid.angle,
-				text: p.label ?? p.name,
+				text: labelText,
 				anchorX: mid.x,
 				anchorY: mid.y,
 				kind: 'part',
@@ -266,32 +374,36 @@
 			});
 		}
 
-		// Cut site labels
-		for (let i = 0; i < cutSites.length; i++) {
-			const cs = cutSites[i];
-			const pt = bpToXY(cs.position, size, baseRadius, cx, cy);
+		// Cut site labels — clustered, one label per group
+		for (let ci = 0; ci < cutSiteClusters.length; ci++) {
+			const cluster = cutSiteClusters[ci];
+			const pt = bpToXY(cluster.primary.position, size, baseRadius, cx, cy);
 			const dx = pt.x - cx;
 			const dy = pt.y - cy;
-			const dist = Math.sqrt(dx * dx + dy * dy);
+			const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 			const pushR = labelRadius + LABEL_PADDING;
 			const angle = Math.atan2(dy, dx);
+			const labelText = cluster.enzymes.length === 1
+				? cluster.primary.enzyme
+				: `${cluster.primary.enzyme} +${cluster.enzymes.length - 1}`;
 			raw.push({
 				x: cx + (dx / dist) * pushR,
 				y: cy + (dy / dist) * pushR,
 				angle,
-				text: cs.enzyme,
+				text: labelText,
 				anchorX: pt.x,
 				anchorY: pt.y,
 				kind: 'cutSite',
 				color: '#d45858',
-				index: i,
+				index: ci, // cluster index
+				bold: cluster.enzymes.length === 1 && uniqueCutters.has(cluster.primary.enzyme),
 			});
 		}
 
-		// Run one unified relaxation pass
+		// Single unified relaxation pass
 		const relaxed = relaxLabels(raw, labelRadius + 60, 18);
 
-		// Clamp labels to viewport bounds
+		// Clamp to viewport bounds
 		const PAD = 8;
 		for (const label of relaxed) {
 			label.y = Math.max(PAD, Math.min(height - PAD, label.y));
@@ -304,7 +416,7 @@
 			}
 		}
 
-		// Split back into categories
+		// Split into categories
 		const partLabels: typeof relaxed = [];
 		const cutSiteLabels: typeof relaxed = [];
 
@@ -361,14 +473,14 @@
 				<CircularSelection
 					selection={selectionState}
 					totalSize={size}
-					radius={baseRadius}
+					radius={baseRadius - SCALE_BAND - 4}
 					{cx}
 					{cy}
-					width={partRadius - baseRadius + PART_WIDTH + 10}
+					width={labelRadius - baseRadius + SCALE_BAND + 12}
 				/>
 			{/if}
 
-			<!-- Layer 3: Backbone ring with tick marks -->
+			<!-- Layer 3: Backbone ring with scale band -->
 			<PlasmidRing {size} radius={baseRadius} {cx} {cy} {showTicks} rotation={rotationDeg} />
 
 			<!-- Layer 4: Cut site markers on the backbone ring -->
@@ -385,16 +497,18 @@
 				/>
 			{/each}
 
-			<!-- Layer 5: Part arcs (outer ring with stacking) -->
+			<!-- Layer 5: Part arcs (forward outer, reverse inner) -->
 			{#each parts as part, i (part.name + part.start)}
+				{@const ri = partRenderInfo.get(i)}
 				<PartArc
 					{part}
 					totalSize={size}
-					radius={partRadius}
+					radius={ri?.radius ?? forwardRadius}
 					{cx}
 					{cy}
-					yOffset={partOffsets.get(i) ?? 0}
+					yOffset={ri?.yOffset ?? 0}
 					showInternalLabel={showInternalLabels}
+					rotation={rotationDeg}
 					selected={selectedPart === part}
 					onmouseenter={(e) => handlePartMouseEnter(e, part)}
 					onmouseleave={handleMouseLeave}
@@ -426,7 +540,7 @@
 				{/each}
 				{#each allLabels.cutSite as lbl (lbl.text + lbl.anchorX + '-lbl')}
 					{@const rl = lbl as any}
-					{@const cs = cutSites[rl.index]}
+					{@const cluster = cutSiteClusters[rl.index]}
 					<PlasmidLabel
 						name={lbl.text}
 						x={lbl.x}
@@ -439,9 +553,10 @@
 						color={rl.color}
 						renderPart="label"
 						counterRotation={-rotationDeg}
-						onmouseenter={(e) => handleCutSiteMouseEnter(e, cs)}
+						bold={rl.bold ?? false}
+						onmouseenter={(e) => handleClusterMouseEnter(e, cluster)}
 						onmouseleave={handleMouseLeave}
-						onclick={() => handleCutSiteClick(cs)}
+						onclick={() => handleClusterClick(cluster)}
 					/>
 				{/each}
 			{/if}

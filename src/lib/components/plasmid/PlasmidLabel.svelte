@@ -27,9 +27,11 @@
 		onmouseleave?: (e: MouseEvent) => void;
 		/** Click callback */
 		onclick?: (e: MouseEvent) => void;
+		/** Render label in bold (e.g. unique cutters) */
+		bold?: boolean;
 	}
 
-	let { name, x, y, anchorX, anchorY, cx, cy, labelRadius = 100, color, renderPart = 'all', counterRotation = 0, onmouseenter, onmouseleave, onclick }: Props = $props();
+	let { name, x, y, anchorX, anchorY, cx, cy, labelRadius = 100, color, renderPart = 'all', counterRotation = 0, onmouseenter, onmouseleave, onclick, bold = false }: Props = $props();
 
 	/** Text anchor: right-aligned for left-side labels, left-aligned for right-side */
 	let isLeftSide = $derived(x < cx);
@@ -104,6 +106,7 @@
 			dominant-baseline="central"
 			fill={color ?? 'var(--hatch-text, #d4dce6)'}
 			class="plasmid-label"
+			font-weight={bold ? 700 : undefined}
 		>
 			{name}
 		</text>

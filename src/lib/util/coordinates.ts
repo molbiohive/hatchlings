@@ -257,9 +257,13 @@ export function drawDirectedArc(
 		return arcPath(startBp, endBp, totalSize, midR, cx, cy, outerR - innerR);
 	}
 
+	// Clamp arrow angle to at most 40% of the arc span so small features don't invert
+	const arcAngle = arcFraction * TWO_PI;
+	const effectiveArrow = Math.min(arrowAngle, arcAngle * 0.4);
+
 	if (strand === 1) {
 		// Arrow tip at endBp — body runs full width from start to arrowhead junction
-		const bodyEndAngle = endAngle - arrowAngle;
+		const bodyEndAngle = endAngle - effectiveArrow;
 		const bodyLargeArc = ((bodyEndAngle - startAngle + TWO_PI) % TWO_PI) / TWO_PI > 0.5 ? 1 : 0;
 
 		const oS = angleToXY(startAngle, outerR, cx, cy);
@@ -278,7 +282,7 @@ export function drawDirectedArc(
 		].join(' ');
 	} else {
 		// Arrow tip at startBp — body runs full width from arrowhead junction to end
-		const bodyStartAngle = startAngle + arrowAngle;
+		const bodyStartAngle = startAngle + effectiveArrow;
 		const bodyLargeArc = ((endAngle - bodyStartAngle + TWO_PI) % TWO_PI) / TWO_PI > 0.5 ? 1 : 0;
 
 		const oS = angleToXY(bodyStartAngle, outerR, cx, cy);

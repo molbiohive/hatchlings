@@ -15,29 +15,22 @@
 
 	let { cutSite, totalSize, radius, cx, cy, onmouseenter, onmouseleave, onclick }: Props = $props();
 
-	const TRI_HEIGHT = 7;
-	const TRI_HALF_BASE = 3;
+	const LINE_EXTEND = 8;
 
-	/** Small filled triangle pointing inward (toward center) — OVE style */
-	let trianglePoints = $derived.by(() => {
+	/** Radial line crossing the backbone */
+	let lineCoords = $derived.by(() => {
 		const angle = bpToAngle(cutSite.position, totalSize);
-		// Tip is toward center, base is on outer edge
-		const tipR = radius - TRI_HEIGHT;
-		const baseR = radius;
-		const tipPt = { x: cx + tipR * Math.cos(angle), y: cy + tipR * Math.sin(angle) };
-		// Base corners perpendicular to radial direction
-		const perpAngle = angle + Math.PI / 2;
-		const baseCx = cx + baseR * Math.cos(angle);
-		const baseCy = cy + baseR * Math.sin(angle);
-		const left = {
-			x: baseCx + TRI_HALF_BASE * Math.cos(perpAngle),
-			y: baseCy + TRI_HALF_BASE * Math.sin(perpAngle),
+		const cos = Math.cos(angle);
+		const sin = Math.sin(angle);
+		return {
+			x1: cx + (radius - LINE_EXTEND) * cos,
+			y1: cy + (radius - LINE_EXTEND) * sin,
+			x2: cx + (radius + LINE_EXTEND) * cos,
+			y2: cy + (radius + LINE_EXTEND) * sin,
+			// Exact cut position on backbone
+			dotX: cx + radius * cos,
+			dotY: cy + radius * sin,
 		};
-		const right = {
-			x: baseCx - TRI_HALF_BASE * Math.cos(perpAngle),
-			y: baseCy - TRI_HALF_BASE * Math.sin(perpAngle),
-		};
-		return `${left.x},${left.y} ${tipPt.x},${tipPt.y} ${right.x},${right.y}`;
 	});
 </script>
 
@@ -52,11 +45,30 @@
 	{onclick}
 	onkeydown={(e) => { if (e.key === 'Enter' && onclick) onclick(e as unknown as MouseEvent); }}
 >
-	<!-- Small filled triangle pointing inward toward center -->
-	<polygon
-		points={trianglePoints}
+	<!-- Radial line crossing backbone -->
+	<line
+		x1={lineCoords.x1}
+		y1={lineCoords.y1}
+		x2={lineCoords.x2}
+		y2={lineCoords.y2}
+		stroke="var(--hatch-cutsite-color, #d45858)"
+		stroke-width="1"
+	/>
+	<!-- Small dot at exact cut position -->
+	<circle
+		cx={lineCoords.dotX}
+		cy={lineCoords.dotY}
+		r="1.5"
 		fill="var(--hatch-cutsite-color, #d45858)"
-		stroke="none"
+	/>
+	<!-- Wider invisible hit area for hover/click -->
+	<line
+		x1={lineCoords.x1}
+		y1={lineCoords.y1}
+		x2={lineCoords.x2}
+		y2={lineCoords.y2}
+		stroke="transparent"
+		stroke-width="8"
 	/>
 </g>
 

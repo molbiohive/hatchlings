@@ -85,9 +85,12 @@
 		return result;
 	});
 
-	/** Check if a row has any cut sites */
+	/** Check if a row has any cut sites (including those whose whiskers extend into this row) */
 	function rowHasCutSites(rowStart: number, rowEnd: number): boolean {
-		return cutSites.some((cs) => cs.position >= rowStart && cs.position < rowEnd);
+		return cutSites.some((cs) => {
+			const csEnd = cutSiteEnd(cs);
+			return cs.position < rowEnd && csEnd > rowStart;
+		});
 	}
 
 	/** Count annotation lanes for a row */
@@ -313,15 +316,83 @@
 		return site.position + Math.max(site.cutPosition ?? 1, site.complementCutPosition ?? 1);
 	}
 
-	function handleCutSiteClick(site: CutSite) {
-		const end = cutSiteEnd(site);
-		if (selectionState) {
-			selectionState.setSelection(site.position, end);
-			onselect?.({ start: site.position, end, sequence: seq.slice(site.position, end) });
-		} else {
-			internalSelStart = site.position;
-			internalSelEnd = end - 1;
+	/** Cluster nearby cut sites per row so dense MCS regions show "+N" */
+	const CLUSTER_CHAR_DIST = 4;
+	type SeqCutCluster = { primary: CutSite; enzymes: string[]; sites: CutSite[] };
+
+	function clusterRowCutSites(rowStart: number, rowEnd: number): SeqCutCluster[] {
+		const rowSites = cutSites
+			.filter((cs) => {
+				const csEnd = cutSiteEnd(cs);
+				return cs.position < rowEnd && csEnd > rowStart;
+			})
+			.sort((a, b) => a.position - b.position);
+		if (rowSites.length === 0) return [];
+
+		const clusters: SeqCutCluster[] = [];
+		let current: SeqCutCluster = { primary: rowSites[0], enzymes: [rowSites[0].enzyme], sites: [rowSites[0]] };
+
+		for (let i = 1; i < rowSites.length; i++) {
+			const charDist = rowSites[i].position - current.primary.position;
+			if (charDist <= CLUSTER_CHAR_DIST) {
+				current.enzymes.push(rowSites[i].enzyme);
+				current.sites.push(rowSites[i]);
+			} else {
+				clusters.push(current);
+				current = { primary: rowSites[i], enzymes: [rowSites[i].enzyme], sites: [rowSites[i]] };
+			}
 		}
+		clusters.push(current);
+		return clusters;
+	}
+
+	/** Clamp an X coordinate to the visible row area */
+	function clampX(x: number, rowLen: number): number {
+		return Math.max(SEQ_X, Math.min(x, SEQ_X + rowLen * charWidth));
+	}
+
+	/** Get the full bp range for a cluster (first site start to last site end) */
+	function clusterRange(cluster: SeqCutCluster): { start: number; end: number } {
+		const first = cluster.sites[0];
+		const last = cluster.sites[cluster.sites.length - 1];
+		return { start: first.position, end: cutSiteEnd(last) };
+	}
+
+	function handleCutSiteClick(site: CutSite) {
+		const s = site.position;
+		const e = cutSiteEnd(site);
+		if (selectionState) {
+			selectionState.setSelection(s, e);
+			onselect?.({ start: s, end: e, sequence: seq.slice(s, e) });
+		} else {
+			internalSelStart = s;
+			internalSelEnd = e - 1;
+		}
+	}
+
+	function handleClusterClick(cluster: SeqCutCluster) {
+		const r = clusterRange(cluster);
+		if (selectionState) {
+			selectionState.setSelection(r.start, r.end);
+			onselect?.({ start: r.start, end: r.end, sequence: seq.slice(r.start, r.end) });
+		} else {
+			internalSelStart = r.start;
+			internalSelEnd = r.end - 1;
+		}
+	}
+
+	function handleClusterHover(cluster: SeqCutCluster | null, e?: MouseEvent) {
+		if (!cluster || !e) { onhoverinfo?.(null); return; }
+		const r = clusterRange(cluster);
+		onhoverinfo?.({
+			title: cluster.enzymes.join(', '),
+			items: [
+				{ label: 'Enzymes', value: cluster.enzymes.length },
+				{ label: 'Region', value: `${r.start}..${r.end}`, unit: 'bp' },
+				...cluster.sites.map(s => ({ label: s.enzyme, value: s.position, unit: 'bp' })),
+			],
+			position: { x: e.clientX, y: e.clientY },
+		});
 	}
 
 	/** Compute strand Y bounds WITHIN SequenceRow (relative to its own origin) */
@@ -462,33 +533,45 @@
 						onparthover={handlePartHover}
 					/>
 
-					<!-- Cut site markers — labels in the gap between annotations and sequence -->
+					<!-- Cut site markers — all positions visible, labels clustered -->
 					{#if hasCutSites}
 					{@const sb = strandBounds(row.start, rowEnd)}
-					{#each cutSites as site}
-						{#if site.position >= row.start && site.position < rowEnd}
-							{@const topCut = site.cutPosition ?? 0}
-							{@const botCut = site.complementCutPosition ?? 0}
-							{@const isSticky = topCut !== botCut}
-							{@const topX = SEQ_X + (site.position - row.start + topCut) * charWidth}
-							{@const botX = SEQ_X + (site.position - row.start + botCut) * charWidth}
-							{@const labelY = sb.annotH + CUTSITE_LABEL_H / 2}
-							{@const whiskerTop = sb.seqY}
-							{@const whiskerBot = sb.endY}
-							{@const midY = (whiskerTop + whiskerBot) / 2}
-							<!-- svelte-ignore a11y_mouse_events_have_key_events -->
-							<g
-								class="cutsite-marker"
-								role="button"
-								tabindex="-1"
-								onmouseover={(e) => handleCutSiteHover(site, e)}
-								onmouseout={() => handleCutSiteHover(null)}
-								onclick={(e) => { e.stopPropagation(); handleCutSiteClick(site); }}
-								onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); handleCutSiteClick(site); } }}
-							>
-								<!-- Enzyme label between annotations and sequence -->
+					{@const clusters = clusterRowCutSites(row.start, rowEnd)}
+					{#each clusters as cluster}
+						{@const cr = clusterRange(cluster)}
+						{@const visStart = Math.max(cr.start, row.start)}
+						{@const visEnd = Math.min(cr.end, rowEnd)}
+						{@const bgLeftX = SEQ_X + (visStart - row.start) * charWidth}
+						{@const bgRightX = SEQ_X + (visEnd - row.start) * charWidth}
+						{@const labelX = (bgLeftX + bgRightX) / 2}
+						{@const labelY = sb.annotH + CUTSITE_LABEL_H / 2}
+						{@const whiskerTop = sb.seqY}
+						{@const whiskerBot = sb.endY}
+						{@const labelText = cluster.enzymes.length === 1 ? cluster.primary.enzyme : cluster.primary.enzyme + ' +' + (cluster.enzymes.length - 1)}
+						{@const showLabel = cluster.primary.position >= row.start && cluster.primary.position < rowEnd}
+						<!-- svelte-ignore a11y_mouse_events_have_key_events -->
+						<g
+							class="cutsite-marker"
+							role="button"
+							tabindex="-1"
+							onmouseover={(e) => cluster.sites.length > 1 ? handleClusterHover(cluster, e) : handleCutSiteHover(cluster.primary, e)}
+							onmouseout={() => cluster.sites.length > 1 ? handleClusterHover(null) : handleCutSiteHover(null)}
+							onclick={(e) => { e.stopPropagation(); cluster.sites.length > 1 ? handleClusterClick(cluster) : handleCutSiteClick(cluster.primary); }}
+							onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); cluster.sites.length > 1 ? handleClusterClick(cluster) : handleCutSiteClick(cluster.primary); } }}
+						>
+							<!-- Semi-transparent background matching the selection area -->
+							<rect
+								x={bgLeftX}
+								y={sb.annotH}
+								width={bgRightX - bgLeftX}
+								height={whiskerBot - sb.annotH}
+								class="cutsite-bg"
+								rx="2"
+							/>
+							<!-- Clustered label (only on the row where the primary site starts) -->
+							{#if showLabel}
 								<text
-									x={topX}
+									x={labelX}
 									y={labelY}
 									text-anchor="middle"
 									dominant-baseline="middle"
@@ -496,8 +579,18 @@
 									font-size="8"
 									font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 									class="cutsite-label"
-								>{site.enzyme}</text>
-								<!-- Whisker lines through the strands -->
+								>{labelText}</text>
+							{/if}
+							<!-- Whisker lines for EVERY site in the cluster, clamped to row -->
+							{#each cluster.sites as cs}
+								{@const topCut = cs.cutPosition ?? 0}
+								{@const botCut = cs.complementCutPosition ?? 0}
+								{@const isSticky = topCut !== botCut}
+								{@const rawTopX = SEQ_X + (cs.position - row.start + topCut) * charWidth}
+								{@const rawBotX = SEQ_X + (cs.position - row.start + botCut) * charWidth}
+								{@const topX = clampX(rawTopX, row.seq.length)}
+								{@const botX = clampX(rawBotX, row.seq.length)}
+								{@const midY = (whiskerTop + whiskerBot) / 2}
 								{#if isSticky}
 									<line x1={topX} y1={whiskerTop} x2={topX} y2={midY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
 									<line x1={topX} y1={midY} x2={botX} y2={midY} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.6" />
@@ -505,10 +598,8 @@
 								{:else}
 									<line x1={topX} y1={whiskerTop} x2={topX} y2={whiskerBot} stroke="var(--hatch-cutsite-color, #d45858)" stroke-width="1" stroke-opacity="0.5" />
 								{/if}
-								<!-- Invisible wider hit area -->
-								<line x1={topX} y1={labelY - 6} x2={topX} y2={whiskerBot} stroke="transparent" stroke-width="8" />
-							</g>
-						{/if}
+							{/each}
+						</g>
 					{/each}
 					{/if}
 				</g>
@@ -560,6 +651,16 @@
 
 	.cutsite-marker {
 		cursor: pointer;
+	}
+
+	.cutsite-bg {
+		fill: var(--hatch-cutsite-bg, rgba(212, 88, 88, 0.06));
+		stroke: none;
+		transition: fill 0.15s;
+	}
+
+	.cutsite-marker:hover .cutsite-bg {
+		fill: var(--hatch-cutsite-bg-hover, rgba(212, 88, 88, 0.15));
 	}
 
 	.cutsite-marker:hover line {

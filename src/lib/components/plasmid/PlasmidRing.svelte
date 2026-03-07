@@ -7,20 +7,21 @@
 		cx: number;
 		cy: number;
 		showTicks?: boolean;
-		/** Current rotation of the map in degrees — used to counter-rotate tick labels */
 		rotation?: number;
 	}
 
-	let { size, radius, cx, cy, showTicks = true, rotation = 0 }: Props = $props();
+	let { size, radius, cx, cy, showTicks = true }: Props = $props();
 
 	let ticks = $derived(generateTicks(size));
 
+	/** Scale band: ticks and labels sit between outer and inner circles */
+	const BAND_WIDTH = 16;
 	const TICK_LENGTH = 6;
 	const RAD_TO_DEG = 180 / Math.PI;
 </script>
 
 <g class="plasmid-ring">
-	<!-- Single backbone circle -->
+	<!-- Outer backbone circle -->
 	<circle
 		{cx}
 		{cy}
@@ -29,26 +30,38 @@
 		stroke="var(--hatch-ring-color, #4a5a6a)"
 		stroke-width="1.5"
 	/>
+	<!-- Inner scale circle -->
+	<circle
+		{cx}
+		{cy}
+		r={radius - BAND_WIDTH}
+		fill="none"
+		stroke="var(--hatch-ring-color, #4a5a6a)"
+		stroke-width="0.5"
+		stroke-opacity="0.4"
+	/>
 
-	<!-- Tick marks extending inward from ring -->
+	<!-- Tick marks and labels inside the scale band -->
 	{#if showTicks}
 		{#each ticks as tick}
 			{@const angle = bpToAngle(tick.position, size)}
 			{@const outer = angleToXY(angle, radius, cx, cy)}
-			{@const inner = angleToXY(angle, radius - TICK_LENGTH, cx, cy)}
+			{@const inner = angleToXY(angle, radius - (tick.major ? TICK_LENGTH : TICK_LENGTH * 0.5), cx, cy)}
 			<line
 				x1={outer.x}
 				y1={outer.y}
 				x2={inner.x}
 				y2={inner.y}
-				stroke={tick.major ? 'var(--hatch-tick-major, #5a6a7a)' : 'var(--hatch-tick-minor, #3a4858)'}
+				stroke={tick.major ? 'var(--hatch-tick-major, #6a7a8a)' : 'var(--hatch-tick-minor, #4a5868)'}
 				stroke-width={tick.major ? 1.5 : 0.75}
 			/>
 			{#if tick.major && tick.label}
-				{@const labelR = radius - 14}
+				{@const labelR = radius - TICK_LENGTH - 4}
 				{@const labelPt = angleToXY(angle, labelR, cx, cy)}
-				<!-- Counter-rotate to keep label upright regardless of map rotation -->
-				<g transform="rotate({-rotation}, {labelPt.x}, {labelPt.y})">
+				{@const inBottomHalf = Math.sin(angle) > 0}
+				{@const tangentDeg = angle * RAD_TO_DEG + 90 + (inBottomHalf ? 180 : 0)}
+				<!-- Rotate label to follow circle path, flip in bottom half to stay readable -->
+				<g transform="rotate({tangentDeg}, {labelPt.x}, {labelPt.y})">
 					<text
 						x={labelPt.x}
 						y={labelPt.y}
@@ -66,8 +79,8 @@
 
 <style>
 	.tick-label {
-		font-size: 8px;
-		fill: var(--hatch-axis-text, #7a8898);
+		font-size: 6px;
+		fill: var(--hatch-axis-text, #8a95a5);
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
 		pointer-events: none;
 		user-select: none;

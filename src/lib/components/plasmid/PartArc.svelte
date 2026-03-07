@@ -15,6 +15,8 @@
 		yOffset?: number;
 		showInternalLabel?: boolean;
 		selected?: boolean;
+		/** Current map rotation in degrees — used to flip text when upside down */
+		rotation?: number;
 		onmouseenter?: (e: MouseEvent) => void;
 		onmouseleave?: (e: MouseEvent) => void;
 		onclick?: (e: MouseEvent) => void;
@@ -30,6 +32,7 @@
 		yOffset = 0,
 		showInternalLabel = true,
 		selected = false,
+		rotation = 0,
 		onmouseenter,
 		onmouseleave,
 		onclick,
@@ -56,7 +59,17 @@
 		return (bpLen / totalSize) * TWO_PI * effectiveRadius;
 	});
 
-	/** Text path for internal label */
+	/** Is the arc midpoint in the bottom half of the circle (after rotation)? */
+	let isBottomHalf = $derived.by(() => {
+		let arcSpan = part.end - part.start;
+		if (arcSpan < 0) arcSpan += totalSize;
+		const midBp = (part.start + arcSpan / 2) % totalSize;
+		const midAngle = bpToAngle(midBp, totalSize);
+		const rotRad = (rotation * Math.PI) / 180;
+		return Math.sin(midAngle + rotRad) > 0;
+	});
+
+	/** Text path for internal label — flips direction when text would be upside down */
 	let textArcId = $derived(`part-arc-${part.name}-${part.start}`);
 	let textPathD = $derived.by(() => {
 		const r = effectiveRadius;
@@ -69,13 +82,23 @@
 		const s = angleToXY(startAngle, r, cx, cy);
 		const e = angleToXY(endAngle, r, cx, cy);
 
-		if (part.strand === -1) {
-			return `M ${e.x} ${e.y} A ${r} ${r} 0 ${largeArc} 0 ${s.x} ${s.y}`;
+		// Text readability depends only on position, not strand:
+		// top half → clockwise, bottom half → counter-clockwise
+		const clockwise = !isBottomHalf;
+
+		if (clockwise) {
+			return `M ${s.x} ${s.y} A ${r} ${r} 0 ${largeArc} 1 ${e.x} ${e.y}`;
 		}
-		return `M ${s.x} ${s.y} A ${r} ${r} 0 ${largeArc} 1 ${e.x} ${e.y}`;
+		return `M ${e.x} ${e.y} A ${r} ${r} 0 ${largeArc} 0 ${s.x} ${s.y}`;
 	});
 
-	let showInternal = $derived(showInternalLabel && arcLengthPx > 40);
+	/** Only show internal label if the text actually fits in the arc */
+	let showInternal = $derived.by(() => {
+		if (!showInternalLabel) return false;
+		const text = part.label ?? part.name;
+		const textWidthPx = text.length * 5.5 + 8;
+		return arcLengthPx >= textWidthPx;
+	});
 </script>
 
 <!-- svelte-ignore a11y_mouse_events_have_key_events -->

@@ -562,7 +562,7 @@
 					{#if hasCutSites}
 					{@const sb = strandBounds(row.start, rowEnd)}
 					{@const clusters = clusterRowCutSites(row.start, rowEnd)}
-					{#each clusters as cluster (cluster.primary.enzyme + cluster.primary.position)}
+					{#each clusters as cluster (cluster.primary.id ?? cluster.primary.enzyme + cluster.primary.position)}
 						{@const cr = clusterRange(cluster)}
 						{@const visStart = Math.max(cr.start, row.start)}
 						{@const visEnd = Math.min(cr.end, rowEnd)}
@@ -607,7 +607,7 @@
 								>{labelText}</text>
 							{/if}
 							<!-- Whisker lines for EVERY site in the cluster, clamped to row -->
-							{#each cluster.sites as cs, ci (cs.enzyme + cs.position + ':' + ci)}
+							{#each cluster.sites as cs, ci (cs.id ?? cs.enzyme + cs.position + ':' + ci)}
 								{@const topCut = cs.cutPosition ?? 0}
 								{@const botCut = cs.complementCutPosition ?? 0}
 								{@const isSticky = topCut !== botCut}

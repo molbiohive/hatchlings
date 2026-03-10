@@ -269,12 +269,10 @@
 <style>
 	.diff-scroll-container {
 		overflow-y: auto;
-		border-radius: 6px;
 	}
 
 	.hatch-diff-viewer {
 		background: var(--hatch-bg, #0c1018);
-		border-radius: 6px;
 		display: block;
 	}
 

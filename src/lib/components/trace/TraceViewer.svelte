@@ -338,14 +338,10 @@
 <style>
 	.trace-viewer {
 		background: var(--hatch-bg, #0c1018);
-		border: 1px solid var(--hatch-border, #2a3848);
-		border-radius: 6px;
 		overflow: hidden;
 	}
 
 	.trace-viewer.embedded {
-		border: none;
-		border-radius: 0;
 		background: none;
 	}
 

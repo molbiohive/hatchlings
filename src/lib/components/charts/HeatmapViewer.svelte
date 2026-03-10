@@ -120,5 +120,6 @@
 <style>
 	.hatch-heatmap {
 		display: inline-block;
+		background: var(--hatch-bg, #0c1018);
 	}
 </style>

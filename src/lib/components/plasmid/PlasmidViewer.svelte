@@ -592,7 +592,6 @@
 	.plasmid-viewer {
 		display: inline-block;
 		background: var(--hatch-bg, #0c1018);
-		border-radius: 8px;
 		overflow: visible;
 	}
 

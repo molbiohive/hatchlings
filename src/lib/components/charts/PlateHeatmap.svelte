@@ -151,5 +151,6 @@
 <style>
 	.hatch-plate-heatmap {
 		display: inline-block;
+		background: var(--hatch-bg, #0c1018);
 	}
 </style>

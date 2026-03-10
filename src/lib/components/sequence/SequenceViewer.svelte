@@ -612,9 +612,7 @@
 	.hatch-sequence-viewer {
 		overflow-y: auto;
 		overflow-x: auto;
-		background: var(--hatch-seq-bg, #0c1018);
-		border: 1px solid var(--hatch-seq-border, #2a3848);
-		border-radius: 6px;
+		background: var(--hatch-bg, #0c1018);
 		position: relative;
 		cursor: text;
 		user-select: none;

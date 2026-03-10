@@ -485,7 +485,7 @@
 		onmouseup={handleMouseUp}
 		onmouseleave={handleMouseUp}
 	>
-		{#each rows as row, i}
+		{#each rows as row, i (row.start)}
 			{#if i >= visibleRange.start && i < visibleRange.end}
 				{@const rowEnd = row.start + row.seq.length}
 				{@const rp = rowPositions[i]}
@@ -562,7 +562,7 @@
 					{#if hasCutSites}
 					{@const sb = strandBounds(row.start, rowEnd)}
 					{@const clusters = clusterRowCutSites(row.start, rowEnd)}
-					{#each clusters as cluster}
+					{#each clusters as cluster (cluster.primary.enzyme + cluster.primary.position)}
 						{@const cr = clusterRange(cluster)}
 						{@const visStart = Math.max(cr.start, row.start)}
 						{@const visEnd = Math.min(cr.end, rowEnd)}
@@ -607,7 +607,7 @@
 								>{labelText}</text>
 							{/if}
 							<!-- Whisker lines for EVERY site in the cluster, clamped to row -->
-							{#each cluster.sites as cs}
+							{#each cluster.sites as cs, ci (cs.enzyme + cs.position + ':' + ci)}
 								{@const topCut = cs.cutPosition ?? 0}
 								{@const botCut = cs.complementCutPosition ?? 0}
 								{@const isSticky = topCut !== botCut}

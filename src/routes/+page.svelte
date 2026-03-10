@@ -28,6 +28,42 @@
 	} from '$lib/types/index.js';
 	import { Tooltip } from '$lib/components/shared/index.js';
 
+	// ========== SEQUENCE GENERATION (must be before plasmidParts which uses buildPrimerSeq) ==========
+	// Generate a deterministic pseudo-random pUC19 sequence (Math.imul avoids JS integer overflow)
+	const pUC19seq = (() => {
+		const bases = 'ATGC';
+		let s = '';
+		let seed = 19;
+		for (let i = 0; i < 2686; i++) {
+			seed = (Math.imul(seed, 1103515245) + 12345) | 0;
+			s += bases[((seed >>> 16) & 0x7fff) % 4];
+		}
+		return s;
+	})();
+	const sequence = pUC19seq;
+
+	/** Build a primer sequence from the template, with optional 5' overhang and mismatches */
+	function buildPrimerSeq(
+		tpl: string, start: number, end: number, strand: 1 | -1,
+		overhang5?: string, mismatchPositions?: number[]
+	): string {
+		const COMP: Record<string, string> = { A: 'T', T: 'A', G: 'C', C: 'G' };
+		const MUTATE: Record<string, string> = { A: 'G', T: 'C', G: 'A', C: 'T' };
+		let binding = '';
+		if (strand === 1) {
+			for (let i = start; i < end; i++) {
+				const base = tpl[i]?.toUpperCase() ?? 'N';
+				binding += (mismatchPositions?.includes(i)) ? (MUTATE[base] ?? base) : base;
+			}
+		} else {
+			for (let i = end - 1; i >= start; i--) {
+				const base = COMP[tpl[i]?.toUpperCase() ?? 'N'] ?? 'N';
+				binding += (mismatchPositions?.includes(i)) ? (MUTATE[base] ?? base) : base;
+			}
+		}
+		return (overhang5 ?? '') + binding;
+	}
+
 	// ========== PLASMID DATA (pUC19, 2686 bp — classic cloning vector with dense MCS) ==========
 	const plasmidParts: Part[] = [
 		{ name: 'AmpR', type: 'CDS', start: 1629, end: 2489, strand: -1, color: '#4dc3ff' },
@@ -36,8 +72,18 @@
 		{ name: 'lacZα', type: 'CDS', start: 217, end: 508, strand: 1, color: '#e6a24c' },
 		{ name: 'MCS', type: 'misc_feature', start: 396, end: 452, strand: 1, color: '#d4915e' },
 		{ name: 'lac promoter', type: 'promoter', start: 168, end: 198, strand: 1, color: '#31a354' },
-		{ name: 'M13 fwd', type: 'primer_bind', start: 361, end: 378, strand: 1, tm: 56.2, color: '#bcbd22' },
-		{ name: 'M13 rev', type: 'primer_bind', start: 488, end: 505, strand: -1, tm: 55.8, color: '#bcbd22' },
+		{ name: 'M13 fwd', type: 'primer_bind', start: 361, end: 378, strand: 1, tm: 56.2,
+			sequence: buildPrimerSeq(pUC19seq, 361, 378, 1, undefined, [370]) },
+		{ name: 'M13 rev', type: 'primer_bind', start: 488, end: 505, strand: -1, tm: 55.8,
+			sequence: buildPrimerSeq(pUC19seq, 488, 505, -1) },
+		// Primers with overhangs (Gibson assembly)
+		{ name: 'Gibson fwd', type: 'primer_bind', start: 340, end: 395, strand: 1, tm: 62.1,
+			sequence: buildPrimerSeq(pUC19seq, 361, 395, 1, 'AATTCGGTACCGGATCCATCG', [375, 388]) },
+		{ name: 'Gibson rev', type: 'primer_bind', start: 450, end: 526, strand: -1, tm: 63.4,
+			sequence: buildPrimerSeq(pUC19seq, 450, 505, -1, 'GCTAGCAATTCCCGGATCCAT', [465, 498]) },
+		// Sequencing primer with a mismatch
+		{ name: 'Seq primer', type: 'primer_bind', start: 800, end: 822, strand: 1, tm: 58.0,
+			sequence: buildPrimerSeq(pUC19seq, 800, 822, 1, undefined, [812]) },
 		{ name: 'CAP site', type: 'protein_bind', start: 145, end: 166, strand: 1, color: '#e377c2' },
 		{ name: 'f1 ori', type: 'rep_origin', start: 2574, end: 2686, strand: 1, color: '#8c564b' },
 	];
@@ -88,18 +134,6 @@
 	}
 
 	// ========== SEQUENCE DATA (pUC19, 2686 bp — same construct as plasmid view for cross-view sync) ==========
-	// Generate a deterministic pseudo-random pUC19 sequence (Math.imul avoids JS integer overflow)
-	const pUC19seq = (() => {
-		const bases = 'ATGC';
-		let s = '';
-		let seed = 19;
-		for (let i = 0; i < 2686; i++) {
-			seed = (Math.imul(seed, 1103515245) + 12345) | 0;
-			s += bases[((seed >>> 16) & 0x7fff) % 4];
-		}
-		return s;
-	})();
-	const sequence = pUC19seq;
 	// Reuse the same parts and cut sites as the plasmid viewer
 	const seqParts: Part[] = plasmidParts;
 	const seqCutSites: CutSite[] = plasmidCutSites;

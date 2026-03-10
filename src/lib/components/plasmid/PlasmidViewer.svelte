@@ -3,7 +3,7 @@
 	import type { SelectionState } from '../../state/index.js';
 	import { formatBp, computeCircularAnnotationLayers, arcMidpoint, bpToXY, bpToAngle, relaxLabels } from '../../util/coordinates.js';
 	import type { LabelPosition } from '../../util/coordinates.js';
-	import { getFeatureColor } from '../../util/colors.js';
+	import { getFeatureColor, isPrimer, PRIMER_COLOR } from '../../util/colors.js';
 	import PlasmidRing from './PlasmidRing.svelte';
 	import PartArc from './PartArc.svelte';
 	import CutSiteMarker from './CutSiteMarker.svelte';
@@ -68,9 +68,13 @@
 	const CUTSITE_SPACE = 14;
 	const LABEL_PADDING = 16;
 
-	/** Split parts into forward (+) and reverse (-) groups with original indices */
-	let forwardParts = $derived(parts.map((p, i) => ({ part: p, index: i })).filter(x => x.part.strand !== -1));
-	let reverseParts = $derived(parts.map((p, i) => ({ part: p, index: i })).filter(x => x.part.strand === -1));
+	/** Split parts into features and primers (no enrichment — plasmid shows simple arcs) */
+	let features = $derived(parts.filter(p => !isPrimer(p)));
+	let primers = $derived(parts.filter(p => isPrimer(p)));
+
+	/** Split features into forward (+) and reverse (-) groups with indices into features array */
+	let forwardParts = $derived(features.map((p, i) => ({ part: p, index: i })).filter(x => x.part.strand !== -1));
+	let reverseParts = $derived(features.map((p, i) => ({ part: p, index: i })).filter(x => x.part.strand === -1));
 
 	/** Compute stacking layers for each group separately (circular-aware for wrapping parts) */
 	let forwardOffsets = $derived.by(() => {
@@ -94,21 +98,67 @@
 		return max;
 	});
 
+	/** Primer stacking layers */
+	let forwardPrimers = $derived(primers.filter(p => p.strand !== -1));
+	let reversePrimers = $derived(primers.filter(p => p.strand === -1));
+
+	let forwardPrimerOffsets = $derived.by(() => {
+		const intervals = forwardPrimers.map(p => ({ start: p.start, end: p.end }));
+		return computeCircularAnnotationLayers(intervals, size);
+	});
+	let reversePrimerOffsets = $derived.by(() => {
+		const intervals = reversePrimers.map(p => ({ start: p.start, end: p.end }));
+		return computeCircularAnnotationLayers(intervals, size);
+	});
+
+	let maxForwardPrimerLayer = $derived.by(() => {
+		let max = 0;
+		for (const v of forwardPrimerOffsets.values()) if (v > max) max = v;
+		return forwardPrimers.length > 0 ? max : -1;
+	});
+	let maxReversePrimerLayer = $derived.by(() => {
+		let max = 0;
+		for (const v of reversePrimerOffsets.values()) if (v > max) max = v;
+		return reversePrimers.length > 0 ? max : -1;
+	});
+
 	/** Scale band width — ticks and labels live between two circles */
 	const SCALE_BAND = 16;
 
-	/** Forward parts: outward from backbone (past cut site space) */
-	let forwardRadius = $derived(baseRadius + CUTSITE_SPACE + (cutSites.length > 0 ? 4 : 0));
-	/** Reverse parts: inward from scale band inner circle + gap */
-	let reverseRadius = $derived(baseRadius - SCALE_BAND - 10);
-
-	/** Outer label radius (above forward features) */
-	let labelRadius = $derived(
-		forwardRadius + (maxForwardLayer + 1) * (PART_WIDTH + PART_GAP) + 12
+	/** Forward features: just outside backbone + cut site space */
+	let forwardRadius = $derived(
+		baseRadius + CUTSITE_SPACE + (cutSites.length > 0 ? 4 : 0)
 	);
 
-	/** Build a unified partOffsets map: original index → { radius, layer } for PartArc rendering */
-	let partRenderInfo = $derived.by(() => {
+	/** Forward primers: beyond the forward feature ring */
+	let primerForwardRadius = $derived(
+		forwardRadius +
+		(forwardParts.length > 0
+			? (maxForwardLayer + 1) * (PART_WIDTH + PART_GAP) + 4
+			: 4)
+	);
+
+	/** Reverse features: just inside scale band */
+	let reverseRadius = $derived(baseRadius - SCALE_BAND - 10);
+
+	/** Reverse primers: beyond reverse features (further inward) */
+	let primerReverseRadius = $derived(
+		reverseRadius -
+		(reverseParts.length > 0
+			? (maxReverseLayer + 1) * (PART_WIDTH + PART_GAP) + 4
+			: 4)
+	);
+
+	/** Outer label radius (above forward primers — now outermost ring) */
+	let labelRadius = $derived(
+		primerForwardRadius +
+		(forwardPrimers.length > 0
+			? (maxForwardPrimerLayer + 1) * (PART_WIDTH + PART_GAP)
+			: 0) + 12
+	);
+
+	/** Build a unified featureRenderInfo map: feature index → { radius, layer } for PartArc rendering */
+	let featureRenderInfo = $derived.by(() => {
 		const info = new Map<number, { radius: number; yOffset: number }>();
 		for (let fi = 0; fi < forwardParts.length; fi++) {
 			const origIdx = forwardParts[fi].index;
@@ -118,11 +168,27 @@
 		for (let ri = 0; ri < reverseParts.length; ri++) {
 			const origIdx = reverseParts[ri].index;
 			const layer = reverseOffsets.get(ri) ?? 0;
-			// Negative yOffset pushes inward from reverseRadius
 			info.set(origIdx, { radius: reverseRadius, yOffset: -layer });
 		}
 		return info;
 	});
+
+	/** Build primer render info */
+	let primerRenderInfo = $derived.by(() => {
+		const info = new Map<number, { radius: number; yOffset: number }>();
+		for (let fi = 0; fi < forwardPrimers.length; fi++) {
+			const layer = forwardPrimerOffsets.get(fi) ?? 0;
+			info.set(fi, { radius: primerForwardRadius, yOffset: layer });
+		}
+		for (let ri = 0; ri < reversePrimers.length; ri++) {
+			const layer = reversePrimerOffsets.get(ri) ?? 0;
+			info.set(forwardPrimers.length + ri, { radius: primerReverseRadius, yOffset: -layer });
+		}
+		return info;
+	});
+
+	/** Combined primer list for rendering (forward then reverse) */
+	let allPrimers = $derived([...forwardPrimers, ...reversePrimers]);
 
 	/** Unique cutter enzymes (appear exactly once) */
 	let uniqueCutters = $derived.by(() => {
@@ -341,14 +407,13 @@
 
 		const raw: RawLabel[] = [];
 
-		// Part labels — only when internal label can't fit the full name
+		// Feature labels — only when internal label can't fit the full name
 		const CHAR_WIDTH = 5.5; // approximate px per char at font-size 9px
-		for (let i = 0; i < parts.length; i++) {
-			const p = parts[i];
-			const ri = partRenderInfo.get(i);
+		for (let i = 0; i < features.length; i++) {
+			const p = features[i];
+			const ri = featureRenderInfo.get(i);
 			if (!ri) continue;
 			const effectiveR = ri.radius + ri.yOffset * (PART_WIDTH + PART_GAP);
-			// Skip external label if arc is wide enough for internal text
 			let bpLen = p.end - p.start;
 			if (bpLen < 0) bpLen += size;
 			const arcLenPx = (bpLen / size) * TWO_PI * effectiveR;
@@ -371,6 +436,37 @@
 				kind: 'part',
 				color: getFeatureColor(p.type, p.color),
 				index: i,
+			});
+		}
+
+		// Primer labels — use full span
+		for (let i = 0; i < allPrimers.length; i++) {
+			const p = allPrimers[i];
+			const ri = primerRenderInfo.get(i);
+			if (!ri) continue;
+			const effectiveR = ri.radius + ri.yOffset * (PART_WIDTH + PART_GAP);
+			let bpLen = p.end - p.start;
+			if (bpLen < 0) bpLen += size;
+			const arcLenPx = (bpLen / size) * TWO_PI * effectiveR;
+			const labelText = p.label ?? p.name;
+			const textWidthPx = labelText.length * CHAR_WIDTH + 8;
+			if (showInternalLabels && arcLenPx >= textWidthPx) continue;
+
+			const mid = arcMidpoint(p.start, p.end, size, effectiveR, cx, cy);
+			const dx = mid.x - cx;
+			const dy = mid.y - cy;
+			const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+			const pushR = labelRadius + LABEL_PADDING;
+			raw.push({
+				x: cx + (dx / dist) * pushR,
+				y: cy + (dy / dist) * pushR,
+				angle: mid.angle,
+				text: labelText,
+				anchorX: mid.x,
+				anchorY: mid.y,
+				kind: 'part',
+				color: PRIMER_COLOR,
+				index: -1, // primer — not indexed into features
 			});
 		}
 
@@ -500,11 +596,11 @@
 				/>
 			{/each}
 
-			<!-- Layer 5: Part arcs (forward outer, reverse inner) -->
-			{#each parts as part, i (part.name + part.start)}
-				{@const ri = partRenderInfo.get(i)}
+			<!-- Layer 5a: Feature arcs (inner ring, closer to backbone) -->
+			{#each features as feature, i (feature.name + feature.start)}
+				{@const ri = featureRenderInfo.get(i)}
 				<PartArc
-					{part}
+					part={feature}
 					totalSize={size}
 					radius={ri?.radius ?? forwardRadius}
 					{cx}
@@ -512,10 +608,32 @@
 					yOffset={ri?.yOffset ?? 0}
 					showInternalLabel={showInternalLabels}
 					rotation={rotationDeg}
-					selected={selectedPart === part}
-					onmouseenter={(e) => handlePartMouseEnter(e, part)}
+					selected={selectedPart === feature}
+					onmouseenter={(e) => handlePartMouseEnter(e, feature)}
 					onmouseleave={handleMouseLeave}
-					onclick={() => handlePartClick(part)}
+					onclick={() => handlePartClick(feature)}
+				/>
+			{/each}
+
+			<!-- Layer 5b: Primer arcs (outer ring, half-opaque teal, no overhangs/mismatches) -->
+			{#each allPrimers as primer, i (primer.name + primer.start + '-primer')}
+				{@const ri = primerRenderInfo.get(i)}
+				<PartArc
+					part={{ ...primer, bindingStart: undefined, bindingEnd: undefined, mismatches: undefined }}
+					totalSize={size}
+					radius={ri?.radius ?? primerForwardRadius}
+					{cx}
+					{cy}
+					yOffset={ri?.yOffset ?? 0}
+					showInternalLabel={showInternalLabels}
+					rotation={rotationDeg}
+					halfArrow={true}
+					overrideColor={PRIMER_COLOR}
+					fillOpacity={0.5}
+					selected={selectedPart === primer}
+					onmouseenter={(e) => handlePartMouseEnter(e, primer)}
+					onmouseleave={handleMouseLeave}
+					onclick={() => handlePartClick(primer)}
 				/>
 			{/each}
 
@@ -523,7 +641,7 @@
 			{#if showLabels}
 				{#each allLabels.part as lbl (lbl.text + lbl.anchorX + '-lbl')}
 					{@const rl = lbl as any}
-					{@const part = parts[rl.index]}
+					{@const part = rl.index >= 0 ? features[rl.index] : undefined}
 					<PlasmidLabel
 						name={lbl.text}
 						x={lbl.x}
@@ -536,9 +654,9 @@
 						color={rl.color}
 						renderPart="label"
 						counterRotation={-rotationDeg}
-						onmouseenter={(e) => handlePartMouseEnter(e, part)}
+						onmouseenter={part ? (e) => handlePartMouseEnter(e, part) : undefined}
 						onmouseleave={handleMouseLeave}
-						onclick={() => handlePartClick(part)}
+						onclick={part ? () => handlePartClick(part) : undefined}
 					/>
 				{/each}
 				{#each allLabels.cutSite as lbl (lbl.text + lbl.anchorX + '-lbl')}

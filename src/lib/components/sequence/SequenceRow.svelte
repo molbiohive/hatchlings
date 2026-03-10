@@ -2,6 +2,7 @@
 	import type { Part, Translation } from '../../types/index.js';
 	import { nucleotideColors } from '../../util/colors.js';
 	import AnnotationTrack from './AnnotationTrack.svelte';
+	import PrimerTrack from './PrimerTrack.svelte';
 	import TranslationTrack from './TranslationTrack.svelte';
 
 	interface Props {
@@ -9,8 +10,10 @@
 		seq: string;
 		/** Bp position of the first base in this row (0-based) */
 		start: number;
-		/** Parts overlapping this row (unified features + primers) */
+		/** Feature parts overlapping this row (no primers) */
 		parts?: Part[];
+		/** Primer parts overlapping this row */
+		primers?: Part[];
 		/** Translations overlapping this row */
 		translations?: Translation[];
 		/** Width of each character in pixels */
@@ -37,6 +40,7 @@
 		seq,
 		start,
 		parts = [],
+		primers = [],
 		translations = [],
 		charWidth = 10,
 		showNumbers = true,
@@ -91,6 +95,32 @@
 
 	const ANNOTATION_TRACK_HEIGHT = $derived(annotationLanes * 18);
 
+	/** Compute lane count for primer track */
+	const primerLanes = $derived.by(() => {
+		if (!showAnnotations || primers.length === 0) return 0;
+		const visible = primers.filter((p) => p.start < end && p.end > start);
+		if (visible.length === 0) return 0;
+
+		const sorted = [...visible].sort((a, b) => a.start - b.start);
+		const lanes: { end: number }[] = [];
+		for (const primer of sorted) {
+			let assigned = false;
+			for (const lane of lanes) {
+				if (primer.start >= lane.end) {
+					lane.end = primer.end;
+					assigned = true;
+					break;
+				}
+			}
+			if (!assigned) {
+				lanes.push({ end: primer.end });
+			}
+		}
+		return lanes.length;
+	});
+
+	const PRIMER_TRACK_HEIGHT = $derived(primerLanes > 0 ? primerLanes * 25 + 8 : 0);
+
 	const RULER_HEIGHT = $derived(showNumbers ? 16 : 0);
 	/** Compute tick interval so labels don't overlap.
 	 * Each label needs ~5px per digit at font-size 8, plus ~6px padding. */
@@ -105,7 +135,8 @@
 		return niceSteps.find(s => s >= basesPerLabel) ?? basesPerLabel;
 	});
 	const annotationY = $derived(RULER_HEIGHT);
-	const seqY = $derived(RULER_HEIGHT + ANNOTATION_TRACK_HEIGHT + (annotationLanes > 0 ? 4 : 0) + cutsiteGap);
+	const primerY = $derived(RULER_HEIGHT + ANNOTATION_TRACK_HEIGHT + (annotationLanes > 0 ? 4 : 0));
+	const seqY = $derived(primerY + PRIMER_TRACK_HEIGHT + (primerLanes > 0 ? 4 : 0) + cutsiteGap);
 	const complementY = $derived(seqY + LINE_HEIGHT + 2);
 	const complementOffset = $derived(showComplement ? LINE_HEIGHT + 2 : 0);
 	const translationY = $derived(seqY + LINE_HEIGHT + complementOffset + 4);
@@ -155,7 +186,7 @@
 		{/each}
 	{/if}
 
-	<!-- Annotation track (unified parts) -->
+	<!-- Annotation track (features only) -->
 	{#if showAnnotations && parts.length > 0}
 		<g transform="translate({SEQ_X}, {annotationY})">
 			<AnnotationTrack
@@ -164,6 +195,21 @@
 				{end}
 				y={0}
 				charsPerRow={seq.length}
+				{charWidth}
+				{onpartclick}
+				{onparthover}
+			/>
+		</g>
+	{/if}
+
+	<!-- Primer track (offset +8 for shifted mismatch/overhang chars) -->
+	{#if showAnnotations && primers.length > 0}
+		<g transform="translate({SEQ_X}, {primerY + 8})">
+			<PrimerTrack
+				{primers}
+				{start}
+				{end}
+				y={0}
 				{charWidth}
 				{onpartclick}
 				{onparthover}

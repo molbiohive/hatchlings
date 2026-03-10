@@ -2,6 +2,8 @@
 	import type { Part, CutSite, Translation } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
+	import { isPrimer } from '../../util/colors.js';
+	import { analyzePrimerBinding } from '../../util/coordinates.js';
 	import SequenceRow from './SequenceRow.svelte';
 
 	interface Props {
@@ -67,6 +69,11 @@
 		onhoverinfo,
 	}: Props = $props();
 
+	/** Enrich primers with auto-detected binding regions and mismatches */
+	let enrichedParts = $derived(
+		parts.map(p => (isPrimer(p) && p.sequence) ? { ...p, ...analyzePrimerBinding(p, seq) } : p)
+	);
+
 	const LEFT_PAD = 12; // space for left 5'/3' labels
 	const RIGHT_PAD = 14; // space for right 3'/5' labels + gap
 	const SEQ_X = LEFT_PAD;
@@ -104,10 +111,10 @@
 		});
 	}
 
-	/** Count annotation lanes for a row */
+	/** Count annotation lanes for a row (features only, no primers) */
 	function countAnnotationLanes(rowStart: number, rowEnd: number): number {
 		if (!showAnnotations) return 0;
-		const visParts = parts.filter((p) => p.start < rowEnd && p.end > rowStart);
+		const visParts = enrichedParts.filter((p) => !isPrimer(p) && p.start < rowEnd && p.end > rowStart);
 		if (visParts.length === 0) return 0;
 		const sorted = [...visParts].sort((a, b) => a.start - b.start);
 		const lanes: { end: number }[] = [];
@@ -125,6 +132,27 @@
 		return lanes.length;
 	}
 
+	/** Count primer lanes for a row */
+	function countPrimerLanes(rowStart: number, rowEnd: number): number {
+		if (!showAnnotations) return 0;
+		const visPrimers = enrichedParts.filter((p) => isPrimer(p) && p.start < rowEnd && p.end > rowStart);
+		if (visPrimers.length === 0) return 0;
+		const sorted = [...visPrimers].sort((a, b) => a.start - b.start);
+		const lanes: { end: number }[] = [];
+		for (const primer of sorted) {
+			let assigned = false;
+			for (const lane of lanes) {
+				if (primer.start >= lane.end) {
+					lane.end = primer.end;
+					assigned = true;
+					break;
+				}
+			}
+			if (!assigned) lanes.push({ end: primer.end });
+		}
+		return lanes.length;
+	}
+
 	/** Height of the inline position ruler */
 	let RULER_HEIGHT = $derived(showNumbers ? 16 : 0);
 
@@ -136,6 +164,9 @@
 
 		const annotLanes = countAnnotationLanes(rowStart, rowEnd);
 		if (annotLanes > 0) h += annotLanes * 18 + 4;
+
+		const primerLanes = countPrimerLanes(rowStart, rowEnd);
+		if (primerLanes > 0) h += primerLanes * 25 + 12;
 
 		if (showTranslations) {
 			const visTrans = translations.filter((t) => t.start < rowEnd && t.end > rowStart);
@@ -424,7 +455,9 @@
 	function strandBounds(rowStart: number, rowEnd: number): { seqY: number; endY: number; annotH: number } {
 		const LINE_HEIGHT = 14;
 		const annotLanes = countAnnotationLanes(rowStart, rowEnd);
-		const annotH = RULER_HEIGHT + annotLanes * 18 + (annotLanes > 0 ? 4 : 0);
+		const primerLanes = countPrimerLanes(rowStart, rowEnd);
+		const primerH = primerLanes > 0 ? primerLanes * 25 + 12 : 0;
+		const annotH = RULER_HEIGHT + annotLanes * 18 + (annotLanes > 0 ? 4 : 0) + primerH;
 		const csGap = rowHasCutSites(rowStart, rowEnd) ? CUTSITE_LABEL_H : 0;
 		const seqY = annotH + csGap;
 		const compY = seqY + LINE_HEIGHT + 2;
@@ -432,8 +465,12 @@
 		return { seqY, endY, annotH };
 	}
 
-	function rowParts(rowStart: number, rowEnd: number): Part[] {
-		return parts.filter((p) => p.start < rowEnd && p.end > rowStart);
+	function rowFeatures(rowStart: number, rowEnd: number): Part[] {
+		return enrichedParts.filter((p) => !isPrimer(p) && p.start < rowEnd && p.end > rowStart);
+	}
+
+	function rowPrimers(rowStart: number, rowEnd: number): Part[] {
+		return enrichedParts.filter((p) => isPrimer(p) && p.start < rowEnd && p.end > rowStart);
 	}
 
 	function rowTranslations(rowStart: number, rowEnd: number): Translation[] {
@@ -545,7 +582,8 @@
 					<SequenceRow
 						seq={row.seq}
 						start={row.start}
-						parts={rowParts(row.start, rowEnd)}
+						parts={rowFeatures(row.start, rowEnd)}
+						primers={rowPrimers(row.start, rowEnd)}
 						translations={rowTranslations(row.start, rowEnd)}
 						charWidth={effectiveCharWidth}
 						{showNumbers}

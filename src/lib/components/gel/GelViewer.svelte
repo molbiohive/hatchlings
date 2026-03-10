@@ -45,7 +45,7 @@
 
 	/** Layout constants */
 	const PADDING_X = 20;
-	const WELL_TOP = 24;
+	const WELL_TOP = 36;
 	const WELL_HEIGHT = 6;
 	const GEL_TOP = WELL_TOP + WELL_HEIGHT + 4;
 
@@ -143,6 +143,7 @@
 					gelHeight={gelHeight}
 					{stain}
 					{bandStyle}
+					{showSizeLabels}
 					showLaneLabel={showLaneLabels}
 					onbandmouseenter={(band, e) => handleBandEnter(lane, band, e)}
 					onbandmouseleave={() => handleBandLeave()}

@@ -9,6 +9,7 @@
 		gelHeight: number;
 		stain: StainType;
 		bandStyle?: 'realistic' | 'simple';
+		showSizeLabels?: boolean;
 		showLaneLabel?: boolean;
 		onbandmouseenter?: (band: GelBand, e: MouseEvent) => void;
 		onbandmouseleave?: (band: GelBand, e: MouseEvent) => void;
@@ -22,6 +23,7 @@
 		gelHeight,
 		stain,
 		bandStyle = 'realistic',
+		showSizeLabels = true,
 		showLaneLabel = true,
 		onbandmouseenter,
 		onbandmouseleave,
@@ -36,7 +38,7 @@
 	{gelHeight}
 	{stain}
 	{bandStyle}
-	showSizeLabels={true}
+	{showSizeLabels}
 	{showLaneLabel}
 	{onbandmouseenter}
 	{onbandmouseleave}

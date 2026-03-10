@@ -33,7 +33,7 @@
 
 	let colors = $derived(stainColors[stain]);
 	let isLadder = $derived(lane.isLadder ?? false);
-	let shouldShowLabels = $derived(isLadder || showSizeLabels);
+	let shouldShowLabels = $derived(showSizeLabels);
 
 	/** Determine whether background is light or dark for label contrast */
 	let isDarkBg = $derived(

@@ -403,16 +403,18 @@
 		// Single unified relaxation pass
 		const relaxed = relaxLabels(raw, labelRadius + 60, 18);
 
-		// Clamp to viewport bounds
-		const PAD = 8;
+		// Soft clamp: prevent labels from flying too far beyond viewport
+		// Labels are allowed to extend past edges (overflow:visible) but we
+		// keep them within a generous margin so connectors stay reasonable.
+		const MARGIN = -40; // allow up to 40px outside viewport
 		for (const label of relaxed) {
-			label.y = Math.max(PAD, Math.min(height - PAD, label.y));
+			label.y = Math.max(MARGIN, Math.min(height - MARGIN, label.y));
 			const textWidth = label.text.length * 6;
 			const isLeft = label.x < cx;
 			if (isLeft) {
-				if (label.x - textWidth < PAD) label.x = PAD + textWidth;
+				if (label.x - textWidth < MARGIN) label.x = MARGIN + textWidth;
 			} else {
-				if (label.x + textWidth > width - PAD) label.x = width - PAD - textWidth;
+				if (label.x + textWidth > width - MARGIN) label.x = width - MARGIN - textWidth;
 			}
 		}
 
@@ -437,6 +439,7 @@
 			{width}
 			{height}
 			viewBox="0 0 {width} {height}"
+			overflow="visible"
 			xmlns="http://www.w3.org/2000/svg"
 			role="application"
 			aria-label="Circular plasmid map for {name}"
@@ -590,7 +593,7 @@
 		display: inline-block;
 		background: var(--hatch-bg, #0c1018);
 		border-radius: 8px;
-		overflow: hidden;
+		overflow: visible;
 	}
 
 	.center-name {

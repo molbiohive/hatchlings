@@ -61,8 +61,8 @@
 	const colorMap = nucleotideColors;
 
 	const end = $derived(start + seq.length);
-	const LABEL_PAD = 16;
-	const SEQ_X = LABEL_PAD;
+	const LEFT_PAD = 12;
+	const SEQ_X = LEFT_PAD;
 	const LINE_HEIGHT = 14;
 
 	/** Compute lane count for annotation track */
@@ -92,7 +92,18 @@
 	const ANNOTATION_TRACK_HEIGHT = $derived(annotationLanes * 18);
 
 	const RULER_HEIGHT = $derived(showNumbers ? 16 : 0);
-	const TICK_INTERVAL = 10;
+	/** Compute tick interval so labels don't overlap.
+	 * Each label needs ~5px per digit at font-size 8, plus ~6px padding. */
+	const TICK_INTERVAL = $derived.by(() => {
+		const maxBp = start + seq.length;
+		const digitCount = String(maxBp).length;
+		const labelPx = digitCount * 5 + 6;
+		const minSpacingPx = labelPx + 10; // label width + gap
+		const basesPerLabel = Math.ceil(minSpacingPx / charWidth);
+		// Round up to a "nice" interval: 10, 20, 50, 100, 200, 500...
+		const niceSteps = [10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+		return niceSteps.find(s => s >= basesPerLabel) ?? basesPerLabel;
+	});
 	const annotationY = $derived(RULER_HEIGHT);
 	const seqY = $derived(RULER_HEIGHT + ANNOTATION_TRACK_HEIGHT + (annotationLanes > 0 ? 4 : 0) + cutsiteGap);
 	const complementY = $derived(seqY + LINE_HEIGHT + 2);
@@ -118,7 +129,10 @@
 		/>
 		{#each { length: seq.length } as _, i}
 			{@const bp = start + i + 1}
-			{@const isTick = bp % TICK_INTERVAL === 0 || i === 0}
+			{@const isIntervalTick = bp % TICK_INTERVAL === 0}
+			{@const isFirstTick = i === 0 && !isIntervalTick}
+			{@const firstTickOverlap = isFirstTick && (TICK_INTERVAL - (bp % TICK_INTERVAL)) * charWidth < String(bp).length * 5 + 16}
+			{@const isTick = isIntervalTick || (isFirstTick && !firstTickOverlap)}
 			{#if isTick}
 				<line
 					x1={SEQ_X + i * charWidth + charWidth / 2}
@@ -181,7 +195,7 @@
 
 	<!-- Strand direction labels: right side -->
 	<text
-		x={SEQ_X + seq.length * charWidth + 4}
+		x={SEQ_X + seq.length * charWidth + 2}
 		y={seqY + LINE_HEIGHT / 2 + 1}
 		text-anchor="start"
 		dominant-baseline="middle"
@@ -191,7 +205,7 @@
 	>3'</text>
 	{#if showComplement}
 		<text
-			x={SEQ_X + seq.length * charWidth + 4}
+			x={SEQ_X + seq.length * charWidth + 2}
 			y={complementY + LINE_HEIGHT / 2 + 1}
 			text-anchor="start"
 			dominant-baseline="middle"

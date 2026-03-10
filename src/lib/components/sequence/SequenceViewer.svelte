@@ -67,13 +67,19 @@
 		onhoverinfo,
 	}: Props = $props();
 
-	const LABEL_PAD = 16; // space for 5'/3' strand labels on each side
-	const SEQ_X = LABEL_PAD;
+	const LEFT_PAD = 12; // space for left 5'/3' labels
+	const RIGHT_PAD = 14; // space for right 3'/5' labels + gap
+	const SEQ_X = LEFT_PAD;
 	const ROW_PADDING = 4;
 
-	/** Auto-compute chars per row from width if not explicitly set */
+	const availableW = $derived(width - LEFT_PAD - RIGHT_PAD);
+
+	/** Auto-compute chars per row from width, then stretch charWidth to fill exactly */
 	let charsPerRow = $derived(
-		charsPerRowProp ?? Math.max(10, Math.floor((width - LABEL_PAD * 2 - ROW_PADDING) / charWidth))
+		charsPerRowProp ?? Math.max(10, Math.floor(availableW / charWidth))
+	);
+	let effectiveCharWidth = $derived(
+		charsPerRowProp ? charWidth : availableW / charsPerRow
 	);
 	const BUFFER_ROWS = 2;
 	const CUTSITE_LABEL_H = 14;
@@ -161,7 +167,7 @@
 		return last.y + last.height + ROW_PADDING;
 	});
 
-	const svgWidth = $derived(width);
+	const svgWidth = $derived(LEFT_PAD + charsPerRow * effectiveCharWidth + RIGHT_PAD);
 
 	/** Virtual scrolling state */
 	let scrollTop = $state(0);
@@ -222,7 +228,7 @@
 		for (let i = 0; i < rows.length; i++) {
 			const rp = rowPositions[i];
 			if (mouseY >= rp.y && mouseY <= rp.y + rp.height) {
-				const charIndex = Math.floor((mouseX - SEQ_X) / charWidth);
+				const charIndex = Math.floor((mouseX - SEQ_X) / effectiveCharWidth);
 				if (charIndex >= 0 && charIndex < rows[i].seq.length) {
 					return rows[i].start + charIndex;
 				}
@@ -279,7 +285,18 @@
 		if (!selRange) return '';
 		const len = selRange.end - selRange.start;
 		if (len <= 0) return '';
-		return `${selRange.start + 1}..${selRange.end} (${len} bp)`;
+		const subseq = seq.slice(selRange.start, selRange.end).toUpperCase();
+		let gc = 0;
+		for (const ch of subseq) if (ch === 'G' || ch === 'C') gc++;
+		const gcPct = ((gc / len) * 100).toFixed(1);
+		// Basic Tm: Wallace rule (<14bp) or salt-adjusted (>=14bp)
+		let tm: string;
+		if (len < 14) {
+			tm = (2 * (len - gc) + 4 * gc).toFixed(0);
+		} else {
+			tm = (64.9 + 41 * (gc - 16.4) / len).toFixed(1);
+		}
+		return `${selRange.start + 1}..${selRange.end} (${len} bp) GC ${gcPct}% Tm ${tm}°C`;
 	});
 
 	function handlePartClick(part: Part) {
@@ -356,7 +373,7 @@
 
 	/** Clamp an X coordinate to the visible row area */
 	function clampX(x: number, rowLen: number): number {
-		return Math.max(SEQ_X, Math.min(x, SEQ_X + rowLen * charWidth));
+		return Math.max(SEQ_X, Math.min(x, SEQ_X + rowLen * effectiveCharWidth));
 	}
 
 	/** Get the full bp range for a cluster (first site start to last site end) */
@@ -445,7 +462,7 @@
 
 <div
 	class="hatch-sequence-viewer"
-	style:width="{width}px"
+	style:width="{svgWidth}px"
 	style:max-height={height ? `${height}px` : undefined}
 	bind:this={containerEl}
 	onscroll={handleScroll}
@@ -480,16 +497,16 @@
 						{@const hlStart = Math.max(selRange.start, row.start)}
 						{@const hlEnd = Math.min(selRange.end, rowEnd)}
 						<rect
-							x={SEQ_X + (hlStart - row.start) * charWidth}
+							x={SEQ_X + (hlStart - row.start) * effectiveCharWidth}
 							y={0}
-							width={(hlEnd - hlStart) * charWidth}
+							width={(hlEnd - hlStart) * effectiveCharWidth}
 							height={rp.height}
 							fill="var(--hatch-selection-fill, rgba(0, 130, 250, 0.3))"
 							rx="2"
 						/>
 						{#if hlStart === (selRange?.start ?? -1)}
 							<rect
-								x={SEQ_X + (hlStart - row.start) * charWidth - 2}
+								x={SEQ_X + (hlStart - row.start) * effectiveCharWidth - 2}
 								y={0}
 								width="4"
 								height={rp.height}
@@ -500,7 +517,7 @@
 						{/if}
 						{#if hlEnd === (selRange?.end ?? -1)}
 							<rect
-								x={SEQ_X + (hlEnd - row.start) * charWidth - 2}
+								x={SEQ_X + (hlEnd - row.start) * effectiveCharWidth - 2}
 								y={0}
 								width="4"
 								height={rp.height}
@@ -514,9 +531,9 @@
 					<!-- Blinking caret -->
 					{#if caretPos >= row.start && caretPos < rowEnd}
 						<line
-							x1={SEQ_X + (caretPos - row.start) * charWidth}
+							x1={SEQ_X + (caretPos - row.start) * effectiveCharWidth}
 							y1={0}
-							x2={SEQ_X + (caretPos - row.start) * charWidth}
+							x2={SEQ_X + (caretPos - row.start) * effectiveCharWidth}
 							y2={rp.height}
 							stroke="var(--hatch-caret-color, #333)"
 							stroke-width="1.5"
@@ -530,7 +547,7 @@
 						start={row.start}
 						parts={rowParts(row.start, rowEnd)}
 						translations={rowTranslations(row.start, rowEnd)}
-						{charWidth}
+						charWidth={effectiveCharWidth}
 						{showNumbers}
 						{showAnnotations}
 						{showTranslations}
@@ -549,8 +566,8 @@
 						{@const cr = clusterRange(cluster)}
 						{@const visStart = Math.max(cr.start, row.start)}
 						{@const visEnd = Math.min(cr.end, rowEnd)}
-						{@const bgLeftX = SEQ_X + (visStart - row.start) * charWidth}
-						{@const bgRightX = SEQ_X + (visEnd - row.start) * charWidth}
+						{@const bgLeftX = SEQ_X + (visStart - row.start) * effectiveCharWidth}
+						{@const bgRightX = SEQ_X + (visEnd - row.start) * effectiveCharWidth}
 						{@const labelX = (bgLeftX + bgRightX) / 2}
 						{@const labelY = sb.annotH + CUTSITE_LABEL_H / 2}
 						{@const whiskerTop = sb.seqY}
@@ -594,8 +611,8 @@
 								{@const topCut = cs.cutPosition ?? 0}
 								{@const botCut = cs.complementCutPosition ?? 0}
 								{@const isSticky = topCut !== botCut}
-								{@const rawTopX = SEQ_X + (cs.position - row.start + topCut) * charWidth}
-								{@const rawBotX = SEQ_X + (cs.position - row.start + botCut) * charWidth}
+								{@const rawTopX = SEQ_X + (cs.position - row.start + topCut) * effectiveCharWidth}
+								{@const rawBotX = SEQ_X + (cs.position - row.start + botCut) * effectiveCharWidth}
 								{@const topX = clampX(rawTopX, row.seq.length)}
 								{@const botX = clampX(rawBotX, row.seq.length)}
 								{@const midY = (whiskerTop + whiskerBot) / 2}
@@ -634,11 +651,13 @@
 		position: sticky;
 		top: 0;
 		z-index: 10;
-		padding: 3px 10px;
+		display: inline-block;
+		padding: 2px 8px;
+		border-radius: 3px;
+		margin: 2px 4px;
 		background: var(--hatch-selection-bar-bg, rgba(59, 130, 246, 0.2));
-		border-bottom: 1px solid var(--hatch-selection-bar-border, rgba(59, 130, 246, 0.3));
 		color: var(--hatch-highlight, #6ab8e0);
-		font-size: 11px;
+		font-size: 10px;
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
 	}
 

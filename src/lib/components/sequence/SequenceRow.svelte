@@ -61,8 +61,8 @@
 	const colorMap = nucleotideColors;
 
 	const end = $derived(start + seq.length);
-	const NUMBER_WIDTH = 50;
-	const SEQ_X = $derived(showNumbers ? NUMBER_WIDTH : 0);
+	const LABEL_PAD = 16;
+	const SEQ_X = LABEL_PAD;
 	const LINE_HEIGHT = 14;
 
 	/** Compute lane count for annotation track */
@@ -91,8 +91,10 @@
 
 	const ANNOTATION_TRACK_HEIGHT = $derived(annotationLanes * 18);
 
-	const annotationY = 0;
-	const seqY = $derived(ANNOTATION_TRACK_HEIGHT + (annotationLanes > 0 ? 4 : 0) + cutsiteGap);
+	const RULER_HEIGHT = $derived(showNumbers ? 16 : 0);
+	const TICK_INTERVAL = 10;
+	const annotationY = $derived(RULER_HEIGHT);
+	const seqY = $derived(RULER_HEIGHT + ANNOTATION_TRACK_HEIGHT + (annotationLanes > 0 ? 4 : 0) + cutsiteGap);
 	const complementY = $derived(seqY + LINE_HEIGHT + 2);
 	const complementOffset = $derived(showComplement ? LINE_HEIGHT + 2 : 0);
 	const translationY = $derived(seqY + LINE_HEIGHT + complementOffset + 4);
@@ -103,27 +105,50 @@
 </script>
 
 <g class="hatch-sequence-row">
-	<!-- Position number -->
+	<!-- Inline position ruler with ticks every 10 bases -->
 	{#if showNumbers}
-		<text
-			x={NUMBER_WIDTH - 8}
-			y={seqY + LINE_HEIGHT / 2 + 1}
-			text-anchor="end"
-			dominant-baseline="middle"
-			fill="var(--hatch-line-number, #566070)"
-			font-size="10"
-			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
-		>{start + 1}</text>
+		<line
+			x1={SEQ_X}
+			y1={RULER_HEIGHT - 2}
+			x2={SEQ_X + seq.length * charWidth}
+			y2={RULER_HEIGHT - 2}
+			stroke="var(--hatch-line-number, #566070)"
+			stroke-opacity="0.3"
+			stroke-width="0.5"
+		/>
+		{#each { length: seq.length } as _, i}
+			{@const bp = start + i + 1}
+			{@const isTick = bp % TICK_INTERVAL === 0 || i === 0}
+			{#if isTick}
+				<line
+					x1={SEQ_X + i * charWidth + charWidth / 2}
+					y1={RULER_HEIGHT - 5}
+					x2={SEQ_X + i * charWidth + charWidth / 2}
+					y2={RULER_HEIGHT - 1}
+					stroke="var(--hatch-line-number, #566070)"
+					stroke-opacity="0.5"
+					stroke-width="0.5"
+				/>
+				<text
+					x={SEQ_X + i * charWidth + charWidth / 2}
+					y={RULER_HEIGHT - 7}
+					text-anchor="middle"
+					fill="var(--hatch-line-number, #566070)"
+					font-size="8"
+					font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
+				>{bp}</text>
+			{/if}
+		{/each}
 	{/if}
 
 	<!-- Annotation track (unified parts) -->
 	{#if showAnnotations && parts.length > 0}
-		<g transform="translate({SEQ_X}, 0)">
+		<g transform="translate({SEQ_X}, {annotationY})">
 			<AnnotationTrack
 				{parts}
 				{start}
 				{end}
-				y={annotationY}
+				y={0}
 				charsPerRow={seq.length}
 				{charWidth}
 				{onpartclick}
@@ -132,17 +157,39 @@
 		</g>
 	{/if}
 
-	<!-- Direction indicators (right side only, to avoid overlap with line numbers) -->
+	<!-- Strand direction labels: left side -->
+	<text
+		x={2}
+		y={seqY + LINE_HEIGHT / 2 + 1}
+		text-anchor="start"
+		dominant-baseline="middle"
+		fill="var(--hatch-text-dim, #566070)"
+		font-size="8"
+		font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
+	>5'</text>
 	{#if showComplement}
 		<text
-			x={SEQ_X + seq.length * charWidth + 4}
-			y={seqY + LINE_HEIGHT / 2 + 1}
+			x={2}
+			y={complementY + LINE_HEIGHT / 2 + 1}
 			text-anchor="start"
 			dominant-baseline="middle"
 			fill="var(--hatch-text-dim, #566070)"
 			font-size="8"
 			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
-		>5'→3'</text>
+		>3'</text>
+	{/if}
+
+	<!-- Strand direction labels: right side -->
+	<text
+		x={SEQ_X + seq.length * charWidth + 4}
+		y={seqY + LINE_HEIGHT / 2 + 1}
+		text-anchor="start"
+		dominant-baseline="middle"
+		fill="var(--hatch-text-dim, #566070)"
+		font-size="8"
+		font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
+	>3'</text>
+	{#if showComplement}
 		<text
 			x={SEQ_X + seq.length * charWidth + 4}
 			y={complementY + LINE_HEIGHT / 2 + 1}
@@ -151,7 +198,7 @@
 			fill="var(--hatch-text-dim, #566070)"
 			font-size="8"
 			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
-		>3'→5'</text>
+		>5'</text>
 	{/if}
 
 	<!-- Forward strand bases -->

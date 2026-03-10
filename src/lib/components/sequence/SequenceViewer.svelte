@@ -51,7 +51,7 @@
 		cutSites = [],
 		translations = [],
 		selectionState,
-		charsPerRow = 60,
+		charsPerRow: charsPerRowProp,
 		charWidth = 10,
 		width = 700,
 		height = 500,
@@ -67,9 +67,14 @@
 		onhoverinfo,
 	}: Props = $props();
 
-	const NUMBER_WIDTH = 50;
-	const SEQ_X = $derived(showNumbers ? NUMBER_WIDTH : 0);
-	const ROW_PADDING = 12;
+	const LABEL_PAD = 16; // space for 5'/3' strand labels on each side
+	const SEQ_X = LABEL_PAD;
+	const ROW_PADDING = 4;
+
+	/** Auto-compute chars per row from width if not explicitly set */
+	let charsPerRow = $derived(
+		charsPerRowProp ?? Math.max(10, Math.floor((width - LABEL_PAD * 2 - ROW_PADDING) / charWidth))
+	);
 	const BUFFER_ROWS = 2;
 	const CUTSITE_LABEL_H = 14;
 
@@ -114,9 +119,12 @@
 		return lanes.length;
 	}
 
+	/** Height of the inline position ruler */
+	let RULER_HEIGHT = $derived(showNumbers ? 16 : 0);
+
 	/** Compute estimated height per row based on visible tracks */
 	function estimateRowHeight(rowStart: number, rowEnd: number): number {
-		let h = 14; // base sequence height
+		let h = RULER_HEIGHT + 14; // ruler + base sequence height
 
 		if (showComplement) h += 14 + 2;
 
@@ -153,7 +161,7 @@
 		return last.y + last.height + ROW_PADDING;
 	});
 
-	const svgWidth = $derived(SEQ_X + charsPerRow * charWidth + 20);
+	const svgWidth = $derived(width);
 
 	/** Virtual scrolling state */
 	let scrollTop = $state(0);
@@ -399,7 +407,7 @@
 	function strandBounds(rowStart: number, rowEnd: number): { seqY: number; endY: number; annotH: number } {
 		const LINE_HEIGHT = 14;
 		const annotLanes = countAnnotationLanes(rowStart, rowEnd);
-		const annotH = annotLanes * 18 + (annotLanes > 0 ? 4 : 0);
+		const annotH = RULER_HEIGHT + annotLanes * 18 + (annotLanes > 0 ? 4 : 0);
 		const csGap = rowHasCutSites(rowStart, rowEnd) ? CUTSITE_LABEL_H : 0;
 		const seqY = annotH + csGap;
 		const compY = seqY + LINE_HEIGHT + 2;
@@ -438,7 +446,7 @@
 <div
 	class="hatch-sequence-viewer"
 	style:width="{width}px"
-	style:height="{height}px"
+	style:max-height={height ? `${height}px` : undefined}
 	bind:this={containerEl}
 	onscroll={handleScroll}
 >
@@ -611,7 +619,7 @@
 <style>
 	.hatch-sequence-viewer {
 		overflow-y: auto;
-		overflow-x: auto;
+		overflow-x: hidden;
 		background: var(--hatch-bg, #0c1018);
 		position: relative;
 		cursor: text;

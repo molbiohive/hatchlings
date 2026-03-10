@@ -7,6 +7,7 @@
 		lane: GelLane;
 		x: number;
 		width: number;
+		gelTop?: number;
 		gelHeight: number;
 		stain: StainType;
 		bandStyle: 'realistic' | 'simple';
@@ -21,6 +22,7 @@
 		lane,
 		x,
 		width,
+		gelTop = 0,
 		gelHeight,
 		stain,
 		bandStyle = 'realistic',
@@ -64,9 +66,9 @@
 	<!-- Faint lane guide line -->
 	<line
 		x1={x + width / 2}
-		y1={30}
+		y1={gelTop}
 		x2={x + width / 2}
-		y2={gelHeight}
+		y2={gelTop + gelHeight}
 		stroke={isDarkBg ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'}
 		stroke-width="1"
 	/>
@@ -94,6 +96,7 @@
 			laneWidth={width}
 			{stain}
 			{bandStyle}
+			{gelTop}
 			{gelHeight}
 			isLadder={isLadder}
 			onmouseenter={(e) => onbandmouseenter?.(band, e)}
@@ -105,7 +108,7 @@
 		{#if shouldShowLabels}
 			<text
 				x={x + width / 2}
-				y={band.position * gelHeight - 4}
+				y={gelTop + band.position * gelHeight - 4}
 				text-anchor="middle"
 				fill={labelColor}
 				font-size="8"

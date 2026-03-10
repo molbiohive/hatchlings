@@ -8,6 +8,7 @@
 		laneWidth: number;
 		stain: StainType;
 		bandStyle: 'realistic' | 'simple';
+		gelTop?: number;
 		gelHeight?: number;
 		isLadder?: boolean;
 		onmouseenter?: (e: MouseEvent) => void;
@@ -21,6 +22,7 @@
 		laneWidth,
 		stain,
 		bandStyle = 'realistic',
+		gelTop = 0,
 		gelHeight = 500,
 		isLadder = false,
 		onmouseenter,
@@ -42,7 +44,7 @@
 		return minT + band.intensity * (maxT - minT);
 	});
 
-	let bandY = $derived(band.position * gelHeight);
+	let bandY = $derived(gelTop + band.position * gelHeight);
 	let bandX = $derived(x + (laneWidth - bandWidth) / 2);
 
 	/** Opacity from intensity */

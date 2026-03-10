@@ -140,6 +140,7 @@
 					{lane}
 					x={laneX}
 					width={laneWidth}
+					gelTop={GEL_TOP}
 					gelHeight={gelHeight}
 					{stain}
 					{bandStyle}
@@ -154,6 +155,7 @@
 					{lane}
 					x={laneX}
 					width={laneWidth}
+					gelTop={GEL_TOP}
 					gelHeight={gelHeight}
 					{stain}
 					{bandStyle}

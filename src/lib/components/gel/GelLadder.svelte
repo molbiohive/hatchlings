@@ -6,6 +6,7 @@
 		lane: GelLane;
 		x: number;
 		width: number;
+		gelTop?: number;
 		gelHeight: number;
 		stain: StainType;
 		bandStyle?: 'realistic' | 'simple';
@@ -20,6 +21,7 @@
 		lane,
 		x,
 		width,
+		gelTop = 0,
 		gelHeight,
 		stain,
 		bandStyle = 'realistic',
@@ -35,6 +37,7 @@
 	{lane}
 	{x}
 	{width}
+	{gelTop}
 	{gelHeight}
 	{stain}
 	{bandStyle}

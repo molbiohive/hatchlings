@@ -542,6 +542,7 @@
 			onmouseup={handleMouseUp}
 			onmouseleave={handleMouseLeave}
 			style:cursor={isRotating ? 'grabbing' : (selectionState ? 'crosshair' : 'grab')}
+			style:outline="none"
 		>
 		<g transform="rotate({rotationDeg}, {cx}, {cy})">
 			<!-- Layer 0: Cut site label connector lines (behind everything) -->

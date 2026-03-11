@@ -516,7 +516,7 @@
 <div
 	class="hatch-sequence-viewer"
 	style:width="{svgWidth}px"
-	style:max-height={height ? `${height}px` : undefined}
+	style:height={height ? `${height}px` : undefined}
 	bind:this={containerEl}
 	onscroll={handleScroll}
 >

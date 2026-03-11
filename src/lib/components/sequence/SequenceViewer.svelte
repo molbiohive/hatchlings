@@ -693,7 +693,7 @@
 		padding: 2px 8px;
 		border-radius: 3px;
 		margin: 2px 4px;
-		background: var(--hatch-selection-bar-bg, rgba(59, 130, 246, 0.2));
+		background: var(--hatch-bg, #0c1018);
 		color: var(--hatch-highlight, #6ab8e0);
 		font-size: 10px;
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);

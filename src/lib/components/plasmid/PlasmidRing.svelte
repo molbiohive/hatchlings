@@ -10,7 +10,7 @@
 		rotation?: number;
 	}
 
-	let { size, radius, cx, cy, showTicks = true }: Props = $props();
+	let { size, radius, cx, cy, showTicks = true, rotation = 0 }: Props = $props();
 
 	let ticks = $derived(generateTicks(size));
 
@@ -58,7 +58,8 @@
 			{#if tick.major && tick.label}
 				{@const labelR = radius - TICK_LENGTH - 4}
 				{@const labelPt = angleToXY(angle, labelR, cx, cy)}
-				{@const inBottomHalf = Math.sin(angle) > 0}
+				{@const rotRad = (rotation * Math.PI) / 180}
+				{@const inBottomHalf = Math.sin(angle + rotRad) > 0}
 				{@const tangentDeg = angle * RAD_TO_DEG + 90 + (inBottomHalf ? 180 : 0)}
 				<!-- Rotate label to follow circle path, flip in bottom half to stay readable -->
 				<g transform="rotate({tangentDeg}, {labelPt.x}, {labelPt.y})">

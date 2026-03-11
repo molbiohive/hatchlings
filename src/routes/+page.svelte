@@ -110,7 +110,6 @@
 		{ enzyme: 'AatII', position: 2617, end: 2623, strand: 1, cutPosition: 5, complementCutPosition: 1 },
 		{ enzyme: 'ScaI', position: 2177, end: 2183, strand: 1, cutPosition: 3, complementCutPosition: 3 },
 	];
-	let plasmidShowLabels = $state(true);
 	let plasmidShowTicks = $state(true);
 	let plasmidShowInternal = $state(true);
 
@@ -387,10 +386,9 @@ END`;
 			<p class="data-note">pUC19 (2686 bp) &mdash; AmpR, lacZ&alpha;, MCS with 15 cut sites</p>
 		</div>
 		<div class="component-col">
-			<PlasmidViewer name="pUC19" size={2686} parts={plasmidParts} cutSites={plasmidCutSites} topology="circular" selectionState={sharedSelection} showLabels={plasmidShowLabels} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={hoverHandler('plasmid')} />
+			<PlasmidViewer name="pUC19" size={2686} parts={plasmidParts} cutSites={plasmidCutSites} topology="circular" selectionState={sharedSelection} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={hoverHandler('plasmid')} />
 		</div>
 		<div class="controls-col">
-			<label><input type="checkbox" bind:checked={plasmidShowLabels} /> Labels</label>
 			<label><input type="checkbox" bind:checked={plasmidShowTicks} /> Tick marks</label>
 			<label><input type="checkbox" bind:checked={plasmidShowInternal} /> Internal labels</label>
 		</div>

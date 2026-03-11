@@ -73,8 +73,8 @@
 		min-width: 180px;
 		max-width: 280px;
 		padding: 10px 14px;
-		background: var(--hatch-tooltip-bg, #141c26);
-		border: 1px solid var(--hatch-tooltip-border, #2a3848);
+		background: var(--hatch-bg, #0c1018);
+		border: 1px solid var(--hatch-border, #2a3848);
 		border-radius: 6px;
 		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 		pointer-events: none;
@@ -84,10 +84,10 @@
 	.tooltip-title {
 		font-size: 12px;
 		font-weight: 700;
-		color: var(--hatch-tooltip-text, var(--hatch-text, #d4dce6));
+		color: var(--hatch-text, #d4dce6);
 		margin-bottom: 6px;
 		padding-bottom: 4px;
-		border-bottom: 1px solid var(--hatch-tooltip-border, var(--hatch-border, #2a3848));
+		border-bottom: 1px solid var(--hatch-border, #2a3848);
 	}
 
 	.tooltip-items {
@@ -105,14 +105,14 @@
 
 	.tooltip-label {
 		font-size: 10px;
-		color: var(--hatch-tooltip-label, var(--hatch-text-muted, #8a95a5));
+		color: var(--hatch-text-muted, #8a95a5);
 		white-space: nowrap;
 	}
 
 	.tooltip-value {
 		font-size: 11px;
 		font-weight: 600;
-		color: var(--hatch-tooltip-text, var(--hatch-text, #d4dce6));
+		color: var(--hatch-text, #d4dce6);
 		text-align: right;
 	}
 

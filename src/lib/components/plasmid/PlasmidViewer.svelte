@@ -1,13 +1,11 @@
 <script lang="ts">
 	import type { Part, CutSite } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
-	import { formatBp, computeCircularAnnotationLayers, arcMidpoint, bpToXY, bpToAngle, relaxLabels } from '../../util/coordinates.js';
-	import type { LabelPosition } from '../../util/coordinates.js';
+	import { formatBp, computeCircularAnnotationLayers } from '../../util/coordinates.js';
 	import { getFeatureColor, isPrimer, PRIMER_COLOR } from '../../util/colors.js';
 	import PlasmidRing from './PlasmidRing.svelte';
 	import PartArc from './PartArc.svelte';
 	import CutSiteMarker from './CutSiteMarker.svelte';
-	import PlasmidLabel from './PlasmidLabel.svelte';
 	import CircularSelection from './CircularSelection.svelte';
 	import type { HoverInfo } from '../../types/utility.js';
 
@@ -21,7 +19,6 @@
 		selectionState?: SelectionState;
 		width?: number;
 		height?: number;
-		showLabels?: boolean;
 		showTicks?: boolean;
 		showInternalLabels?: boolean;
 		/** Sequence topology */
@@ -42,7 +39,6 @@
 		selectionState,
 		width = 500,
 		height = 500,
-		showLabels = true,
 		showTicks = true,
 		showInternalLabels = true,
 		topology = 'circular',
@@ -59,14 +55,13 @@
 	let cx = $derived(width / 2);
 	let cy = $derived(height / 2);
 
-	let baseRadius = $derived(Math.min(width, height) * 0.32);
+	let baseRadius = $derived(Math.min(width, height) * 0.36);
 
 	// --- Layer computation ---
 
 	const PART_WIDTH = 14;
 	const PART_GAP = 4;
 	const CUTSITE_SPACE = 14;
-	const LABEL_PADDING = 16;
 
 	/** Split parts into features and primers (no enrichment — plasmid shows simple arcs) */
 	let features = $derived(parts.filter(p => !isPrimer(p)));
@@ -149,8 +144,8 @@
 			: 4)
 	);
 
-	/** Outer label radius (above forward primers — now outermost ring) */
-	let labelRadius = $derived(
+	/** Outermost ring radius (for selection overlay width) */
+	let outerRingRadius = $derived(
 		primerForwardRadius +
 		(forwardPrimers.length > 0
 			? (maxForwardPrimerLayer + 1) * (PART_WIDTH + PART_GAP)
@@ -237,6 +232,62 @@
 
 	// Selection interaction state
 	let isSelectDragging = $state(false);
+
+	// --- Selection-based center annotations ---
+	type SelectionEntry = { name: string; color: string; bold?: boolean };
+
+	/** Check if two circular ranges overlap */
+	function rangesOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number): boolean {
+		// Normalize to length-based check for circular ranges
+		function contains(rStart: number, rEnd: number, bp: number): boolean {
+			if (rStart <= rEnd) return bp >= rStart && bp < rEnd;
+			return bp >= rStart || bp < rEnd;
+		}
+		// Two ranges overlap if either contains part of the other
+		if (contains(aStart, aEnd, bStart)) return true;
+		if (contains(aStart, aEnd, bEnd > 0 ? bEnd - 1 : size - 1)) return true;
+		if (contains(bStart, bEnd, aStart)) return true;
+		return false;
+	}
+
+	/** Selection range + annotations within it */
+	let selectionInfo = $derived.by((): {
+		start: number; end: number; length: number;
+		items: SelectionEntry[]; overflow: number;
+	} | null => {
+		if (!selectionState) return null;
+		const range = selectionState.range;
+		if (!range) return null;
+		let len = range.end - range.start;
+		if (len <= 0) len += size;
+
+		const entries: SelectionEntry[] = [];
+		for (const p of features) {
+			if (rangesOverlap(range.start, range.end, p.start, p.end)) {
+				entries.push({ name: p.label ?? p.name, color: getFeatureColor(p.type, p.color) });
+			}
+		}
+		for (const p of primers) {
+			if (rangesOverlap(range.start, range.end, p.start, p.end)) {
+				entries.push({ name: p.label ?? p.name, color: PRIMER_COLOR });
+			}
+		}
+		for (const cs of cutSites) {
+			const csEnd = cs.end ?? cs.position + 1;
+			if (rangesOverlap(range.start, range.end, cs.position, csEnd)) {
+				entries.push({ name: cs.enzyme, color: '#d45858', bold: uniqueCutters.has(cs.enzyme) });
+			}
+		}
+
+		const MAX_SHOWN = 6;
+		return {
+			start: range.start,
+			end: range.end,
+			length: len,
+			items: entries.slice(0, MAX_SHOWN),
+			overflow: entries.length > MAX_SHOWN ? entries.length - MAX_SHOWN : 0,
+		};
+	});
 
 	/** Convert mouse position to bp on the circular map */
 	function mouseToBp(e: MouseEvent): number {
@@ -389,171 +440,6 @@
 	}
 
 	let sizeLabel = $derived(formatBp(size));
-
-	/**
-	 * Unified label positions: parts + cut sites.
-	 * Forward parts + cut sites go to outer labels; reverse parts go to inner labels.
-	 * Each group is relaxed separately.
-	 */
-	let allLabels = $derived.by(() => {
-		if (!showLabels) return { part: [] as any[], cutSite: [] as any[] };
-
-		type RawLabel = LabelPosition & {
-			kind: 'part' | 'cutSite';
-			color: string;
-			index: number;
-			bold?: boolean;
-			partRef?: Part; // direct Part reference for hover/click
-		};
-
-		const raw: RawLabel[] = [];
-
-		// Feature labels — only when internal label can't fit the full name
-		const CHAR_WIDTH = 5.5; // approximate px per char at font-size 9px
-		const ARROW_TIP_PX = 20; // arrowhead eats into usable text area
-		for (let i = 0; i < features.length; i++) {
-			const p = features[i];
-			const ri = featureRenderInfo.get(i);
-			if (!ri) continue;
-			const effectiveR = ri.radius + ri.yOffset * (PART_WIDTH + PART_GAP);
-			let bpLen = p.end - p.start;
-			if (bpLen < 0) bpLen += size;
-			const arcLenPx = (bpLen / size) * TWO_PI * effectiveR;
-			const labelText = p.label ?? p.name;
-			const textWidthPx = labelText.length * CHAR_WIDTH + 8;
-			if (showInternalLabels && (arcLenPx - ARROW_TIP_PX) >= textWidthPx) continue;
-
-			const mid = arcMidpoint(p.start, p.end, size, effectiveR, cx, cy);
-			const dx = mid.x - cx;
-			const dy = mid.y - cy;
-			const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-			const pushR = labelRadius + LABEL_PADDING;
-			raw.push({
-				x: cx + (dx / dist) * pushR,
-				y: cy + (dy / dist) * pushR,
-				angle: mid.angle,
-				text: labelText,
-				anchorX: mid.x,
-				anchorY: mid.y,
-				kind: 'part',
-				color: getFeatureColor(p.type, p.color),
-				index: i,
-				partRef: p,
-			});
-		}
-
-		// Primer labels — use full span
-		for (let i = 0; i < allPrimers.length; i++) {
-			const p = allPrimers[i];
-			const ri = primerRenderInfo.get(i);
-			if (!ri) continue;
-			const effectiveR = ri.radius + ri.yOffset * (PART_WIDTH + PART_GAP);
-			let bpLen = p.end - p.start;
-			if (bpLen < 0) bpLen += size;
-			const arcLenPx = (bpLen / size) * TWO_PI * effectiveR;
-			const labelText = p.label ?? p.name;
-			const textWidthPx = labelText.length * CHAR_WIDTH + 8;
-			if (showInternalLabels && arcLenPx >= textWidthPx) continue;
-
-			const mid = arcMidpoint(p.start, p.end, size, effectiveR, cx, cy);
-			const dx = mid.x - cx;
-			const dy = mid.y - cy;
-			const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-			const pushR = labelRadius + LABEL_PADDING;
-			raw.push({
-				x: cx + (dx / dist) * pushR,
-				y: cy + (dy / dist) * pushR,
-				angle: mid.angle,
-				text: labelText,
-				anchorX: mid.x,
-				anchorY: mid.y,
-				kind: 'part',
-				color: PRIMER_COLOR,
-				index: -1,
-				partRef: p,
-			});
-		}
-
-		// Cut site labels — clustered, one label per group
-		for (let ci = 0; ci < cutSiteClusters.length; ci++) {
-			const cluster = cutSiteClusters[ci];
-			const pt = bpToXY(cluster.primary.position, size, baseRadius, cx, cy);
-			const dx = pt.x - cx;
-			const dy = pt.y - cy;
-			const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-			const pushR = labelRadius + LABEL_PADDING;
-			const angle = Math.atan2(dy, dx);
-			const labelText = cluster.enzymes.length === 1
-				? cluster.primary.enzyme
-				: `${cluster.primary.enzyme} +${cluster.enzymes.length - 1}`;
-			raw.push({
-				x: cx + (dx / dist) * pushR,
-				y: cy + (dy / dist) * pushR,
-				angle,
-				text: labelText,
-				anchorX: pt.x,
-				anchorY: pt.y,
-				kind: 'cutSite',
-				color: '#d45858',
-				index: ci, // cluster index
-				bold: cluster.enzymes.length === 1 && uniqueCutters.has(cluster.primary.enzyme),
-			});
-		}
-
-		// Single unified relaxation pass
-		const relaxed = relaxLabels(raw, labelRadius + 60, 18);
-
-		// Soft clamp: prevent labels from flying too far beyond viewport
-		// Labels are allowed to extend past edges (overflow:visible) but we
-		// keep them within a generous margin so connectors stay reasonable.
-		const MARGIN = -40; // allow up to 40px outside viewport
-		for (const label of relaxed) {
-			label.y = Math.max(MARGIN, Math.min(height - MARGIN, label.y));
-			const textWidth = label.text.length * 6;
-			const isLeft = label.x < cx;
-			if (isLeft) {
-				if (label.x - textWidth < MARGIN) label.x = MARGIN + textWidth;
-			} else {
-				if (label.x + textWidth > width - MARGIN) label.x = width - MARGIN - textWidth;
-			}
-		}
-
-		// Auto-merge labels that are too close after relaxation
-		const MERGE_DIST = 16; // px threshold — labels closer than this get merged
-		const merged: typeof relaxed = [];
-		const used = new Set<number>();
-		for (let i = 0; i < relaxed.length; i++) {
-			if (used.has(i)) continue;
-			const base = relaxed[i] as RawLabel;
-			const group = [base];
-			for (let j = i + 1; j < relaxed.length; j++) {
-				if (used.has(j)) continue;
-				const other = relaxed[j] as RawLabel;
-				const dx2 = base.x - other.x;
-				const dy2 = base.y - other.y;
-				if (Math.sqrt(dx2 * dx2 + dy2 * dy2) < MERGE_DIST) {
-					group.push(other);
-					used.add(j);
-				}
-			}
-			if (group.length > 1) {
-				base.text = `${base.text} +${group.length - 1}`;
-			}
-			merged.push(base);
-		}
-
-		// Split into categories
-		const partLabels: typeof relaxed = [];
-		const cutSiteLabels: typeof relaxed = [];
-
-		for (const label of merged) {
-			const rl = label as RawLabel;
-			if (rl.kind === 'part') partLabels.push(label);
-			else cutSiteLabels.push(label);
-		}
-
-		return { part: partLabels, cutSite: cutSiteLabels };
-	});
 </script>
 
 <div class="plasmid-viewer" style:width="{width}px" style:height="{height}px" style:position="relative">
@@ -563,7 +449,6 @@
 			{width}
 			{height}
 			viewBox="0 0 {width} {height}"
-			overflow="visible"
 			xmlns="http://www.w3.org/2000/svg"
 			role="application"
 			aria-label="Circular plasmid map for {name}"
@@ -571,31 +456,11 @@
 			onmousedown={handleMouseDown}
 			onmousemove={handleMouseMove}
 			onmouseup={handleMouseUp}
-			onmouseleave={handleMouseUp}
+			onmouseleave={handleMouseLeave}
 			style:cursor={isRotating ? 'grabbing' : (selectionState ? 'crosshair' : 'grab')}
 		>
 		<g transform="rotate({rotationDeg}, {cx}, {cy})">
-			<!-- Layer 1: Label connector lines (behind everything) -->
-			{#if showLabels}
-				{#each [...allLabels.part, ...allLabels.cutSite] as lbl (lbl.text + lbl.anchorX + '-conn')}
-					{@const rl = lbl as any}
-					<PlasmidLabel
-						name={lbl.text}
-						x={lbl.x}
-						y={lbl.y}
-						anchorX={lbl.anchorX}
-						anchorY={lbl.anchorY}
-						{cx}
-						{cy}
-						labelRadius={labelRadius}
-						color={rl.color}
-						renderPart="connector"
-						counterRotation={-rotationDeg}
-					/>
-				{/each}
-			{/if}
-
-			<!-- Layer 2: Selection overlay (behind backbone but above connectors) -->
+			<!-- Layer 1: Selection overlay -->
 			{#if selectionState}
 				<CircularSelection
 					selection={selectionState}
@@ -603,11 +468,11 @@
 					radius={baseRadius - SCALE_BAND - 4}
 					{cx}
 					{cy}
-					width={labelRadius - baseRadius + SCALE_BAND + 12}
+					width={outerRingRadius - baseRadius + SCALE_BAND + 12}
 				/>
 			{/if}
 
-			<!-- Layer 3: Backbone ring with scale band -->
+			<!-- Layer 2: Backbone ring with scale band -->
 			<PlasmidRing {size} radius={baseRadius} {cx} {cy} {showTicks} rotation={rotationDeg} />
 
 			<!-- Layer 4: Cut site markers on the backbone ring -->
@@ -624,7 +489,7 @@
 				/>
 			{/each}
 
-			<!-- Layer 5a: Feature arcs (inner ring, closer to backbone) -->
+			<!-- Layer 5a: Feature arcs -->
 			{#each features as feature, i (feature.name + feature.start)}
 				{@const ri = featureRenderInfo.get(i)}
 				<PartArc
@@ -643,7 +508,7 @@
 				/>
 			{/each}
 
-			<!-- Layer 5b: Primer arcs (outer ring, half-opaque teal, no overhangs/mismatches) -->
+			<!-- Layer 5b: Primer arcs -->
 			{#each allPrimers as primer, i (primer.name + primer.start + '-primer')}
 				{@const ri = primerRenderInfo.get(i)}
 				<PartArc
@@ -666,72 +531,72 @@
 				/>
 			{/each}
 
-			<!-- Layer 6: Label dots + text (on top of everything) -->
-			{#if showLabels}
-				{#each allLabels.part as lbl (lbl.text + lbl.anchorX + '-lbl')}
-					{@const rl = lbl as any}
-					{@const part = rl.partRef as Part | undefined}
-					<PlasmidLabel
-						name={lbl.text}
-						x={lbl.x}
-						y={lbl.y}
-						anchorX={lbl.anchorX}
-						anchorY={lbl.anchorY}
-						{cx}
-						{cy}
-						labelRadius={labelRadius}
-						color={rl.color}
-						renderPart="label"
-						counterRotation={-rotationDeg}
-						onmouseenter={part ? (e) => handlePartMouseEnter(e, part) : undefined}
-						onmouseleave={handleMouseLeave}
-						onclick={part ? () => handlePartClick(part) : undefined}
-					/>
-				{/each}
-				{#each allLabels.cutSite as lbl (lbl.text + lbl.anchorX + '-lbl')}
-					{@const rl = lbl as any}
-					{@const cluster = cutSiteClusters[rl.index]}
-					<PlasmidLabel
-						name={lbl.text}
-						x={lbl.x}
-						y={lbl.y}
-						anchorX={lbl.anchorX}
-						anchorY={lbl.anchorY}
-						{cx}
-						{cy}
-						labelRadius={labelRadius}
-						color={rl.color}
-						renderPart="label"
-						counterRotation={-rotationDeg}
-						bold={rl.bold ?? false}
-						onmouseenter={(e) => handleClusterMouseEnter(e, cluster)}
-						onmouseleave={handleMouseLeave}
-						onclick={() => handleClusterClick(cluster)}
-					/>
-				{/each}
-			{/if}
-
 		</g>
 
-			<!-- Center text: plasmid name and size (outside rotation group) -->
-			<text
-				x={cx}
-				y={cy - 10}
-				text-anchor="middle"
-				dominant-baseline="central"
-				class="center-name"
-			>
-				{name}
-			</text>
-			<text
-				x={cx}
-				y={cy + 12}
-				text-anchor="middle"
-				dominant-baseline="central"
-				class="center-size"
-			>
-				{sizeLabel} bp
-			</text>
+			<!-- Center text (outside rotation group) -->
+			{#if selectionInfo}
+				{@const totalLines = 2 + selectionInfo.items.length + (selectionInfo.overflow > 0 ? 1 : 0)}
+				{@const startY = cy - ((totalLines - 1) * 13) / 2}
+				<!-- Selection range header -->
+				<text
+					x={cx}
+					y={startY}
+					text-anchor="middle"
+					dominant-baseline="central"
+					class="center-range"
+				>
+					{selectionInfo.start}..{selectionInfo.end} ({formatBp(selectionInfo.length)} bp)
+				</text>
+				<!-- Annotation list -->
+				{#each selectionInfo.items as entry, i (entry.name + i)}
+					<circle
+						cx={cx - 52}
+						cy={startY + (i + 1) * 13}
+						r="3"
+						fill={entry.color}
+					/>
+					<text
+						x={cx - 44}
+						y={startY + (i + 1) * 13}
+						dominant-baseline="central"
+						class="center-annotation"
+						font-weight={entry.bold ? 700 : 400}
+					>
+						{entry.name}
+					</text>
+				{/each}
+				{#if selectionInfo.overflow > 0}
+					<text
+						x={cx}
+						y={startY + (selectionInfo.items.length + 1) * 13}
+						text-anchor="middle"
+						dominant-baseline="central"
+						class="center-overflow"
+					>
+						+{selectionInfo.overflow} more
+					</text>
+				{/if}
+			{:else}
+				<!-- Default: plasmid name + size -->
+				<text
+					x={cx}
+					y={cy - 10}
+					text-anchor="middle"
+					dominant-baseline="central"
+					class="center-name"
+				>
+					{name}
+				</text>
+				<text
+					x={cx}
+					y={cy + 12}
+					text-anchor="middle"
+					dominant-baseline="central"
+					class="center-size"
+				>
+					{sizeLabel} bp
+				</text>
+			{/if}
 			</svg>
 	</div>
 
@@ -739,7 +604,7 @@
 	.plasmid-viewer {
 		display: inline-block;
 		background: var(--hatch-bg, #0c1018);
-		overflow: visible;
+		overflow: hidden;
 	}
 
 	.center-name {
@@ -752,6 +617,27 @@
 
 	.center-size {
 		font-size: 12px;
+		fill: var(--hatch-text-muted, #8a95a5);
+		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+		user-select: none;
+	}
+
+	.center-range {
+		font-size: 8px;
+		fill: var(--hatch-text-muted, #8a95a5);
+		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+		user-select: none;
+	}
+
+	.center-annotation {
+		font-size: 9px;
+		fill: var(--hatch-text, #d4dce6);
+		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+		user-select: none;
+	}
+
+	.center-overflow {
+		font-size: 8px;
 		fill: var(--hatch-text-muted, #8a95a5);
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
 		user-select: none;

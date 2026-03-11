@@ -12,6 +12,12 @@ export interface Part {
 	note?: string;
 	tm?: number;
 	sequence?: string;
+	/** Start of binding region (for primers with overhangs) */
+	bindingStart?: number;
+	/** End of binding region (for primers with overhangs) */
+	bindingEnd?: number;
+	/** Positions of mismatched bases (absolute bp positions) */
+	mismatches?: number[];
 }
 
 export interface CutSite {

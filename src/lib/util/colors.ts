@@ -135,6 +135,14 @@ export const categoricalColors = [
 	'#C4A54A', '#5B92CC', '#CF7F5F', '#6BBF9A', '#B07DB8',
 ];
 
+/** Primer color — teal */
+export const PRIMER_COLOR = '#22d3ee';
+
+/** Check if a part is a primer */
+export function isPrimer(part: { type: string }): boolean {
+	return part.type === 'primer_bind' || part.type === 'primer';
+}
+
 /** Get a feature color, falling back to a default */
 export function getFeatureColor(type: string, customColor?: string): string {
 	return customColor ?? featureColors[type] ?? '#8c564b';

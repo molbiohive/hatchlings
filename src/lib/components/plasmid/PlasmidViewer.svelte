@@ -403,12 +403,14 @@
 			color: string;
 			index: number;
 			bold?: boolean;
+			partRef?: Part; // direct Part reference for hover/click
 		};
 
 		const raw: RawLabel[] = [];
 
 		// Feature labels — only when internal label can't fit the full name
 		const CHAR_WIDTH = 5.5; // approximate px per char at font-size 9px
+		const ARROW_TIP_PX = 20; // arrowhead eats into usable text area
 		for (let i = 0; i < features.length; i++) {
 			const p = features[i];
 			const ri = featureRenderInfo.get(i);
@@ -419,7 +421,7 @@
 			const arcLenPx = (bpLen / size) * TWO_PI * effectiveR;
 			const labelText = p.label ?? p.name;
 			const textWidthPx = labelText.length * CHAR_WIDTH + 8;
-			if (showInternalLabels && arcLenPx >= textWidthPx) continue;
+			if (showInternalLabels && (arcLenPx - ARROW_TIP_PX) >= textWidthPx) continue;
 
 			const mid = arcMidpoint(p.start, p.end, size, effectiveR, cx, cy);
 			const dx = mid.x - cx;
@@ -436,6 +438,7 @@
 				kind: 'part',
 				color: getFeatureColor(p.type, p.color),
 				index: i,
+				partRef: p,
 			});
 		}
 
@@ -466,7 +469,8 @@
 				anchorY: mid.y,
 				kind: 'part',
 				color: PRIMER_COLOR,
-				index: -1, // primer — not indexed into features
+				index: -1,
+				partRef: p,
 			});
 		}
 
@@ -514,11 +518,35 @@
 			}
 		}
 
+		// Auto-merge labels that are too close after relaxation
+		const MERGE_DIST = 16; // px threshold — labels closer than this get merged
+		const merged: typeof relaxed = [];
+		const used = new Set<number>();
+		for (let i = 0; i < relaxed.length; i++) {
+			if (used.has(i)) continue;
+			const base = relaxed[i] as RawLabel;
+			const group = [base];
+			for (let j = i + 1; j < relaxed.length; j++) {
+				if (used.has(j)) continue;
+				const other = relaxed[j] as RawLabel;
+				const dx2 = base.x - other.x;
+				const dy2 = base.y - other.y;
+				if (Math.sqrt(dx2 * dx2 + dy2 * dy2) < MERGE_DIST) {
+					group.push(other);
+					used.add(j);
+				}
+			}
+			if (group.length > 1) {
+				base.text = `${base.text} +${group.length - 1}`;
+			}
+			merged.push(base);
+		}
+
 		// Split into categories
 		const partLabels: typeof relaxed = [];
 		const cutSiteLabels: typeof relaxed = [];
 
-		for (const label of relaxed) {
+		for (const label of merged) {
 			const rl = label as RawLabel;
 			if (rl.kind === 'part') partLabels.push(label);
 			else cutSiteLabels.push(label);
@@ -624,6 +652,7 @@
 					radius={ri?.radius ?? primerForwardRadius}
 					{cx}
 					{cy}
+					width={7}
 					yOffset={ri?.yOffset ?? 0}
 					showInternalLabel={showInternalLabels}
 					rotation={rotationDeg}
@@ -641,7 +670,7 @@
 			{#if showLabels}
 				{#each allLabels.part as lbl (lbl.text + lbl.anchorX + '-lbl')}
 					{@const rl = lbl as any}
-					{@const part = rl.index >= 0 ? features[rl.index] : undefined}
+					{@const part = rl.partRef as Part | undefined}
 					<PlasmidLabel
 						name={lbl.text}
 						x={lbl.x}

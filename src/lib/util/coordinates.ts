@@ -407,8 +407,7 @@ export function computeCircularAnnotationLayers(
 
 /**
  * Relax label positions to avoid overlaps.
- * Uses force-directed relaxation with decay over multiple passes.
- * Considers approximate text width for better collision detection.
+ * Force-directed relaxation with decay over multiple passes.
  */
 export function relaxLabels(
 	labels: LabelPosition[],
@@ -416,27 +415,18 @@ export function relaxLabels(
 	spacing: number = 18,
 ): LabelPosition[] {
 	if (labels.length === 0) return [];
-
-	// Sort by angle
 	const sorted = [...labels].sort((a, b) => a.angle - b.angle);
-
 	const PASSES = 20;
 	for (let pass = 0; pass < PASSES; pass++) {
-		const decay = 1 - pass / PASSES; // force decays over iterations
+		const decay = 1 - pass / PASSES;
 		for (let i = 0; i < sorted.length; i++) {
 			for (let j = i + 1; j < sorted.length; j++) {
 				const dy = sorted[j].y - sorted[i].y;
 				const dx = sorted[j].x - sorted[i].x;
-				// Approximate text width: ~6px per character
 				const widthI = sorted[i].text.length * 6;
 				const widthJ = sorted[j].text.length * 6;
 				const minDx = (widthI + widthJ) / 2 + 4;
-				const minDy = spacing;
-				// Check overlap using both dimensions
-				const overlapX = Math.abs(dx) < minDx;
-				const overlapY = Math.abs(dy) < minDy;
-				if (overlapX && overlapY) {
-					const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+				if (Math.abs(dx) < minDx && Math.abs(dy) < spacing) {
 					const push = (spacing - Math.abs(dy)) / 2 * decay;
 					const angle = Math.atan2(dy || 0.1, dx || 0.1);
 					sorted[j].x += Math.cos(angle) * push;
@@ -447,7 +437,6 @@ export function relaxLabels(
 			}
 		}
 	}
-
 	return sorted;
 }
 

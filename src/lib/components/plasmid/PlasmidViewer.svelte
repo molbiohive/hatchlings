@@ -1,11 +1,13 @@
 <script lang="ts">
 	import type { Part, CutSite } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
-	import { formatBp, computeCircularAnnotationLayers } from '../../util/coordinates.js';
+	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels } from '../../util/coordinates.js';
+	import type { LabelPosition } from '../../util/coordinates.js';
 	import { getFeatureColor, isPrimer, PRIMER_COLOR } from '../../util/colors.js';
 	import PlasmidRing from './PlasmidRing.svelte';
 	import PartArc from './PartArc.svelte';
 	import CutSiteMarker from './CutSiteMarker.svelte';
+	import PlasmidLabel from './PlasmidLabel.svelte';
 	import CircularSelection from './CircularSelection.svelte';
 	import type { HoverInfo } from '../../types/utility.js';
 
@@ -198,28 +200,87 @@
 		return unique;
 	});
 
-	/** Cluster nearby cut sites for label display */
-	const CLUSTER_BP = 30; // bp threshold for grouping
-	type CutSiteCluster = { primary: CutSite; primaryIndex: number; enzymes: string[]; indices: number[] };
-	let cutSiteClusters = $derived.by(() => {
-		if (cutSites.length === 0) return [] as CutSiteCluster[];
+	/** Label radius (just beyond outermost ring) */
+	const LABEL_PADDING = 16;
+	let labelRadius = $derived(outerRingRadius);
+
+	/** Cluster nearby cut sites into single labels */
+	const CLUSTER_BP = 30;
+	let cutSiteLabels = $derived.by(() => {
+		if (cutSites.length === 0) return [] as (LabelPosition & { color: string; bold: boolean; cutSite: CutSite })[];
+
+		// Cluster nearby sites
 		const sorted = cutSites.map((cs, i) => ({ cs, i })).sort((a, b) => a.cs.position - b.cs.position);
-		const clusters: CutSiteCluster[] = [];
+		type Cluster = { primary: CutSite; enzymes: string[] };
+		const clusters: Cluster[] = [];
 		for (const entry of sorted) {
 			const last = clusters[clusters.length - 1];
 			if (last && entry.cs.position - last.primary.position <= CLUSTER_BP) {
 				last.enzymes.push(entry.cs.enzyme);
-				last.indices.push(entry.i);
 			} else {
-				clusters.push({
-					primary: entry.cs,
-					primaryIndex: entry.i,
-					enzymes: [entry.cs.enzyme],
-					indices: [entry.i],
-				});
+				clusters.push({ primary: entry.cs, enzymes: [entry.cs.enzyme] });
 			}
 		}
-		return clusters;
+
+		// Build label positions
+		const raw: (LabelPosition & { color: string; bold: boolean; cutSite: CutSite })[] = [];
+		for (const cluster of clusters) {
+			const pt = bpToXY(cluster.primary.position, size, baseRadius, cx, cy);
+			const dx = pt.x - cx;
+			const dy = pt.y - cy;
+			const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+			const pushR = labelRadius + LABEL_PADDING;
+			const angle = Math.atan2(dy, dx);
+			const text = cluster.enzymes.length === 1
+				? cluster.primary.enzyme
+				: `${cluster.primary.enzyme} +${cluster.enzymes.length - 1}`;
+			raw.push({
+				x: cx + (dx / dist) * pushR,
+				y: cy + (dy / dist) * pushR,
+				angle,
+				text,
+				anchorX: pt.x,
+				anchorY: pt.y,
+				color: '#d45858',
+				bold: cluster.enzymes.length === 1 && uniqueCutters.has(cluster.primary.enzyme),
+				cutSite: cluster.primary,
+			});
+		}
+
+		// Cap at 24, merge angular neighbors if too many
+		const MAX_LABELS = 24;
+		let capped = raw;
+		if (raw.length > MAX_LABELS) {
+			const byAngle = [...raw].sort((a, b) => a.angle - b.angle);
+			const minGap = TWO_PI / MAX_LABELS;
+			capped = [];
+			let i = 0;
+			while (i < byAngle.length) {
+				const leader = { ...byAngle[i] };
+				let count = 1;
+				let j = i + 1;
+				while (j < byAngle.length && byAngle[j].angle - leader.angle < minGap) { count++; j++; }
+				if (count > 1) leader.text = `${leader.text} +${count - 1}`;
+				capped.push(leader);
+				i = j;
+			}
+		}
+
+		const relaxed = relaxLabels(capped, labelRadius + 60, 18);
+
+		// Soft clamp to viewport
+		const MARGIN = -40;
+		for (const lbl of relaxed) {
+			lbl.y = Math.max(MARGIN, Math.min(height - MARGIN, lbl.y));
+			const tw = lbl.text.length * 6;
+			if (lbl.x < cx) {
+				if (lbl.x - tw < MARGIN) lbl.x = MARGIN + tw;
+			} else {
+				if (lbl.x + tw > width - MARGIN) lbl.x = width - MARGIN - tw;
+			}
+		}
+
+		return relaxed as typeof raw;
 	});
 
 	let selectedPart: Part | null = $state(null);
@@ -383,27 +444,12 @@
 		});
 	}
 
-	function handleClusterMouseEnter(e: MouseEvent, cluster: CutSiteCluster) {
-		onhoverinfo?.({
-			title: cluster.enzymes.length === 1 ? cluster.primary.enzyme : `${cluster.primary.enzyme} +${cluster.enzymes.length - 1}`,
-			items: [
-				{ label: 'Position', value: cluster.primary.position, unit: 'bp' },
-				...(cluster.enzymes.length > 1
-					? [{ label: 'Enzymes', value: cluster.enzymes.join(', ') }]
-					: [{ label: 'Strand', value: cluster.primary.strand === 1 ? 'Forward (+)' : 'Reverse (-)' }]),
-			],
-			position: { x: e.clientX, y: e.clientY },
-		});
-	}
-
-	function handleClusterClick(cluster: CutSiteCluster) {
-		const start = cluster.primary.position;
-		const last = cutSites[cluster.indices[cluster.indices.length - 1]];
-		const end = cutSiteEnd(last);
+	function handleLabelClick(cutSite: CutSite) {
+		const end = cutSiteEnd(cutSite);
 		if (selectionState) {
-			selectionState.setSelection(start, end);
-			onselect?.({ start, end });
-			onselectionchange?.({ start, end });
+			selectionState.setSelection(cutSite.position, end);
+			onselect?.({ start: cutSite.position, end });
+			onselectionchange?.({ start: cutSite.position, end });
 		}
 	}
 
@@ -440,6 +486,15 @@
 	}
 
 	let sizeLabel = $derived(formatBp(size));
+
+	/** Truncate name to fit inside the inner circle */
+	const CENTER_CHAR_PX = 9.5; // approximate px per char at 16px mono
+	let displayName = $derived.by(() => {
+		const maxWidth = (reverseRadius - 16) * 2; // diameter minus padding
+		const maxChars = Math.floor(maxWidth / CENTER_CHAR_PX);
+		if (name.length <= maxChars) return name;
+		return name.slice(0, maxChars - 1) + '\u2026';
+	});
 </script>
 
 <div class="plasmid-viewer" style:width="{width}px" style:height="{height}px" style:position="relative">
@@ -460,6 +515,23 @@
 			style:cursor={isRotating ? 'grabbing' : (selectionState ? 'crosshair' : 'grab')}
 		>
 		<g transform="rotate({rotationDeg}, {cx}, {cy})">
+			<!-- Layer 0: Cut site label connector lines (behind everything) -->
+			{#each cutSiteLabels as lbl (lbl.text + lbl.anchorX + '-conn')}
+				<PlasmidLabel
+					name={lbl.text}
+					x={lbl.x}
+					y={lbl.y}
+					anchorX={lbl.anchorX}
+					anchorY={lbl.anchorY}
+					{cx}
+					{cy}
+					labelRadius={labelRadius}
+					color={lbl.color}
+					renderPart="connector"
+					counterRotation={-rotationDeg}
+				/>
+			{/each}
+
 			<!-- Layer 1: Selection overlay -->
 			{#if selectionState}
 				<CircularSelection
@@ -531,6 +603,27 @@
 				/>
 			{/each}
 
+			<!-- Layer 6: Cut site label text -->
+			{#each cutSiteLabels as lbl (lbl.text + lbl.anchorX + '-lbl')}
+				<PlasmidLabel
+					name={lbl.text}
+					x={lbl.x}
+					y={lbl.y}
+					anchorX={lbl.anchorX}
+					anchorY={lbl.anchorY}
+					{cx}
+					{cy}
+					labelRadius={labelRadius}
+					color={lbl.color}
+					renderPart="label"
+					counterRotation={-rotationDeg}
+					bold={lbl.bold}
+					onmouseenter={(e) => handleCutSiteMouseEnter(e, lbl.cutSite)}
+					onmouseleave={handleMouseLeave}
+					onclick={() => handleLabelClick(lbl.cutSite)}
+				/>
+			{/each}
+
 		</g>
 
 			<!-- Center text (outside rotation group) -->
@@ -585,7 +678,7 @@
 					dominant-baseline="central"
 					class="center-name"
 				>
-					{name}
+					{displayName}
 				</text>
 				<text
 					x={cx}

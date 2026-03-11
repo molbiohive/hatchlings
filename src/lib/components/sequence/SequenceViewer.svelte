@@ -286,7 +286,7 @@
 		const bp = bpFromMouseEvent(e);
 		if (bp >= 0) {
 			if (selectionState) {
-				selectionState.updateDrag(bp);
+				selectionState.updateDragLinear(bp);
 			} else {
 				internalSelEnd = bp;
 			}

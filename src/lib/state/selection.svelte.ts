@@ -64,16 +64,32 @@ export class SelectionState {
 		this.selectionEnd = -1;
 	}
 
+	/** Anchor position where the current drag started */
+	dragAnchor = -1;
+
 	startDrag(position: number): void {
 		this.isDragging = true;
-		this.selectionStart = Math.max(0, Math.min(position, this.sequenceLength));
-		this.selectionEnd = this.selectionStart;
-		this.caretPosition = position;
+		const clamped = Math.max(0, Math.min(position, this.sequenceLength));
+		this.dragAnchor = clamped;
+		this.selectionStart = clamped;
+		this.selectionEnd = clamped;
+		this.caretPosition = clamped;
 	}
 
-	updateDrag(position: number): void {
+	/** Update drag for linear selection (always normalizes to min/max) */
+	updateDragLinear(position: number): void {
 		if (!this.isDragging) return;
-		this.selectionEnd = Math.max(0, Math.min(position, this.sequenceLength));
+		const clamped = Math.max(0, Math.min(position, this.sequenceLength));
+		this.selectionStart = Math.min(this.dragAnchor, clamped);
+		this.selectionEnd = Math.max(this.dragAnchor, clamped);
+		this.caretPosition = clamped;
+	}
+
+	/** Update drag with explicit start/end (for circular selection with direction tracking) */
+	updateDragCircular(start: number, end: number): void {
+		if (!this.isDragging) return;
+		this.selectionStart = Math.max(0, Math.min(start, this.sequenceLength));
+		this.selectionEnd = Math.max(0, Math.min(end, this.sequenceLength));
 		this.caretPosition = this.selectionEnd;
 	}
 

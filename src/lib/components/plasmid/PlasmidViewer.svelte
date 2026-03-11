@@ -350,17 +350,25 @@
 		};
 	});
 
-	/** Convert mouse position to bp on the circular map */
-	function mouseToBp(e: MouseEvent): number {
+	/** Convert mouse event to rotation-corrected angle in radians [0, 2π) */
+	function mouseToAngle(e: MouseEvent): number {
 		const rect = svgElement?.getBoundingClientRect();
 		if (!rect) return 0;
 		const mx = e.clientX - rect.left - cx;
 		const my = e.clientY - rect.top - cy;
 		let angle = Math.atan2(my, mx) + Math.PI / 2;
 		angle -= (rotationDeg * Math.PI) / 180;
-		angle = ((angle % TWO_PI) + TWO_PI) % TWO_PI;
-		return Math.round((angle / TWO_PI) * size) % size;
+		return ((angle % TWO_PI) + TWO_PI) % TWO_PI;
 	}
+
+	/** Convert mouse position to bp on the circular map */
+	function mouseToBp(e: MouseEvent): number {
+		return Math.round((mouseToAngle(e) / TWO_PI) * size) % size;
+	}
+
+	// Drag direction tracking for circular selection
+	let lastDragAngle = 0;
+	let cumulativeDragAngle = 0;
 
 	function handleWheel(e: WheelEvent) {
 		e.preventDefault();
@@ -380,6 +388,8 @@
 			rotateStartRotation = rotationDeg;
 		} else if (selectionState) {
 			const bp = mouseToBp(e);
+			lastDragAngle = mouseToAngle(e);
+			cumulativeDragAngle = 0;
 			selectionState.startDrag(bp);
 			isSelectDragging = true;
 			oncaretmove?.(bp);
@@ -395,8 +405,27 @@
 			const currentAngle = Math.atan2(my, mx) * (180 / Math.PI);
 			rotationDeg = rotateStartRotation + (currentAngle - rotateStartAngle);
 		} else if (isSelectDragging && selectionState) {
-			const bp = mouseToBp(e);
-			selectionState.updateDrag(bp);
+			const angle = mouseToAngle(e);
+			// Compute shortest angular delta, handling the 0/2π wrap
+			let delta = angle - lastDragAngle;
+			if (delta > Math.PI) delta -= TWO_PI;
+			if (delta < -Math.PI) delta += TWO_PI;
+			cumulativeDragAngle += delta;
+			lastDragAngle = angle;
+
+			// Convert cumulative angle to bp offset from anchor
+			const bpOffset = Math.round((cumulativeDragAngle / TWO_PI) * size);
+			const anchor = selectionState.dragAnchor;
+
+			if (bpOffset >= 0) {
+				// Clockwise drag
+				const end = ((anchor + bpOffset) % size + size) % size;
+				selectionState.updateDragCircular(anchor, end);
+			} else {
+				// Counterclockwise drag
+				const start = ((anchor + bpOffset) % size + size) % size;
+				selectionState.updateDragCircular(start, anchor);
+			}
 		}
 	}
 

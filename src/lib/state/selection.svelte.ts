@@ -19,13 +19,12 @@ export class SelectionState {
 		this.sequenceLength = sequenceLength;
 	}
 
-	/** Normalized selection range (start < end), or null if no selection */
+	/** Selection range preserving drag direction, or null if no selection.
+	 *  start > end means the selection wraps around origin (circular). */
 	get range(): SelectionRange | null {
 		if (this.selectionStart < 0 || this.selectionEnd < 0) return null;
 		if (this.selectionStart === this.selectionEnd) return null;
-		const start = Math.min(this.selectionStart, this.selectionEnd);
-		const end = Math.max(this.selectionStart, this.selectionEnd);
-		return { start, end };
+		return { start: this.selectionStart, end: this.selectionEnd };
 	}
 
 	/** Whether there is an active selection (not just a caret) */
@@ -33,11 +32,19 @@ export class SelectionState {
 		return this.range !== null;
 	}
 
-	/** Length of current selection in bp */
+	/** Whether the current selection wraps around origin */
+	get wraps(): boolean {
+		const r = this.range;
+		if (!r) return false;
+		return r.start > r.end;
+	}
+
+	/** Length of current selection in bp (handles wrapping) */
 	get selectionLength(): number {
 		const r = this.range;
 		if (!r) return 0;
-		return r.end - r.start;
+		if (r.end >= r.start) return r.end - r.start;
+		return (this.sequenceLength - r.start) + r.end;
 	}
 
 	setCaret(position: number): void {

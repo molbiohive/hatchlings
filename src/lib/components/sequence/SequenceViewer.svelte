@@ -300,7 +300,10 @@
 				selectionState.endDrag();
 				const range = selectionState.range;
 				if (range) {
-					onselect?.({ start: range.start, end: range.end, sequence: seq.slice(range.start, range.end) });
+					const selSeq = range.start <= range.end
+						? seq.slice(range.start, range.end)
+						: seq.slice(range.start) + seq.slice(0, range.end);
+					onselect?.({ start: range.start, end: range.end, sequence: selSeq });
 				}
 			} else {
 				if (internalSelStart >= 0 && internalSelEnd >= 0 && internalSelStart !== internalSelEnd) {
@@ -312,15 +315,28 @@
 		}
 	}
 
+	/** Whether the selection wraps around origin (start > end) */
+	let selWraps = $derived(selRange ? selRange.start > selRange.end : false);
+
+	/** Check if a linear [rowStart, rowEnd) overlaps the selection (handles wrapping) */
+	function selOverlapsRow(rowStart: number, rowEnd: number): boolean {
+		if (!selRange) return false;
+		if (!selWraps) return selRange.start < rowEnd && selRange.end > rowStart;
+		// Wrapping: selection covers [start, seqLen) + [0, end)
+		return selRange.start < rowEnd || selRange.end > rowStart;
+	}
+
 	let selectionInfo = $derived.by(() => {
 		if (!selRange) return '';
-		const len = selRange.end - selRange.start;
-		if (len <= 0) return '';
-		const subseq = seq.slice(selRange.start, selRange.end).toUpperCase();
+		let len = selRange.end - selRange.start;
+		if (len === 0) return '';
+		if (len < 0) len += seq.length; // wrapping
+		const subseq = selWraps
+			? (seq.slice(selRange.start) + seq.slice(0, selRange.end)).toUpperCase()
+			: seq.slice(selRange.start, selRange.end).toUpperCase();
 		let gc = 0;
 		for (const ch of subseq) if (ch === 'G' || ch === 'C') gc++;
 		const gcPct = ((gc / len) * 100).toFixed(1);
-		// Basic Tm: Wallace rule (<14bp) or salt-adjusted (>=14bp)
 		let tm: string;
 		if (len < 14) {
 			tm = (2 * (len - gc) + 4 * gc).toFixed(0);
@@ -530,9 +546,13 @@
 
 				<g transform="translate(0, {rp.y})">
 					<!-- Selection highlight -->
-					{#if selRange && selRange.start < rowEnd && selRange.end > row.start}
-						{@const hlStart = Math.max(selRange.start, row.start)}
-						{@const hlEnd = Math.min(selRange.end, rowEnd)}
+					{#if selRange && selOverlapsRow(row.start, rowEnd)}
+						{@const hlStart = selWraps
+							? (row.start < selRange.end ? row.start : Math.max(selRange.start, row.start))
+							: Math.max(selRange.start, row.start)}
+						{@const hlEnd = selWraps
+							? (rowEnd > selRange.start ? rowEnd : Math.min(selRange.end, rowEnd))
+							: Math.min(selRange.end, rowEnd)}
 						<rect
 							x={SEQ_X + (hlStart - row.start) * effectiveCharWidth}
 							y={0}

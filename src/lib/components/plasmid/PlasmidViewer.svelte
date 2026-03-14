@@ -25,6 +25,8 @@
 		showInternalLabels?: boolean;
 		/** Sequence topology */
 		topology?: 'circular' | 'linear';
+		/** When false, disables all mouse/wheel/keyboard handlers, selection, and cut-site labels */
+		interactive?: boolean;
 		onselect?: (selection: { start: number; end: number }) => void;
 		onselectionchange?: (selection: { start: number; end: number } | null) => void;
 		oncaretmove?: (position: number) => void;
@@ -44,6 +46,7 @@
 		showTicks = true,
 		showInternalLabels = true,
 		topology = 'circular',
+		interactive = true,
 		onselect,
 		onselectionchange,
 		oncaretmove,
@@ -486,6 +489,16 @@
 		onhoverinfo?.(null);
 	}
 
+	function handleCenterEnter(e: MouseEvent) {
+		const items: { label: string; value: string | number; unit?: string }[] = [
+			{ label: 'Length', value: size, unit: 'bp' },
+			{ label: 'Topology', value: topology },
+		];
+		if (parts.length > 0) items.push({ label: 'Features', value: parts.length });
+		if (cutSites.length > 0) items.push({ label: 'Cut sites', value: cutSites.length });
+		onhoverinfo?.({ title: name, items, position: { x: e.clientX, y: e.clientY } });
+	}
+
 	function handlePartClick(part: Part) {
 		selectedPart = part;
 		onpartclick?.(part);
@@ -536,34 +549,36 @@
 			xmlns="http://www.w3.org/2000/svg"
 			role="application"
 			aria-label="Circular plasmid map for {name}"
-			onwheel={handleWheel}
-			onmousedown={handleMouseDown}
-			onmousemove={handleMouseMove}
-			onmouseup={handleMouseUp}
-			onmouseleave={handleMouseLeave}
-			style:cursor={isRotating ? 'grabbing' : (selectionState ? 'crosshair' : 'grab')}
+			onwheel={interactive ? handleWheel : undefined}
+			onmousedown={interactive ? handleMouseDown : undefined}
+			onmousemove={interactive ? handleMouseMove : undefined}
+			onmouseup={interactive ? handleMouseUp : undefined}
+			onmouseleave={interactive ? handleMouseLeave : undefined}
+			style:cursor={!interactive ? 'default' : isRotating ? 'grabbing' : (selectionState ? 'crosshair' : 'grab')}
 			style:outline="none"
 		>
 		<g transform="rotate({rotationDeg}, {cx}, {cy})">
 			<!-- Layer 0: Cut site label connector lines (behind everything) -->
-			{#each cutSiteLabels as lbl (lbl.text + lbl.anchorX + '-conn')}
-				<PlasmidLabel
-					name={lbl.text}
-					x={lbl.x}
-					y={lbl.y}
-					anchorX={lbl.anchorX}
-					anchorY={lbl.anchorY}
-					{cx}
-					{cy}
-					labelRadius={labelRadius}
-					color={lbl.color}
-					renderPart="connector"
-					counterRotation={-rotationDeg}
-				/>
-			{/each}
+			{#if interactive}
+				{#each cutSiteLabels as lbl (lbl.text + lbl.anchorX + '-conn')}
+					<PlasmidLabel
+						name={lbl.text}
+						x={lbl.x}
+						y={lbl.y}
+						anchorX={lbl.anchorX}
+						anchorY={lbl.anchorY}
+						{cx}
+						{cy}
+						labelRadius={labelRadius}
+						color={lbl.color}
+						renderPart="connector"
+						counterRotation={-rotationDeg}
+					/>
+				{/each}
+			{/if}
 
 			<!-- Layer 1: Selection overlay -->
-			{#if selectionState}
+			{#if interactive && selectionState}
 				<CircularSelection
 					selection={selectionState}
 					totalSize={size}
@@ -634,30 +649,43 @@
 			{/each}
 
 			<!-- Layer 6: Cut site label text -->
-			{#each cutSiteLabels as lbl (lbl.text + lbl.anchorX + '-lbl')}
-				<PlasmidLabel
-					name={lbl.text}
-					x={lbl.x}
-					y={lbl.y}
-					anchorX={lbl.anchorX}
-					anchorY={lbl.anchorY}
-					{cx}
-					{cy}
-					labelRadius={labelRadius}
-					color={lbl.color}
-					renderPart="label"
-					counterRotation={-rotationDeg}
-					bold={lbl.bold}
-					onmouseenter={(e) => handleCutSiteMouseEnter(e, lbl.cutSite)}
-					onmouseleave={handleMouseLeave}
-					onclick={() => handleLabelClick(lbl.cutSite)}
-				/>
-			{/each}
+			{#if interactive}
+				{#each cutSiteLabels as lbl (lbl.text + lbl.anchorX + '-lbl')}
+					<PlasmidLabel
+						name={lbl.text}
+						x={lbl.x}
+						y={lbl.y}
+						anchorX={lbl.anchorX}
+						anchorY={lbl.anchorY}
+						{cx}
+						{cy}
+						labelRadius={labelRadius}
+						color={lbl.color}
+						renderPart="label"
+						counterRotation={-rotationDeg}
+						bold={lbl.bold}
+						onmouseenter={(e) => handleCutSiteMouseEnter(e, lbl.cutSite)}
+						onmouseleave={handleMouseLeave}
+						onclick={() => handleLabelClick(lbl.cutSite)}
+					/>
+				{/each}
+			{/if}
 
 		</g>
 
+			<!-- Center hit area for hover info -->
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<circle
+				{cx} {cy}
+				r={baseRadius * 0.65}
+				fill="transparent"
+				onmouseenter={handleCenterEnter}
+				onmouseleave={handleMouseLeave}
+				style="cursor:default;"
+			/>
+
 			<!-- Center text (outside rotation group) -->
-			{#if selectionInfo}
+			{#if interactive && selectionInfo}
 				{@const totalLines = 2 + selectionInfo.items.length + (selectionInfo.overflow > 0 ? 1 : 0)}
 				{@const startY = cy - ((totalLines - 1) * 13) / 2}
 				<!-- Selection range header -->

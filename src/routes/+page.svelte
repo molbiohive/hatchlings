@@ -18,6 +18,7 @@
 	import SeqLogo from '$lib/components/charts/SeqLogo.svelte';
 	import BindingKineticsViewer from '$lib/components/charts/BindingKineticsViewer.svelte';
 	import CompositionChart from '$lib/components/charts/CompositionChart.svelte';
+	import { CloningHistoryViewer } from '$lib/components/cloning/index.js';
 
 	import type {
 		Part, CutSite, Translation,
@@ -25,6 +26,7 @@
 		AlignmentSequence, ConservationScore,
 		DoseResponseCurveData,
 		HoverInfo,
+		CloningNode,
 	} from '$lib/types/index.js';
 	import { Tooltip } from '$lib/components/shared/index.js';
 
@@ -356,8 +358,104 @@ END`;
 	const compositionCounts={A:58,T:42,G:55,C:48};
 	let compAlphabet: 'dna'|'rna'|'protein' = $state('dna');
 
+	// ========== CLONING HISTORY DATA ==========
+	// Cloning history — recursive tree with fictional demo constructs
+	const pTK_Backbone: CloningNode = {
+		id: 'ptk-bb', name: 'pTK-Express', size: 4820, topology: 'circular',
+		parts: [
+			{ name: 'mNeonGreen', type: 'CDS', start: 679, end: 1395, strand: 1, color: '#e6c84c' },
+			{ name: 'T7 pro', type: 'promoter', start: 1, end: 589, strand: 1, color: '#31a354' },
+			{ name: 'AmpR', type: 'CDS', start: 1631, end: 2425, strand: 1, color: '#4dc3ff' },
+			{ name: 'ColE1', type: 'rep_origin', start: 2844, end: 3432, strand: -1, color: '#9467bd' },
+			{ name: 'rrnB T1', type: 'terminator', start: 1420, end: 1580, strand: 1, color: '#e377c2' },
+			{ name: 'f1 ori', type: 'rep_origin', start: 3500, end: 3956, strand: 1, color: '#8c564b' },
+		],
+		cutSites: [
+			{ enzyme: 'EcoRI', position: 619, end: 625, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+			{ enzyme: 'NdeI', position: 668, end: 674, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+			{ enzyme: 'XhoI', position: 1402, end: 1410, strand: 1, cutPosition: 2, complementCutPosition: 6 },
+			{ enzyme: 'HindIII', position: 1413, end: 1419, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		],
+		description: 'Expression backbone vector',
+	};
+
+	const cblnRNA: CloningNode = {
+		id: 'cbln-rna', name: 'Cbln1.rna', size: 1620, topology: 'linear',
+		parts: [
+			{ name: 'Cbln1 CDS', type: 'CDS', start: 105, end: 690, strand: 1, color: '#f97316' },
+			{ name: "5' UTR", type: 'misc_feature', start: 0, end: 105, strand: 1, color: '#94a3b8' },
+			{ name: "3' UTR", type: 'misc_feature', start: 690, end: 1620, strand: 1, color: '#94a3b8' },
+		],
+		description: 'Cerebellin-1 mRNA template',
+	};
+
+	const fusionParts: Part[] = [
+		{ name: 'Cbln1', type: 'CDS', start: 679, end: 1369, strand: 1, color: '#f97316' },
+		{ name: 'mNeonGreen', type: 'CDS', start: 1369, end: 2085, strand: 1, color: '#e6c84c' },
+		{ name: 'T7 pro', type: 'promoter', start: 1, end: 589, strand: 1, color: '#31a354' },
+		{ name: 'AmpR', type: 'CDS', start: 2321, end: 3115, strand: 1, color: '#4dc3ff' },
+		{ name: 'ColE1', type: 'rep_origin', start: 3534, end: 4122, strand: -1, color: '#9467bd' },
+		{ name: 'rrnB T1', type: 'terminator', start: 2110, end: 2270, strand: 1, color: '#e377c2' },
+	];
+
+	const fusionCutSites: CutSite[] = [
+		{ enzyme: 'XhoI', position: 2092, end: 2100, strand: 1, cutPosition: 2, complementCutPosition: 6 },
+		{ enzyme: 'HindIII', position: 2103, end: 2109, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+		{ enzyme: 'BsaI', position: 620, end: 627, strand: 1, cutPosition: 4, complementCutPosition: 8 },
+	];
+
+	const cloningRoot: CloningNode = {
+		id: 'gg-frag', name: 'pTK_Cbln1_BsaI_GG1', size: 4780, topology: 'linear',
+		parts: [
+			{ name: 'Cbln1', type: 'CDS', start: 640, end: 1330, strand: 1, color: '#f97316' },
+			{ name: 'mNeonGreen', type: 'CDS', start: 1330, end: 2046, strand: 1, color: '#e6c84c' },
+			{ name: 'AmpR', type: 'CDS', start: 2282, end: 3076, strand: 1, color: '#4dc3ff' },
+		],
+		cutSites: [
+			{ enzyme: 'BsaI', position: 0, end: 7, strand: 1, cutPosition: 4, complementCutPosition: 8 },
+			{ enzyme: 'BsaI', position: 4773, end: 4780, strand: -1, cutPosition: 4, complementCutPosition: 8 },
+		],
+		description: 'GoldenGate-ready fragment (GG1 linker)',
+		source: {
+			action: { type: 'pcr', label: 'Amplify GG1', primers: ['BsaI_GG1_fwd', 'BsaI_GG1_rev'], temperature: '98°C', notes: '30 cycles' },
+			inputs: [{ conditions: '30 cycles, 98°C', node: {
+				id: 'cbln1-ng-v2', name: 'Cbln1-mNG seq', size: 5510, topology: 'circular',
+				parts: fusionParts, cutSites: fusionCutSites,
+				description: 'Cbln1-mNeonGreen after sequence verification',
+				source: {
+					action: { type: 'ligate', label: 'Replace', notes: 'Seq-verified replace' },
+					inputs: [{ conditions: 'Seq-verified', node: {
+						id: 'cbln1-ng-v1', name: 'Cbln1-mNG', size: 5510, topology: 'circular',
+						parts: fusionParts, cutSites: fusionCutSites,
+						description: 'Cbln1-mNeonGreen fusion (pre-seq verification)',
+						source: {
+							action: { type: 'gibson', label: 'Gibson', enzymes: ['EcoRI', 'NdeI'], temperature: '50°C', duration: '1 hr' },
+							inputs: [
+								{ conditions: 'EcoRI + HindIII linearized', node: pTK_Backbone },
+								{ conditions: 'NdeI + EcoRI flanking', node: {
+									id: 'cbln1-amplicon', name: 'Cbln1_amplicon', size: 780, topology: 'linear',
+									parts: [{ name: 'Cbln1', type: 'CDS', start: 30, end: 720, strand: 1, color: '#f97316' }],
+									cutSites: [
+										{ enzyme: 'EcoRI', position: 0, end: 6, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+										{ enzyme: 'NdeI', position: 774, end: 780, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+									],
+									description: 'PCR-amplified Cbln1 insert',
+									source: {
+										action: { type: 'pcr', label: 'PCR', primers: ['Cbln1_fwd', 'Cbln1_rev'], temperature: '98°C', notes: 'RT-PCR' },
+										inputs: [{ conditions: 'RT-PCR, 98°C', node: cblnRNA }],
+									},
+								}},
+							],
+						},
+					}}],
+				},
+			}}],
+		},
+	};
+
 	// Navigation
 	const sections = [
+		{ id: 'cloning', label: 'Cloning History' },
 		{ id: 'plasmid', label: 'Plasmid' }, { id: 'sequence', label: 'Sequence' },
 		{ id: 'gel', label: 'Gel' }, { id: 'trace', label: 'Trace' },
 		{ id: 'alignment', label: 'Alignment' }, { id: 'protein', label: 'Protein 3D' },
@@ -377,6 +475,20 @@ END`;
 			<a href="#{s.id}">{s.label}</a>
 		{/each}
 	</nav>
+
+	<!-- =============================== CLONING HISTORY =============================== -->
+	<section id="cloning" class="component-row">
+		<div class="info-col">
+			<h2>CloningHistoryViewer</h2>
+			<p>Construct history DAG with mini PlasmidViewer nodes and labeled operation edges. Supports LR and TB layouts.</p>
+			<p class="data-note">Cbln1-mNeonGreen fusion construct &mdash; recursive tree, single output</p>
+		</div>
+		<div class="component-col">
+			<CloningHistoryViewer root={cloningRoot} width={1200} height={900} onhoverinfo={hoverHandler('cloning')} />
+		</div>
+		<div class="controls-col">
+		</div>
+	</section>
 
 	<!-- =============================== PLASMID =============================== -->
 	<section id="plasmid" class="component-row">

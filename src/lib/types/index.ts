@@ -9,3 +9,4 @@ export * from './alignment.js';
 export * from './protein.js';
 export * from './composition.js';
 export * from './utility.js';
+export * from './cloning.js';

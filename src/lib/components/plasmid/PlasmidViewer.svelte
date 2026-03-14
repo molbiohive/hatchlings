@@ -490,13 +490,44 @@
 	}
 
 	function handleCenterEnter(e: MouseEvent) {
+		const pos = { x: e.clientX, y: e.clientY };
+
+		// When selection is active, show the complete annotation table
+		if (selectionInfo) {
+			const allEntries: SelectionEntry[] = [];
+			for (const p of features) {
+				if (rangesOverlap(selectionInfo.start, selectionInfo.end, p.start, p.end)) {
+					allEntries.push({ name: p.label ?? p.name, color: getFeatureColor(p.type, p.color) });
+				}
+			}
+			for (const p of primers) {
+				if (rangesOverlap(selectionInfo.start, selectionInfo.end, p.start, p.end)) {
+					allEntries.push({ name: p.label ?? p.name, color: PRIMER_COLOR });
+				}
+			}
+			for (const cs of cutSites) {
+				const csEnd = cs.end ?? cs.position + 1;
+				if (rangesOverlap(selectionInfo.start, selectionInfo.end, cs.position, csEnd)) {
+					allEntries.push({ name: cs.enzyme, color: '#d45858', bold: uniqueCutters.has(cs.enzyme) });
+				}
+			}
+			const items = allEntries.map(e => ({ label: e.name, value: e.color === '#d45858' ? 'cut site' : 'feature' }));
+			onhoverinfo?.({
+				title: `${selectionInfo.start}..${selectionInfo.end} (${formatBp(selectionInfo.length)} bp)`,
+				items,
+				position: pos,
+			});
+			return;
+		}
+
+		// Default: construct summary
 		const items: { label: string; value: string | number; unit?: string }[] = [
 			{ label: 'Length', value: size, unit: 'bp' },
 			{ label: 'Topology', value: topology },
 		];
 		if (parts.length > 0) items.push({ label: 'Features', value: parts.length });
 		if (cutSites.length > 0) items.push({ label: 'Cut sites', value: cutSites.length });
-		onhoverinfo?.({ title: name, items, position: { x: e.clientX, y: e.clientY } });
+		onhoverinfo?.({ title: name, items, position: pos });
 	}
 
 	function handlePartClick(part: Part) {

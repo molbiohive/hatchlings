@@ -638,7 +638,7 @@
 			{/each}
 
 			<!-- Layer 5a: Feature arcs -->
-			{#each features as feature, i (feature.name + feature.start)}
+			{#each features as feature, i (feature.name + feature.start + '-' + i)}
 				{@const ri = featureRenderInfo.get(i)}
 				<PartArc
 					part={feature}
@@ -657,7 +657,7 @@
 			{/each}
 
 			<!-- Layer 5b: Primer arcs -->
-			{#each allPrimers as primer, i (primer.name + primer.start + '-primer')}
+			{#each allPrimers as primer, i (primer.name + primer.start + '-primer-' + i)}
 				{@const ri = primerRenderInfo.get(i)}
 				<PartArc
 					part={{ ...primer, bindingStart: undefined, bindingEnd: undefined, mismatches: undefined }}

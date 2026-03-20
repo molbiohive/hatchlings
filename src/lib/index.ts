@@ -27,7 +27,7 @@ export { TraceViewer, MultiTraceViewer, TracePeaks, BaseCallTrack, AlignmentView
 export { ProteinViewer } from './components/protein/index.js';
 export { AlignmentViewer } from './components/alignment/index.js';
 
-export { CloningHistoryViewer } from './components/cloning/index.js';
+export { CloningHistoryViewer, CloningStrategyViewer } from './components/cloning/index.js';
 
 // Scientific chart components
 export {

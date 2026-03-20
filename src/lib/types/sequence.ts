@@ -30,6 +30,12 @@ export interface CutSite {
 	overhang?: string;
 	cutPosition?: number;
 	complementCutPosition?: number;
+	/** Recognition site sequence (e.g., 'GAATTC' for EcoRI). If provided, used for cut-site rendering. */
+	recognitionSeq?: string;
+	/** Sense strand cut offset within recognition site (0-indexed, e.g., 1 for EcoRI G^AATTC) */
+	senseCutOffset?: number;
+	/** Complement strand cut offset within recognition site (0-indexed from sense 5' end, e.g., 5 for EcoRI) */
+	complementCutOffset?: number;
 }
 
 export interface ORF {

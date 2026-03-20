@@ -1,8 +1,30 @@
 <script lang="ts">
 	import type {
-		CloningNode, CloningAction, CloningSourceInput, FragmentEnd, StickyEnd, HomologyEnd,
-		TypeIISEnd,
+		CloningNode, CloningAction, CloningSourceInput,
 	} from '../../types/cloning.js';
+
+	// Fragment end types — internal to rendering, not part of the data model
+	interface ClosedEnd { type: 'closed' }
+	interface BluntEnd { type: 'blunt' }
+	interface StickyEnd {
+		type: 'sticky';
+		enzyme?: string;
+		overhang?: string;
+		direction: '5prime' | '3prime';
+	}
+	interface HomologyEnd {
+		type: 'homology';
+		length?: number;
+		label?: string;
+		color?: string;
+	}
+	interface TypeIISEnd {
+		type: 'type-iis';
+		enzyme: string;
+		overhang: string;
+		direction: '5prime' | '3prime';
+	}
+	type FragmentEnd = ClosedEnd | BluntEnd | StickyEnd | HomologyEnd | TypeIISEnd;
 	import type { HoverInfo } from '../../types/utility.js';
 	import type { CutSite } from '../../types/sequence.js';
 
@@ -32,11 +54,7 @@
 	const OVERLAP_COLORS = ['#67e8f9', '#c084fc', '#86efac', '#fcd34d', '#fca5a5', '#a5b4fc'];
 
 	const PALETTE = ['#58a6ff', '#f97316', '#22c55e', '#a78bfa', '#f472b6', '#facc15'];
-	const OVERLAP_ACTIONS = ['gibson', 'infusion', 'slic', 'cpec'];
-	const GOLDEN_GATE_ACTIONS = ['golden-gate', 'goldengate', 'gg', 'moclo'];
-	const GATEWAY_ACTIONS = ['gateway', 'lr', 'bp', 'lr-clonase'];
-	const CRE_LOX_ACTIONS = ['cre-lox', 'cre', 'flp-frt', 'recombination'];
-	const CRISPR_ACTIONS = ['crispr', 'crispr-hdr', 'hdr', 'cas9'];
+	const OVERLAP_PARADIGMS = new Set(['gibson', 'infusion', 'slic', 'cpec']);
 
 	/** Recognition site database for grey flanking context rendering */
 	const ENZYME_SITES: Record<string, { seq: string; senseCut: number; compCut: number }> = {
@@ -113,16 +131,6 @@
 		return matching.length >= 2 ? { left: matching[0], right: matching[1] } : null;
 	}
 
-	function detectParadigm(actionType: string): string {
-		const t = actionType.toLowerCase();
-		if (GATEWAY_ACTIONS.some(a => t.includes(a))) return 'gateway';
-		if (CRE_LOX_ACTIONS.some(a => t.includes(a))) return 'cre-lox';
-		if (CRISPR_ACTIONS.some(a => t.includes(a))) return 'crispr';
-		if (GOLDEN_GATE_ACTIONS.some(a => t.includes(a))) return 'golden-gate';
-		if (OVERLAP_ACTIONS.some(a => t.includes(a))) return 'overlap';
-		return 'assembly';
-	}
-
 	// ── Sequence block: what to render for one end of a construct ──
 	// Each character position has a sense char, comp char, and a type.
 	// 'ds' = both strands present, 'oh-s' = only sense (comp missing), 'oh-c' = only comp (sense missing)
@@ -151,7 +159,7 @@
 		node: CloningNode;
 		isResult: boolean;
 		isByproduct: boolean;
-		conditions?: string;
+		label?: string;
 		color: string;
 		opacity: number;
 		leftBlock: SeqBlock;
@@ -329,11 +337,11 @@
 		if (!node.source) return '';
 		const a = node.source.action;
 		if (a.label) return a.label;
-		const t = a.type ?? 'operation';
+		const t = a.paradigm ?? 'operation';
 		return t.charAt(0).toUpperCase() + t.slice(1);
 	});
 
-	let paradigm = $derived(node.source ? detectParadigm(node.source.action.type) : 'assembly');
+	let paradigm = $derived(node.source?.action.paradigm ?? 'assembly');
 
 	// Color-match compatible overhangs: same overhang sequence → same color
 	const OH_PALETTE = ['#67e8f9', '#a78bfa', '#86efac', '#fcd34d', '#fca5a5', '#f97316'];
@@ -362,7 +370,7 @@
 	let constructs = $derived.by((): PlacedConstruct[] => {
 		const action = node.source?.action;
 		const actionEnzymes = action?.enzymes ?? [];
-		const isOverlap = paradigm === 'overlap';
+		const isOverlap = OVERLAP_PARADIGMS.has(paradigm);
 		const isGoldenGate = paradigm === 'golden-gate';
 		const isGateway = paradigm === 'gateway';
 		let overlapIdx = 0;
@@ -460,7 +468,7 @@
 
 				items.push({
 					node: cn, isResult: false, isByproduct: false,
-					conditions: inp.conditions, color, opacity: 1,
+					label: inp.label, color, opacity: 1,
 					leftBlock: buildEndBlock(leftSeq, leftEnd, 'left', endOhColor(leftEnd)),
 					rightBlock: buildEndBlock(rightSeq, rightEnd, 'right', endOhColor(rightEnd)),
 					hasMiddle, leftEnzyme, rightEnzyme,
@@ -528,12 +536,7 @@
 		}
 
 		function detectCreLoxOp(action: CloningAction, inputs: CloningSourceInput[], byproducts?: CloningNode[]): string {
-			if (action.subtype) return action.subtype;
-			const notes = (action.notes ?? '').toLowerCase();
-			if (notes.includes('inversion') || notes.includes('flip')) return 'inversion';
-			if (notes.includes('insertion') || notes.includes('integrat')) return 'insertion';
-			if (notes.includes('translocation') || notes.includes('exchange')) return 'translocation';
-			if (notes.includes('excision')) return 'excision';
+			if (action.operation) return action.operation;
 			if (inputs.length >= 2) return 'insertion';
 			if (inputs.length === 1) {
 				const seq = inputs[0].node.sequence?.toUpperCase();
@@ -764,13 +767,13 @@
 		}
 
 		if (paradigm === 'gateway') {
+			const attSites = node.source?.action.attSites;
 			for (const c of constructs) {
 				let attLabel: string | null = null;
 				let color = '#a78bfa';
 
-				if (c.conditions) {
-					const match = c.conditions.match(/att([A-Za-z]\d?)/i);
-					if (match) attLabel = 'att' + match[1].toUpperCase();
+				if (attSites?.length && !c.isResult && !c.isByproduct) {
+					attLabel = attSites[0].name;
 				} else if (c.isResult) {
 					attLabel = 'attB';
 				} else if (c.isByproduct) {
@@ -823,7 +826,7 @@
 			{ label: 'Size', value: c.node.size.toLocaleString(), unit: 'bp' },
 		];
 		if (c.node.topology) items.push({ label: 'Topology', value: c.node.topology });
-		if (c.conditions) items.push({ label: 'Conditions', value: c.conditions });
+		if (c.label) items.push({ label: 'Conditions', value: c.label });
 		if (c.leftEnzyme && c.rightEnzyme && c.leftEnzyme !== c.rightEnzyme) {
 			items.push({ label: 'Enzymes', value: `${c.leftEnzyme} + ${c.rightEnzyme}` });
 		} else if (c.leftEnzyme) {
@@ -1191,9 +1194,9 @@
 				</text>
 				<text x={c.x + c.totalW / 2} y={by + ROW_H + 26} text-anchor="middle"
 					class="construct-size">{c.node.size.toLocaleString()} bp</text>
-				{#if c.conditions}
+				{#if c.label}
 					<text x={c.x + c.totalW / 2} y={by + ROW_H + 37} text-anchor="middle"
-						class="conditions-label">{c.conditions}</text>
+						class="conditions-label">{c.label}</text>
 				{/if}
 			</g>
 		{/each}

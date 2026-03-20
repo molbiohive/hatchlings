@@ -418,22 +418,22 @@ END`;
 		],
 		description: 'GoldenGate-ready fragment (GG1 linker)',
 		source: {
-			action: { type: 'pcr', label: 'Amplify GG1', primers: ['BsaI_GG1_fwd', 'BsaI_GG1_rev'], temperature: '98°C', notes: '30 cycles' },
-			inputs: [{ conditions: '30 cycles, 98°C', node: {
+			action: { paradigm: 'pcr', label: 'Amplify GG1', primers: ['BsaI_GG1_fwd', 'BsaI_GG1_rev'], temperature: '98°C', notes: '30 cycles' },
+			inputs: [{ label: '30 cycles, 98°C', node: {
 				id: 'cbln1-ng-v2', name: 'Cbln1-mNG seq', size: 5510, topology: 'circular',
 				parts: fusionParts, cutSites: fusionCutSites,
 				description: 'Cbln1-mNeonGreen after sequence verification',
 				source: {
-					action: { type: 'ligate', label: 'Replace', notes: 'Seq-verified replace' },
-					inputs: [{ conditions: 'Seq-verified', node: {
+					action: { paradigm: 'ligation', label: 'Replace', notes: 'Seq-verified replace' },
+					inputs: [{ label: 'Seq-verified', node: {
 						id: 'cbln1-ng-v1', name: 'Cbln1-mNG', size: 5510, topology: 'circular',
 						parts: fusionParts, cutSites: fusionCutSites,
 						description: 'Cbln1-mNeonGreen fusion (pre-seq verification)',
 						source: {
-							action: { type: 'gibson', label: 'Gibson', enzymes: ['EcoRI', 'NdeI'], temperature: '50°C', duration: '1 hr' },
+							action: { paradigm: 'gibson', label: 'Gibson', enzymes: ['EcoRI', 'NdeI'], temperature: '50°C', duration: '1 hr' },
 							inputs: [
-								{ conditions: 'EcoRI + HindIII linearized', node: pTK_Backbone },
-								{ conditions: 'NdeI + EcoRI flanking', node: {
+								{ label: 'EcoRI + HindIII linearized', node: pTK_Backbone },
+								{ label: 'NdeI + EcoRI flanking', node: {
 									id: 'cbln1-amplicon', name: 'Cbln1_amplicon', size: 780, topology: 'linear',
 									parts: [{ name: 'Cbln1', type: 'CDS', start: 30, end: 720, strand: 1, color: '#f97316' }],
 									cutSites: [
@@ -442,8 +442,8 @@ END`;
 									],
 									description: 'PCR-amplified Cbln1 insert',
 									source: {
-										action: { type: 'pcr', label: 'PCR', primers: ['Cbln1_fwd', 'Cbln1_rev'], temperature: '98°C', notes: 'RT-PCR' },
-										inputs: [{ conditions: 'RT-PCR, 98°C', node: cblnRNA }],
+										action: { paradigm: 'pcr', label: 'PCR', primers: ['Cbln1_fwd', 'Cbln1_rev'], temperature: '98°C', notes: 'RT-PCR' },
+										inputs: [{ label: 'RT-PCR, 98°C', node: cblnRNA }],
 									},
 								}},
 							],
@@ -481,10 +481,10 @@ END`;
 	const reResult: CloningNode = {
 		id: 're-res', name: 'pUC19-GFP', size: 3400, topology: 'circular',
 		source: {
-			action: { type: 'ligation', label: 'Ligate', enzymes: ['EcoRI', 'BamHI'], notes: 'T4 ligase, 16°C overnight' },
+			action: { paradigm: 'ligation', label: 'Ligate', enzymes: ['EcoRI', 'BamHI'], notes: 'T4 ligase, 16°C overnight' },
 			inputs: [
-				{ conditions: 'EcoRI + BamHI digest', node: reVector },
-				{ conditions: 'EcoRI + BamHI ends', node: reInsert },
+				{ label: 'EcoRI + BamHI digest', node: reVector },
+				{ label: 'EcoRI + BamHI ends', node: reInsert },
 			],
 		},
 	};
@@ -517,11 +517,11 @@ END`;
 	const ggResult: CloningNode = {
 		id: 'gg-res', name: 'pGG-T7sfGFP', size: 4200, topology: 'circular',
 		source: {
-			action: { type: 'golden-gate', label: 'Golden Gate', enzymes: ['BsaI'], temperature: '37°C/16°C cycling', notes: '30 cycles, then 50°C 5min, 80°C 10min' },
+			action: { paradigm: 'golden-gate', label: 'Golden Gate', enzymes: ['BsaI'], temperature: '37°C/16°C cycling', notes: '30 cycles, then 50°C 5min, 80°C 10min' },
 			inputs: [
-				{ conditions: 'BsaI digest', node: ggPart1 },
-				{ conditions: 'BsaI digest', node: ggPart2 },
-				{ conditions: 'BsaI digest', node: ggPart3 },
+				{ label: 'BsaI digest', node: ggPart1 },
+				{ label: 'BsaI digest', node: ggPart2 },
+				{ label: 'BsaI digest', node: ggPart3 },
 			],
 		},
 	};
@@ -548,10 +548,16 @@ END`;
 	const gwResult: CloningNode = {
 		id: 'gw-res', name: 'pEXP-GOI', size: 6200, topology: 'circular',
 		source: {
-			action: { type: 'gateway', label: 'LR Clonase', notes: 'LR Clonase II, 25°C, 1hr' },
+			action: {
+				paradigm: 'gateway', label: 'LR Clonase', notes: 'LR Clonase II, 25°C, 1hr',
+				attSites: [
+					{ name: 'attL1' }, { name: 'attL2' },
+					{ name: 'attR1' }, { name: 'attR2' },
+				],
+			},
 			inputs: [
-				{ conditions: 'Entry clone (attL)', node: gwEntry },
-				{ conditions: 'Destination (attR)', node: gwDest },
+				{ label: 'Entry clone (attL)', node: gwEntry },
+				{ label: 'Destination (attR)', node: gwDest },
 			],
 		},
 	};

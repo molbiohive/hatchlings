@@ -50,13 +50,13 @@
 		y1: number;
 		y2: number;
 		opLabel: string;
-		conditions: string;
+		label: string;
 		source: CloningSource;
 	}
 
 	interface BusDrop {
 		cx: number;
-		conditions: string;
+		label: string;
 		/** y-start of this drop line */
 		dropY1: number;
 	}
@@ -77,7 +77,7 @@
 
 	function getOpLabel(source: CloningSource): string {
 		if (source.action.label) return source.action.label;
-		const t = source.action.type ?? 'operation';
+		const t = source.action.paradigm ?? 'operation';
 		return t.charAt(0).toUpperCase() + t.slice(1).replace(/_/g, ' ');
 	}
 
@@ -116,7 +116,7 @@
 					y1: connTop,
 					y2: childY,
 					opLabel,
-					conditions: inputs[0].conditions ?? '',
+					label: inputs[0].label ?? '',
 					source: cnode.source,
 				});
 				place(inputs[0].node, x, childY);
@@ -132,7 +132,7 @@
 					const isLast = i === inputs.length - 1;
 					drops.push({
 						cx: childCX,
-						conditions: inputs[i].conditions ?? '',
+						label: inputs[i].label ?? '',
 						dropY1: isLast ? busY + CORNER_R : busY,
 					});
 					place(inputs[i].node, childX, childrenY);
@@ -192,7 +192,7 @@
 	function handleConnEnter(e: MouseEvent, source: CloningSource) {
 		const a = source.action;
 		const items: { label: string; value: string | number; unit?: string }[] = [
-			{ label: 'Type', value: a.type },
+			{ label: 'Type', value: a.paradigm },
 		];
 		if (a.enzymes) items.push({ label: 'Enzymes', value: a.enzymes.join(', ') });
 		if (a.primers) items.push({ label: 'Primers', value: a.primers.join(', ') });
@@ -238,13 +238,13 @@
 						class="op-text"
 					>{conn.opLabel}</text>
 					<!-- Conditions: left-aligned to line right -->
-					{#if conn.conditions}
+					{#if conn.label}
 						<text
 							x={conn.x + TEXT_GAP}
 							y={(conn.y1 + conn.y2) / 2}
 							dominant-baseline="central"
 							class="cond-text"
-						>{conn.conditions}</text>
+						>{conn.label}</text>
 					{/if}
 				</g>
 
@@ -296,14 +296,14 @@
 						dominant-baseline="central"
 						class="op-text"
 					>{conn.opLabel}</text>
-					<!-- Per-input conditions: to the right of each drop -->
+					<!-- Per-input labels: to the right of each drop -->
 					{#each conn.drops as drop}
-						{#if drop.conditions}
+						{#if drop.label}
 							<text
 								x={drop.cx + TEXT_GAP}
 								y={conn.busY + 16}
 								class="cond-text"
-							>{drop.conditions}</text>
+							>{drop.label}</text>
 						{/if}
 					{/each}
 				</g>

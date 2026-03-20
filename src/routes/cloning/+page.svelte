@@ -55,10 +55,10 @@
 		id: 're-res', name: 'pUC19-GFP', size: 3400, topology: 'circular',
 		sequence: reResultSeq,
 		source: {
-			action: { type: 'ligation', label: 'Ligate', enzymes: ['EcoRI', 'BamHI'], notes: 'T4 DNA Ligase, 16°C overnight' },
+			action: { paradigm: 'ligation', label: 'Ligate', enzymes: ['EcoRI', 'BamHI'], notes: 'T4 DNA Ligase, 16°C overnight' },
 			inputs: [
-				{ conditions: 'EcoRI + BamHI digest', node: reVector },
-				{ conditions: 'EcoRI + BamHI ends', node: reInsert },
+				{ label: 'EcoRI + BamHI digest', node: reVector },
+				{ label: 'EcoRI + BamHI ends', node: reInsert },
 			],
 		},
 	};
@@ -85,10 +85,10 @@
 		id: 'gib-res', name: 'Cbln1-mNG', size: 5510, topology: 'circular',
 		sequence: randSeq(5510, 55),
 		source: {
-			action: { type: 'gibson', label: 'Gibson Assembly', temperature: '50°C', duration: '1 hr' },
+			action: { paradigm: 'gibson', label: 'Gibson Assembly', temperature: '50°C', duration: '1 hr' },
 			inputs: [
-				{ conditions: 'Linearized backbone', node: gibsonBackbone },
-				{ conditions: '30bp overlap arms', node: gibsonInsert },
+				{ label: 'Linearized backbone', node: gibsonBackbone },
+				{ label: '30bp overlap arms', node: gibsonInsert },
 			],
 		},
 	};
@@ -131,11 +131,11 @@
 		id: 'gg-res', name: 'pGG-T7sfGFP', size: 4200, topology: 'circular',
 		sequence: randSeq(4200, 42),
 		source: {
-			action: { type: 'golden-gate', label: 'Golden Gate (BsaI)', enzymes: ['BsaI'], temperature: '37°C/16°C', notes: '30 cycles' },
+			action: { paradigm: 'golden-gate', label: 'Golden Gate (BsaI)', enzymes: ['BsaI'], temperature: '37°C/16°C', notes: '30 cycles' },
 			inputs: [
-				{ conditions: 'BsaI flanked', node: ggPart1 },
-				{ conditions: 'BsaI flanked', node: ggPart2 },
-				{ conditions: 'BsaI flanked', node: ggPart3 },
+				{ label: 'BsaI flanked', node: ggPart1 },
+				{ label: 'BsaI flanked', node: ggPart2 },
+				{ label: 'BsaI flanked', node: ggPart3 },
 			],
 		},
 	};
@@ -155,8 +155,8 @@
 		id: 'cre-exc-res', name: 'KO locus', size: 6600, topology: 'linear',
 		sequence: randSeq(6600, 66),
 		source: {
-			action: { type: 'cre-lox', label: 'Cre recombinase', subtype: 'excision', notes: '▷loxP...▷loxP → excision' },
-			inputs: [{ conditions: '+ Cre recombinase', node: floxedLocus }],
+			action: { paradigm: 'cre-lox', label: 'Cre recombinase', operation: 'excision', notes: 'same-orientation loxP sites -- excision' },
+			inputs: [{ label: '+ Cre recombinase', node: floxedLocus }],
 			byproducts: [{
 				id: 'cre-ex', name: 'Excised circle', size: 1400, topology: 'circular',
 				sequence: randSeq(1400, 14),
@@ -177,8 +177,8 @@
 		id: 'cre-inv-res', name: 'Inverted locus', size: 4868, topology: 'linear',
 		sequence: randSeq(4868, 68),
 		source: {
-			action: { type: 'cre-lox', label: 'Cre recombinase', subtype: 'inversion', notes: '▷loxP...◁loxP → inversion' },
-			inputs: [{ conditions: '+ Cre recombinase', node: invertLocus }],
+			action: { paradigm: 'cre-lox', label: 'Cre recombinase', operation: 'inversion', notes: 'opposite-orientation loxP sites -- inversion' },
+			inputs: [{ label: '+ Cre recombinase', node: invertLocus }],
 		},
 	};
 
@@ -201,10 +201,10 @@
 		id: 'cre-ins-res', name: 'Integrated locus', size: 8868, topology: 'linear',
 		sequence: randSeq(8868, 88),
 		source: {
-			action: { type: 'cre-lox', label: 'Cre recombinase', subtype: 'insertion', notes: 'loxP target + loxP donor → integration' },
+			action: { paradigm: 'cre-lox', label: 'Cre recombinase', operation: 'insertion', notes: 'loxP target + loxP donor -- integration' },
 			inputs: [
-				{ conditions: 'Target (loxP)', node: insertTarget },
-				{ conditions: 'Donor circle (loxP)', node: insertDonor },
+				{ label: 'Target (loxP)', node: insertTarget },
+				{ label: 'Donor circle (loxP)', node: insertDonor },
 			],
 		},
 	};
@@ -228,10 +228,10 @@
 		id: 'cre-tr-res', name: 'Recombinant 1', size: 7034, topology: 'linear',
 		sequence: randSeq(7034, 70),
 		source: {
-			action: { type: 'cre-lox', label: 'Cre recombinase', subtype: 'translocation', notes: 'loxP on two loci → reciprocal exchange' },
+			action: { paradigm: 'cre-lox', label: 'Cre recombinase', operation: 'translocation', notes: 'loxP on two loci -- reciprocal exchange' },
 			inputs: [
-				{ conditions: 'Locus A (loxP)', node: transLocusA },
-				{ conditions: 'Locus B (loxP)', node: transLocusB },
+				{ label: 'Locus A (loxP)', node: transLocusA },
+				{ label: 'Locus B (loxP)', node: transLocusB },
 			],
 			byproducts: [{
 				id: 'cre-tr-bp', name: 'Recombinant 2', size: 5034, topology: 'linear',
@@ -255,10 +255,17 @@
 		id: 'gw-res', name: 'pEXP-GOI', size: 6200, topology: 'circular',
 		sequence: randSeq(6200, 62),
 		source: {
-			action: { type: 'gateway', label: 'LR Clonase II', temperature: '25°C', notes: 'attL × attR → attB + attP' },
+			action: {
+				paradigm: 'gateway', label: 'LR Clonase II', temperature: '25°C',
+				attSites: [
+					{ name: 'attL1' }, { name: 'attL2' },
+					{ name: 'attR1' }, { name: 'attR2' },
+				],
+				notes: 'attL x attR -- attB + attP',
+			},
 			inputs: [
-				{ conditions: 'Entry clone (attL)', node: gwEntry },
-				{ conditions: 'Dest vector (attR)', node: gwDest },
+				{ label: 'Entry clone (attL)', node: gwEntry },
+				{ label: 'Dest vector (attR)', node: gwDest },
 			],
 			byproducts: [{
 				id: 'gw-bp', name: 'Byproduct', size: 2400, topology: 'circular',
@@ -288,14 +295,14 @@
 		sequence: randSeq(13200, 132),
 		source: {
 			action: {
-				type: 'crispr-hdr', label: 'CRISPR-Cas9 HDR',
+				paradigm: 'crispr', label: 'CRISPR-Cas9 HDR',
 				guide: genomicSeq.slice(5790, 5810),
 				pam: genomicSeq.slice(5810, 5813),
 				notes: 'sgRNA + Cas9 RNP + HDR donor',
 			},
 			inputs: [
-				{ conditions: 'Cas9 + sgRNA (DSB)', node: genomicLocus },
-				{ conditions: 'HDR donor (800bp arms)', node: donorTemplate },
+				{ label: 'Cas9 + sgRNA (DSB)', node: genomicLocus },
+				{ label: 'HDR donor (800bp arms)', node: donorTemplate },
 			],
 		},
 	};

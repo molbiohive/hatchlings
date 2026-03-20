@@ -109,11 +109,6 @@
 <style>
 	.gel-band {
 		cursor: pointer;
-		transition: filter 0.15s;
 		outline: none;
-	}
-
-	.gel-band:hover {
-		filter: brightness(1.2);
 	}
 </style>

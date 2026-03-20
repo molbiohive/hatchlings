@@ -10,10 +10,6 @@ export const nucleotideColors: Record<string, string> = {
 	N: '#999999', // grey
 };
 
-/** Aliases for convenience */
-export const dnaColors = nucleotideColors;
-export const rnaColors = nucleotideColors;
-
 /** Feature type colors */
 export const featureColors: Record<string, string> = {
 	CDS: '#4dc3ff',
@@ -52,16 +48,6 @@ export const aminoAcidColors: Record<string, string> = {
 	D: '#c97a8a', E: '#c97a8a',
 	// Special (grey)
 	G: '#999999', '*': '#999999',
-};
-
-/** Alias for protein colors */
-export const proteinColors = aminoAcidColors;
-
-/** Get the right color map for a sequence alphabet */
-export const sequenceColors: Record<string, Record<string, string>> = {
-	dna: nucleotideColors,
-	rna: nucleotideColors,
-	protein: aminoAcidColors,
 };
 
 /** Gel stain color schemes */

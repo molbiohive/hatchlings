@@ -19,6 +19,7 @@
 	import BindingKineticsViewer from '$lib/components/charts/BindingKineticsViewer.svelte';
 	import CompositionChart from '$lib/components/charts/CompositionChart.svelte';
 	import { CloningHistoryViewer } from '$lib/components/cloning/index.js';
+	import { CloningStrategyViewer } from '$lib/components/cloning/index.js';
 
 	import type {
 		Part, CutSite, Translation,
@@ -371,10 +372,10 @@ END`;
 			{ name: 'f1 ori', type: 'rep_origin', start: 3500, end: 3956, strand: 1, color: '#8c564b' },
 		],
 		cutSites: [
-			{ enzyme: 'EcoRI', position: 619, end: 625, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-			{ enzyme: 'NdeI', position: 668, end: 674, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-			{ enzyme: 'XhoI', position: 1402, end: 1410, strand: 1, cutPosition: 2, complementCutPosition: 6 },
-			{ enzyme: 'HindIII', position: 1413, end: 1419, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+			{ enzyme: 'EcoRI', position: 619, end: 625, strand: 1, cutPosition: 1, complementCutPosition: 5, overhang: 'AATT' },
+			{ enzyme: 'NdeI', position: 668, end: 674, strand: 1, cutPosition: 1, complementCutPosition: 5, overhang: 'TA' },
+			{ enzyme: 'XhoI', position: 1402, end: 1410, strand: 1, cutPosition: 2, complementCutPosition: 6, overhang: 'TCGA' },
+			{ enzyme: 'HindIII', position: 1413, end: 1419, strand: 1, cutPosition: 1, complementCutPosition: 5, overhang: 'AGCT' },
 		],
 		description: 'Expression backbone vector',
 	};
@@ -436,8 +437,8 @@ END`;
 									id: 'cbln1-amplicon', name: 'Cbln1_amplicon', size: 780, topology: 'linear',
 									parts: [{ name: 'Cbln1', type: 'CDS', start: 30, end: 720, strand: 1, color: '#f97316' }],
 									cutSites: [
-										{ enzyme: 'EcoRI', position: 0, end: 6, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-										{ enzyme: 'NdeI', position: 774, end: 780, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+										{ enzyme: 'EcoRI', position: 0, end: 6, strand: 1, cutPosition: 1, complementCutPosition: 5, overhang: 'AATT' },
+										{ enzyme: 'NdeI', position: 774, end: 780, strand: 1, cutPosition: 1, complementCutPosition: 5, overhang: 'TA' },
 									],
 									description: 'PCR-amplified Cbln1 insert',
 									source: {
@@ -453,9 +454,124 @@ END`;
 		},
 	};
 
+	// Extract Gibson step from history tree
+	const gibsonNode = cloningRoot.source!.inputs[0].node.source!.inputs[0].node;
+
+	// ── Restriction/Ligation demo (EcoRI + BamHI) ──
+	const reVector: CloningNode = {
+		id: 're-vec', name: 'pUC19', size: 2686, topology: 'circular',
+		parts: [
+			{ name: 'lacZα', type: 'CDS', start: 200, end: 680, strand: 1, color: '#3b82f6' },
+			{ name: 'AmpR', type: 'CDS', start: 1200, end: 2060, strand: -1, color: '#4dc3ff' },
+			{ name: 'ori', type: 'rep_origin', start: 2060, end: 2500, strand: -1, color: '#9467bd' },
+		],
+		cutSites: [
+			{ enzyme: 'EcoRI', position: 396, end: 402, strand: 1, cutPosition: 1, complementCutPosition: 5, overhang: 'AATT' },
+			{ enzyme: 'BamHI', position: 418, end: 424, strand: 1, cutPosition: 1, complementCutPosition: 5, overhang: 'GATC' },
+		],
+	};
+	const reInsert: CloningNode = {
+		id: 're-ins', name: 'GFP fragment', size: 720, topology: 'linear',
+		parts: [{ name: 'GFP', type: 'CDS', start: 6, end: 714, strand: 1, color: '#22c55e' }],
+		cutSites: [
+			{ enzyme: 'EcoRI', position: 0, end: 6, strand: 1, cutPosition: 1, complementCutPosition: 5, overhang: 'AATT' },
+			{ enzyme: 'BamHI', position: 714, end: 720, strand: 1, cutPosition: 1, complementCutPosition: 5, overhang: 'GATC' },
+		],
+	};
+	const reResult: CloningNode = {
+		id: 're-res', name: 'pUC19-GFP', size: 3400, topology: 'circular',
+		source: {
+			action: { type: 'ligation', label: 'Ligate', enzymes: ['EcoRI', 'BamHI'], notes: 'T4 ligase, 16°C overnight' },
+			inputs: [
+				{ conditions: 'EcoRI + BamHI digest', node: reVector },
+				{ conditions: 'EcoRI + BamHI ends', node: reInsert },
+			],
+		},
+	};
+
+	// ── Golden Gate demo (BsaI) ──
+	const ggPart1: CloningNode = {
+		id: 'gg-p1', name: 'Part1-Promoter', size: 520, topology: 'linear',
+		parts: [{ name: 'T7 pro', type: 'promoter', start: 20, end: 500, strand: 1, color: '#31a354' }],
+		cutSites: [
+			{ enzyme: 'BsaI', position: 0, end: 7, strand: 1, cutPosition: 4, complementCutPosition: 8, overhang: 'AATG' },
+			{ enzyme: 'BsaI', position: 513, end: 520, strand: -1, cutPosition: 4, complementCutPosition: 8, overhang: 'TTCG' },
+		],
+	};
+	const ggPart2: CloningNode = {
+		id: 'gg-p2', name: 'Part2-CDS', size: 840, topology: 'linear',
+		parts: [{ name: 'sfGFP', type: 'CDS', start: 20, end: 820, strand: 1, color: '#22c55e' }],
+		cutSites: [
+			{ enzyme: 'BsaI', position: 0, end: 7, strand: 1, cutPosition: 4, complementCutPosition: 8, overhang: 'TTCG' },
+			{ enzyme: 'BsaI', position: 833, end: 840, strand: -1, cutPosition: 4, complementCutPosition: 8, overhang: 'GCAA' },
+		],
+	};
+	const ggPart3: CloningNode = {
+		id: 'gg-p3', name: 'Part3-Terminator', size: 280, topology: 'linear',
+		parts: [{ name: 'rrnB T1', type: 'terminator', start: 10, end: 260, strand: 1, color: '#e377c2' }],
+		cutSites: [
+			{ enzyme: 'BsaI', position: 0, end: 7, strand: 1, cutPosition: 4, complementCutPosition: 8, overhang: 'GCAA' },
+			{ enzyme: 'BsaI', position: 273, end: 280, strand: -1, cutPosition: 4, complementCutPosition: 8, overhang: 'AATG' },
+		],
+	};
+	const ggResult: CloningNode = {
+		id: 'gg-res', name: 'pGG-T7sfGFP', size: 4200, topology: 'circular',
+		source: {
+			action: { type: 'golden-gate', label: 'Golden Gate', enzymes: ['BsaI'], temperature: '37°C/16°C cycling', notes: '30 cycles, then 50°C 5min, 80°C 10min' },
+			inputs: [
+				{ conditions: 'BsaI digest', node: ggPart1 },
+				{ conditions: 'BsaI digest', node: ggPart2 },
+				{ conditions: 'BsaI digest', node: ggPart3 },
+			],
+		},
+	};
+
+	// ── Gateway LR demo ──
+	const gwEntry: CloningNode = {
+		id: 'gw-entry', name: 'pENTR-GOI', size: 3800, topology: 'circular',
+		parts: [
+			{ name: 'GOI', type: 'CDS', start: 200, end: 1400, strand: 1, color: '#f97316' },
+			{ name: 'KanR', type: 'CDS', start: 1800, end: 2600, strand: -1, color: '#facc15' },
+			{ name: 'attL1', type: 'misc_feature', start: 180, end: 205, strand: 1, color: '#a78bfa' },
+			{ name: 'attL2', type: 'misc_feature', start: 1400, end: 1425, strand: 1, color: '#a78bfa' },
+		],
+	};
+	const gwDest: CloningNode = {
+		id: 'gw-dest', name: 'pDEST-AmpR', size: 5600, topology: 'circular',
+		parts: [
+			{ name: 'ccdB', type: 'CDS', start: 300, end: 1100, strand: 1, color: '#ef4444' },
+			{ name: 'AmpR', type: 'CDS', start: 2200, end: 3060, strand: -1, color: '#4dc3ff' },
+			{ name: 'attR1', type: 'misc_feature', start: 280, end: 305, strand: 1, color: '#c084fc' },
+			{ name: 'attR2', type: 'misc_feature', start: 1100, end: 1125, strand: 1, color: '#c084fc' },
+		],
+	};
+	const gwResult: CloningNode = {
+		id: 'gw-res', name: 'pEXP-GOI', size: 6200, topology: 'circular',
+		source: {
+			action: { type: 'gateway', label: 'LR Clonase', notes: 'LR Clonase II, 25°C, 1hr' },
+			inputs: [
+				{ conditions: 'Entry clone (attL)', node: gwEntry },
+				{ conditions: 'Destination (attR)', node: gwDest },
+			],
+		},
+	};
+
+	// ── Step selector ──
+	const cloningSteps: { label: string; node: CloningNode }[] = [
+		{ label: 'Gibson Assembly', node: gibsonNode },
+		{ label: 'Restriction/Ligation (EcoRI+BamHI)', node: reResult },
+		{ label: 'Golden Gate (BsaI, 3 parts)', node: ggResult },
+		{ label: 'Gateway LR', node: gwResult },
+	];
+	let selectedStepIdx = $state(0);
+
+	// Responsive widths — bind to component-col containers
+	let colWidth = $state(800);
+
 	// Navigation
 	const sections = [
 		{ id: 'cloning', label: 'Cloning History' },
+		{ id: 'cloning-strategy', label: 'Cloning Strategy' },
 		{ id: 'plasmid', label: 'Plasmid' }, { id: 'sequence', label: 'Sequence' },
 		{ id: 'gel', label: 'Gel' }, { id: 'trace', label: 'Trace' },
 		{ id: 'alignment', label: 'Alignment' }, { id: 'protein', label: 'Protein 3D' },
@@ -483,10 +599,25 @@ END`;
 			<p>Construct history DAG with mini PlasmidViewer nodes and labeled operation edges. Supports LR and TB layouts.</p>
 			<p class="data-note">Cbln1-mNeonGreen fusion construct &mdash; recursive tree, single output</p>
 		</div>
-		<div class="component-col">
-			<CloningHistoryViewer root={cloningRoot} width={1200} height={900} onhoverinfo={hoverHandler('cloning')} />
+		<div class="component-col" bind:clientWidth={colWidth}>
+			<CloningHistoryViewer root={cloningRoot} width={colWidth} height={Math.round(colWidth * 0.75)} onhoverinfo={hoverHandler('cloning')} />
 		</div>
 		<div class="controls-col">
+		</div>
+	</section>
+
+	<!-- =============================== CLONING STEP =============================== -->
+	<section id="cloning-strategy" class="component-row">
+		<div class="info-col">
+			<h2>CloningStrategyViewer</h2>
+			<p>Cloning strategy diagram: inputs + &rarr; result. Linearized backbones show as capsules with cut-site gap. Distinct colors per construct.</p>
+			<p class="data-note">{cloningSteps[selectedStepIdx].label}</p>
+		</div>
+		<div class="component-col">
+			<CloningStrategyViewer node={cloningSteps[selectedStepIdx].node} width={colWidth} height={200} onhoverinfo={hoverHandler('cloning-step')} />
+		</div>
+		<div class="controls-col">
+			<label>Step <select bind:value={selectedStepIdx}>{#each cloningSteps as step, i}<option value={i}>{step.label}</option>{/each}</select></label>
 		</div>
 	</section>
 
@@ -498,7 +629,7 @@ END`;
 			<p class="data-note">pUC19 (2686 bp) &mdash; AmpR, lacZ&alpha;, MCS with 15 cut sites</p>
 		</div>
 		<div class="component-col">
-			<PlasmidViewer name="pUC19" size={2686} parts={plasmidParts} cutSites={plasmidCutSites} topology="circular" selectionState={sharedSelection} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={500} height={500} onhoverinfo={hoverHandler('plasmid')} />
+			<PlasmidViewer name="pUC19" size={2686} parts={plasmidParts} cutSites={plasmidCutSites} topology="circular" selectionState={sharedSelection} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={Math.min(colWidth, 700)} height={Math.min(colWidth, 700)} onhoverinfo={hoverHandler('plasmid')} />
 		</div>
 		<div class="controls-col">
 			<label><input type="checkbox" bind:checked={plasmidShowTicks} /> Tick marks</label>
@@ -514,7 +645,7 @@ END`;
 			<p class="data-note">pUC19 ({sequence.length} bp) &mdash; synced with PlasmidViewer</p>
 		</div>
 		<div class="component-col">
-			<SequenceViewer seq={sequence} topology="circular" parts={seqParts} cutSites={seqCutSites} translations={seqTranslations} selectionState={sharedSelection} showAnnotations={seqShowAnnotations} showTranslations={seqShowTranslations} showNumbers={seqShowNumbers} showComplement={seqShowComplement} colorBases={seqColorBases} width={560} height={350} charsPerRow={50} onhoverinfo={hoverHandler('sequence')} />
+			<SequenceViewer seq={sequence} topology="circular" parts={seqParts} cutSites={seqCutSites} translations={seqTranslations} selectionState={sharedSelection} showAnnotations={seqShowAnnotations} showTranslations={seqShowTranslations} showNumbers={seqShowNumbers} showComplement={seqShowComplement} colorBases={seqColorBases} width={colWidth} height={Math.round(colWidth * 0.625)} charsPerRow={Math.round(colWidth / 11)} onhoverinfo={hoverHandler('sequence')} />
 		</div>
 		<div class="controls-col">
 			<label><input type="checkbox" bind:checked={seqShowAnnotations} /> Annotations</label>
@@ -533,7 +664,7 @@ END`;
 			<p class="data-note">pUC19 restriction digest, 1% agarose</p>
 		</div>
 		<div class="component-col">
-			<GelViewer lanes={gelLanes} gelType="agarose" stain={gelStain} voltage="120V" runTime="45 min" showSizeLabels={gelShowSizeLabels} showLaneLabels={true} bandStyle={gelBandStyle} width={380} height={440} onhoverinfo={hoverHandler('gel')} />
+			<GelViewer lanes={gelLanes} gelType="agarose" stain={gelStain} voltage="120V" runTime="45 min" showSizeLabels={gelShowSizeLabels} showLaneLabels={true} bandStyle={gelBandStyle} width={Math.min(colWidth, 600)} height={Math.round(Math.min(colWidth, 600) * 1.16)} onhoverinfo={hoverHandler('gel')} />
 		</div>
 		<div class="controls-col">
 			<label>Ladder <select bind:value={selectedLadder}><option value="1kb">1 kb</option><option value="100bp">100 bp</option><option value="1kb+">1 kb Plus</option></select></label>
@@ -551,7 +682,7 @@ END`;
 			<p class="data-note">{numBases} bases, simulated AB1 data</p>
 		</div>
 		<div class="component-col">
-			<TraceViewer baseCalls={baseCalls} qualityScores={qualityScores} channels={traceChannels} peakPositions={peakPositions} alignment={traceAlignment} width={560} height={260} showQuality={traceShowQuality} trimQuality={traceTrimQ} zoom={traceZoom} onhoverinfo={hoverHandler('trace')} />
+			<TraceViewer baseCalls={baseCalls} qualityScores={qualityScores} channels={traceChannels} peakPositions={peakPositions} alignment={traceAlignment} width={colWidth} height={Math.round(colWidth * 0.46)} showQuality={traceShowQuality} trimQuality={traceTrimQ} zoom={traceZoom} onhoverinfo={hoverHandler('trace')} />
 		</div>
 		<div class="controls-col">
 			<label>Zoom <input type="range" min="0.5" max="10" step="0.1" bind:value={traceZoom} /><span class="val">{traceZoom.toFixed(1)}x</span></label>
@@ -568,7 +699,7 @@ END`;
 			<p class="data-note">3 lanes, shared zoom/scroll</p>
 		</div>
 		<div class="component-col">
-			<MultiTraceViewer traces={multiTraces} width={560} laneHeight={140} showQuality={traceShowQuality} trimQuality={traceTrimQ} zoom={multiTraceZoom} onhoverinfo={hoverHandler('trace')} />
+			<MultiTraceViewer traces={multiTraces} width={colWidth} laneHeight={Math.round(colWidth * 0.25)} showQuality={traceShowQuality} trimQuality={traceTrimQ} zoom={multiTraceZoom} onhoverinfo={hoverHandler('trace')} />
 		</div>
 		<div class="controls-col">
 			<label>Zoom <input type="range" min="0.5" max="10" step="0.1" bind:value={multiTraceZoom} /><span class="val">{multiTraceZoom.toFixed(1)}x</span></label>
@@ -583,7 +714,7 @@ END`;
 			<p class="data-note">Hemoglobin alpha, 5 species</p>
 		</div>
 		<div class="component-col">
-			<AlignmentViewer sequences={alignSeqs} alphabet="protein" conservation={alignCons} width={560} height={170} cellWidth={alignCellW} cellHeight={18} showConservation={alignShowConservation} showNames={alignShowNames} />
+			<AlignmentViewer sequences={alignSeqs} alphabet="protein" conservation={alignCons} width={colWidth} height={Math.round(colWidth * 0.3)} cellWidth={alignCellW} cellHeight={18} showConservation={alignShowConservation} showNames={alignShowNames} />
 		</div>
 		<div class="controls-col">
 			<label>Cell width <input type="range" min="4" max="16" step="1" bind:value={alignCellW} /><span class="val">{alignCellW}px</span></label>
@@ -600,7 +731,7 @@ END`;
 			<p class="data-note">Demo peptide ALA-GLY-VAL-LEU-SER</p>
 		</div>
 		<div class="component-col">
-			<ProteinViewer pdbData={demoPdb} name="Demo Peptide" style={proteinStyle} colorScheme={proteinColor} spin={proteinSpin} width={440} height={360} />
+			<ProteinViewer pdbData={demoPdb} name="Demo Peptide" style={proteinStyle} colorScheme={proteinColor} spin={proteinSpin} width={Math.min(colWidth, 700)} height={Math.round(Math.min(colWidth, 700) * 0.82)} />
 		</div>
 		<div class="controls-col">
 			<label>Style <select bind:value={proteinStyle}><option value="cartoon">Cartoon</option><option value="stick">Stick</option><option value="sphere">Sphere</option><option value="line">Line</option></select></label>
@@ -617,7 +748,7 @@ END`;
 			<p class="data-note">pUC19 EcoRI, BamHI, HindIII</p>
 		</div>
 		<div class="component-col">
-			<RestrictionMap length={2686} cutSites={plasmidCutSites} features={plasmidParts} width={560} height={170} bind:zoom={rmZoom} onhoverinfo={hoverHandler('restriction')} />
+			<RestrictionMap length={2686} cutSites={plasmidCutSites} features={plasmidParts} width={colWidth} height={Math.round(colWidth * 0.3)} bind:zoom={rmZoom} onhoverinfo={hoverHandler('restriction')} />
 		</div>
 		<div class="controls-col">
 			<label>Zoom <input type="range" min="0.5" max="10" step="0.1" bind:value={rmZoom} /> {rmZoom.toFixed(1)}x</label>
@@ -632,7 +763,7 @@ END`;
 			<p class="data-note">Wild-type vs mutant construct with insertion</p>
 		</div>
 		<div class="component-col">
-			<DiffViewer seqA={diffSeqA} seqB={diffSeqB} nameA="Wild-type" nameB="Mutant + insert" featuresA={diffFeatA} featuresB={diffFeatB} alphabet="dna" width={560} />
+			<DiffViewer seqA={diffSeqA} seqB={diffSeqB} nameA="Wild-type" nameB="Mutant + insert" featuresA={diffFeatA} featuresB={diffFeatB} alphabet="dna" width={colWidth} />
 		</div>
 		<div class="controls-col">
 			<p class="hint">No interactive controls &mdash; data-driven display</p>
@@ -647,7 +778,7 @@ END`;
 			<p class="data-note">{Object.values(compositionCounts).reduce((a,b)=>a+b,0)} bp sample</p>
 		</div>
 		<div class="component-col">
-			<CompositionChart counts={compositionCounts} alphabet={compAlphabet} gc={0.507} width={440} height={130} />
+			<CompositionChart counts={compositionCounts} alphabet={compAlphabet} gc={0.507} width={colWidth} height={Math.round(colWidth * 0.23)} />
 		</div>
 		<div class="controls-col">
 			<label>Alphabet <select bind:value={compAlphabet}><option value="dna">DNA</option><option value="rna">RNA</option><option value="protein">Protein</option></select></label>
@@ -730,9 +861,9 @@ END`;
 
 <style>
 	.page {
-		max-width: 1280px;
+		max-width: 70%;
 		margin: 0 auto;
-		padding: 16px 24px 80px;
+		padding: 16px 0 80px;
 	}
 
 	/* Table-of-contents nav */

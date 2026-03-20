@@ -20,6 +20,7 @@
 		<nav>
 			<a href="{base}/" class="brand">hatchlings</a>
 			<span class="tagline">Svelte 5 molecular biology components</span>
+			<a href="{base}/cloning" class="nav-link">Cloning Strategies</a>
 			<button class="theme-toggle" onclick={toggleTheme} title="Toggle dark/light theme">
 				{theme === 'dark' ? 'Light' : 'Dark'}
 			</button>
@@ -68,6 +69,18 @@
 		color: var(--hatch-text-dim, #566070);
 		font-size: 13px;
 		flex: 1;
+	}
+
+	.nav-link {
+		color: var(--hatch-text-muted, #8a95a5);
+		font-size: 12px;
+		text-decoration: none;
+		padding: 4px 10px;
+		border-radius: 4px;
+		transition: color 0.15s;
+	}
+	.nav-link:hover {
+		color: var(--hatch-text, #d4dce6);
 	}
 
 	.theme-toggle {

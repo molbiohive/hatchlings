@@ -65,6 +65,15 @@ export interface PlasmidData {
 	cutSites: CutSite[];
 }
 
+export interface ProteinAnnotation {
+	name: string;
+	type: string;
+	start: number;
+	end: number;
+	color?: string;
+	label?: string;
+}
+
 export interface SequenceData {
 	seq: string;
 	parts: Part[];

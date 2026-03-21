@@ -26,6 +26,59 @@
 	const RENDER_SIZE = 500;
 	let cssScale = $derived(nodeSize / RENDER_SIZE);
 
+	/** Estimate LinearMap height at RENDER_SIZE width, mirroring its zone layout */
+	function estimateLinearHeight(node: CloningNode): number {
+		const parts = node.parts ?? [];
+		const cs = node.cutSites ?? [];
+		const FEATURE_H = 14, PRIMER_H = 8, LANE_GAP = 3, ZONE_GAP = 4;
+		const RULER_H = 8; // TICK_UP + TICK_DOWN only (showTicks=false)
+		const LABEL_ROW = 12 + ZONE_GAP;
+
+		const isPrimer = (p: { type: string }) => p.type === 'primer_bind' || p.type === 'primer';
+		const fwdFeat = parts.filter(p => !isPrimer(p) && p.strand !== -1);
+		const revFeat = parts.filter(p => !isPrimer(p) && p.strand === -1);
+		const fwdPrim = parts.filter(p => isPrimer(p) && p.strand !== -1);
+		const revPrim = parts.filter(p => isPrimer(p) && p.strand === -1);
+
+		function laneCount(items: { start: number; end: number }[]): number {
+			if (items.length === 0) return 0;
+			const sorted = [...items].sort((a, b) => a.start - b.start);
+			const lanes: { end: number }[] = [];
+			for (const item of sorted) {
+				let placed = false;
+				for (const lane of lanes) {
+					if (item.start >= lane.end) { lane.end = item.end; placed = true; break; }
+				}
+				if (!placed) lanes.push({ end: item.end });
+			}
+			return lanes.length;
+		}
+
+		const zoneH = (count: number, itemH: number) =>
+			count > 0 ? count * (itemH + LANE_GAP) + ZONE_GAP : 0;
+
+		let h = LABEL_ROW; // name label
+		h += cs.length > 0 ? 14 + ZONE_GAP : 0; // cut site labels (interactive=false => 0, but include for safety)
+		h += zoneH(laneCount(fwdPrim), PRIMER_H);
+		h += zoneH(laneCount(fwdFeat), FEATURE_H);
+		h += RULER_H;
+		h += ZONE_GAP;
+		h += zoneH(laneCount(revFeat), FEATURE_H);
+		h += zoneH(laneCount(revPrim), PRIMER_H);
+		h += 4; // bottom padding
+		return h;
+	}
+
+	function nodeH(node: CloningNode): number {
+		if (node.topology !== 'linear') return nodeSize;
+		return Math.round(estimateLinearHeight(node) * cssScale);
+	}
+
+	function renderH(node: CloningNode): number {
+		if (node.topology !== 'linear') return RENDER_SIZE;
+		return estimateLinearHeight(node);
+	}
+
 	// Spacing constants
 	const LABEL_H = 36;
 	const SINGLE_CONN_H = 50;
@@ -103,8 +156,9 @@
 
 			if (!cnode.source?.inputs?.length) return;
 
+			const h = nodeH(cnode);
 			const parentCX = x + nodeSize / 2;
-			const connTop = y + nodeSize + LABEL_H;
+			const connTop = y + h + LABEL_H;
 			const { inputs } = cnode.source;
 			const opLabel = getOpLabel(cnode.source);
 
@@ -169,7 +223,7 @@
 			minX = Math.min(minX, n.x);
 			maxX = Math.max(maxX, n.x + nodeSize);
 			minY = Math.min(minY, n.y);
-			maxY = Math.max(maxY, n.y + nodeSize + LABEL_H);
+			maxY = Math.max(maxY, n.y + nodeH(n.node) + LABEL_H);
 		}
 		// Extra horizontal room for text labels
 		const textPadLeft = 100;
@@ -312,6 +366,8 @@
 
 		<!-- Nodes (on top of connectors) -->
 		{#each layout.nodes as pn (pn.node.id)}
+			{@const nh = nodeH(pn.node)}
+			{@const rh = renderH(pn.node)}
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<g
 				class="node"
@@ -320,10 +376,10 @@
 				onmouseenter={(e) => handleNodeEnter(e, pn.node)}
 				onmouseleave={handleMouseLeave}
 			>
-				<foreignObject x="0" y="0" width={nodeSize} height={nodeSize}>
+				<foreignObject x="0" y="0" width={nodeSize} height={nh}>
 					<div
 						class="node-embed"
-						style="width:{RENDER_SIZE}px;height:{RENDER_SIZE}px;transform:scale({cssScale});transform-origin:top left;"
+						style="width:{RENDER_SIZE}px;height:{rh}px;transform:scale({cssScale});transform-origin:top left;"
 					>
 						<PlasmidViewer
 							name={pn.node.name}
@@ -332,7 +388,7 @@
 							cutSites={pn.node.cutSites ?? []}
 							topology={pn.node.topology ?? 'circular'}
 							width={RENDER_SIZE}
-							height={RENDER_SIZE}
+							height={rh}
 							showTicks={false}
 							showInternalLabels={false}
 							interactive={false}
@@ -341,10 +397,10 @@
 					</div>
 				</foreignObject>
 				<!-- Name + size below node -->
-				<text x={nodeSize / 2} y={nodeSize + 14} text-anchor="middle" class="node-name">
+				<text x={nodeSize / 2} y={nh + 14} text-anchor="middle" class="node-name">
 					{pn.node.name}
 				</text>
-				<text x={nodeSize / 2} y={nodeSize + 28} text-anchor="middle" class="node-size">
+				<text x={nodeSize / 2} y={nh + 28} text-anchor="middle" class="node-size">
 					{pn.node.size.toLocaleString()} bp
 				</text>
 			</g>

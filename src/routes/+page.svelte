@@ -7,6 +7,7 @@
 	import { TraceViewer, MultiTraceViewer } from '$lib/components/trace/index.js';
 	import { AlignmentViewer } from '$lib/components/alignment/index.js';
 	import { ProteinViewer } from '$lib/components/protein/index.js';
+	import { ProteinSequenceViewer } from '$lib/components/protein-sequence/index.js';
 	import DoseResponseCurve from '$lib/components/charts/DoseResponseCurve.svelte';
 	import ChromatogramViewer from '$lib/components/charts/ChromatogramViewer.svelte';
 	import PlateHeatmap from '$lib/components/charts/PlateHeatmap.svelte';
@@ -28,6 +29,7 @@
 		DoseResponseCurveData,
 		HoverInfo,
 		CloningNode,
+		ProteinAnnotation,
 	} from '$lib/types/index.js';
 	import { Tooltip } from '$lib/components/shared/index.js';
 
@@ -574,13 +576,37 @@ END`;
 	// Responsive widths — bind to component-col containers
 	let colWidth = $state(800);
 
+	// ========== PROTEIN SEQUENCE DATA ==========
+	const proteinSeqDemo = 'MVGRLSTKPDEARKLFESVHPGDYCWQIATMNDTHSEGLFPNVWYIRQKEGDM' +
+		'ARVTCHLPSFQAIENDGYTKWRMVGRLSTKPDEARKLFESVHPGDYCWQIATMNDTHSEG' +
+		'LFPNVWYIRQKEGDMARVTCHLPSFQAIENDGYTKWRMVGRLSTKPDEARKLFE';
+	const proteinDnaDemo = (() => {
+		const CT: Record<string, string> = {
+			M:'ATG',V:'GTG',G:'GGC',R:'CGC',L:'CTC',S:'TCG',T:'ACC',K:'AAG',
+			P:'CCC',D:'GAC',E:'GAG',A:'GCG',F:'TTC',H:'CAC',Y:'TAC',C:'TGC',
+			W:'TGG',Q:'CAG',I:'ATC',N:'AAC',
+		};
+		return proteinSeqDemo.split('').map(aa => CT[aa] ?? 'NNN').join('');
+	})();
+	const proteinAnnotations: ProteinAnnotation[] = [
+		{ name: 'Signal peptide', type: 'signal_peptide', start: 0, end: 18, color: '#aec7e8' },
+		{ name: 'SH3 domain', type: 'domain', start: 22, end: 72, color: '#4dc3ff' },
+		{ name: 'Glycosylation', type: 'motif', start: 45, end: 48, color: '#ff9896' },
+		{ name: 'Active site', type: 'binding_site', start: 80, end: 95, color: '#31a354' },
+		{ name: 'Coiled-coil', type: 'domain', start: 100, end: 145, color: '#9467bd' },
+		{ name: 'Phosphorylation', type: 'motif', start: 130, end: 133, color: '#e377c2' },
+	];
+	let protSeqShowCodons = $state(true);
+	let protSeqColorResidues = $state(true);
+	let protSeqFrame: 0 | 1 | 2 = $state(0);
+
 	// Navigation
 	const sections = [
 		{ id: 'cloning', label: 'Cloning History' },
 		{ id: 'cloning-strategy', label: 'Cloning Strategy' },
 		{ id: 'plasmid', label: 'Plasmid' }, { id: 'sequence', label: 'Sequence' },
 		{ id: 'gel', label: 'Gel' }, { id: 'trace', label: 'Trace' },
-		{ id: 'alignment', label: 'Alignment' }, { id: 'protein', label: 'Protein 3D' },
+		{ id: 'alignment', label: 'Alignment' }, { id: 'protein-seq', label: 'Protein Seq' }, { id: 'protein', label: 'Protein 3D' },
 		{ id: 'restriction', label: 'Restriction Map' }, { id: 'diff', label: 'Construct Diff' },
 		{ id: 'composition', label: 'Composition' },
 		{ id: 'dose', label: 'Dose-Response' }, { id: 'chrom', label: 'Chromatogram' },
@@ -636,6 +662,22 @@ END`;
 		</div>
 		<div class="component-col">
 			<PlasmidViewer name="pUC19" size={2686} parts={plasmidParts} cutSites={plasmidCutSites} topology="circular" selectionState={sharedSelection} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={Math.min(colWidth, 700)} height={Math.min(colWidth, 700)} onhoverinfo={hoverHandler('plasmid')} />
+		</div>
+		<div class="controls-col">
+			<label><input type="checkbox" bind:checked={plasmidShowTicks} /> Tick marks</label>
+			<label><input type="checkbox" bind:checked={plasmidShowInternal} /> Internal labels</label>
+		</div>
+	</section>
+
+	<!-- =============================== LINEAR MAP =============================== -->
+	<section id="linear" class="component-row">
+		<div class="info-col">
+			<h2>PlasmidViewer (Linear)</h2>
+			<p>Horizontal linear map using the same PlasmidViewer component with <code>topology="linear"</code>. Features stack by strand, cut sites labeled with greedy placement.</p>
+			<p class="data-note">Same pUC19 data &mdash; topology switch only</p>
+		</div>
+		<div class="component-col">
+			<PlasmidViewer name="pUC19" size={2686} parts={plasmidParts} cutSites={plasmidCutSites} topology="linear" selectionState={sharedSelection} showTicks={plasmidShowTicks} showInternalLabels={plasmidShowInternal} width={colWidth} onhoverinfo={hoverHandler('linear')} />
 		</div>
 		<div class="controls-col">
 			<label><input type="checkbox" bind:checked={plasmidShowTicks} /> Tick marks</label>
@@ -726,6 +768,23 @@ END`;
 			<label>Cell width <input type="range" min="4" max="16" step="1" bind:value={alignCellW} /><span class="val">{alignCellW}px</span></label>
 			<label><input type="checkbox" bind:checked={alignShowConservation} /> Conservation</label>
 			<label><input type="checkbox" bind:checked={alignShowNames} /> Names</label>
+		</div>
+	</section>
+
+	<!-- =============================== PROTEIN SEQUENCE =============================== -->
+	<section id="protein-seq" class="component-row">
+		<div class="info-col">
+			<h2>ProteinSequenceViewer</h2>
+			<p>Amino acid sequence viewer with property-based residue coloring, annotation tracks (domains, motifs), codon display from DNA source, and reading frame switching.</p>
+			<p class="data-note">{proteinSeqDemo.length} aa with 6 annotations</p>
+		</div>
+		<div class="component-col">
+			<ProteinSequenceViewer seq={proteinSeqDemo} dnaSource={proteinDnaDemo} frame={protSeqFrame} annotations={proteinAnnotations} showCodons={protSeqShowCodons} colorResidues={protSeqColorResidues} width={colWidth} height={Math.round(colWidth * 0.5)} onhoverinfo={hoverHandler('protein-seq')} />
+		</div>
+		<div class="controls-col">
+			<label><input type="checkbox" bind:checked={protSeqColorResidues} /> Color residues</label>
+			<label><input type="checkbox" bind:checked={protSeqShowCodons} /> Show codons</label>
+			<label>Frame <select bind:value={protSeqFrame}><option value={0}>0</option><option value={1}>1</option><option value={2}>2</option></select></label>
 		</div>
 	</section>
 

@@ -25,6 +25,7 @@ export { SequenceViewer, SequenceRow, AnnotationTrack, TranslationTrack, Ruler, 
 export { GelViewer, GelBand, GelLane, GelLadder } from './components/gel/index.js';
 export { TraceViewer, MultiTraceViewer, TracePeaks, BaseCallTrack, AlignmentView } from './components/trace/index.js';
 export { ProteinViewer } from './components/protein/index.js';
+export { ProteinSequenceViewer } from './components/protein-sequence/index.js';
 export { AlignmentViewer } from './components/alignment/index.js';
 
 export { CloningHistoryViewer, CloningStrategyViewer } from './components/cloning/index.js';

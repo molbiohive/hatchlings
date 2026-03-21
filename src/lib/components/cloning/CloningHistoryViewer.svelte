@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CloningNode, CloningSource } from '../../types/cloning.js';
 	import type { HoverInfo } from '../../types/utility.js';
+	import { countLanes } from '../../util/coordinates.js';
 	import { FEATURE_H, PRIMER_H, LANE_GAP, ZONE_GAP, RULER_TICK, LABEL_ROW_H, CUT_SITE_LABEL_H } from '../../util/layout.js';
 	import PlasmidViewer from '../plasmid/PlasmidViewer.svelte';
 
@@ -40,31 +41,17 @@
 		const fwdPrim = parts.filter(p => isPrimer(p) && p.strand !== -1);
 		const revPrim = parts.filter(p => isPrimer(p) && p.strand === -1);
 
-		function laneCount(items: { start: number; end: number }[]): number {
-			if (items.length === 0) return 0;
-			const sorted = [...items].sort((a, b) => a.start - b.start);
-			const lanes: { end: number }[] = [];
-			for (const item of sorted) {
-				let placed = false;
-				for (const lane of lanes) {
-					if (item.start >= lane.end) { lane.end = item.end; placed = true; break; }
-				}
-				if (!placed) lanes.push({ end: item.end });
-			}
-			return lanes.length;
-		}
-
 		const zoneH = (count: number, itemH: number) =>
 			count > 0 ? count * (itemH + LANE_GAP) + ZONE_GAP : 0;
 
 		let h = LABEL_ROW; // name label
 		h += cs.length > 0 ? CUT_SITE_LABEL_H + ZONE_GAP : 0; // cut site labels
-		h += zoneH(laneCount(fwdPrim), PRIMER_H);
-		h += zoneH(laneCount(fwdFeat), FEATURE_H);
+		h += zoneH(countLanes(fwdPrim), PRIMER_H);
+		h += zoneH(countLanes(fwdFeat), FEATURE_H);
 		h += RULER_H;
 		h += ZONE_GAP;
-		h += zoneH(laneCount(revFeat), FEATURE_H);
-		h += zoneH(laneCount(revPrim), PRIMER_H);
+		h += zoneH(countLanes(revFeat), FEATURE_H);
+		h += zoneH(countLanes(revPrim), PRIMER_H);
 		h += 4; // bottom padding
 		return h;
 	}

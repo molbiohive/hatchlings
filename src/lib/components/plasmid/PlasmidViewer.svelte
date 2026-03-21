@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Part, CutSite } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
-	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels } from '../../util/coordinates.js';
+	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels, maxLayer } from '../../util/coordinates.js';
 	import type { LabelPosition } from '../../util/coordinates.js';
-	import { getFeatureColor, isPrimer, PRIMER_COLOR } from '../../util/colors.js';
+	import { getFeatureColor, isPrimer, PRIMER_COLOR, CUT_SITE_COLOR } from '../../util/colors.js';
 	import { PART_WIDTH, PART_GAP, CUTSITE_SPACE, SCALE_BAND } from '../../util/layout.js';
 	import { LinearMap } from '../linear/index.js';
 	import PlasmidRing from './PlasmidRing.svelte';
@@ -86,16 +86,8 @@
 	});
 
 	/** Max stacking depth per group */
-	let maxForwardLayer = $derived.by(() => {
-		let max = 0;
-		for (const v of forwardOffsets.values()) if (v > max) max = v;
-		return max;
-	});
-	let maxReverseLayer = $derived.by(() => {
-		let max = 0;
-		for (const v of reverseOffsets.values()) if (v > max) max = v;
-		return max;
-	});
+	let maxForwardLayer = $derived(maxLayer(forwardOffsets));
+	let maxReverseLayer = $derived(maxLayer(reverseOffsets));
 
 	/** Primer stacking layers */
 	let forwardPrimers = $derived(primers.filter(p => p.strand !== -1));
@@ -110,16 +102,8 @@
 		return computeCircularAnnotationLayers(intervals, size);
 	});
 
-	let maxForwardPrimerLayer = $derived.by(() => {
-		let max = 0;
-		for (const v of forwardPrimerOffsets.values()) if (v > max) max = v;
-		return forwardPrimers.length > 0 ? max : -1;
-	});
-	let maxReversePrimerLayer = $derived.by(() => {
-		let max = 0;
-		for (const v of reversePrimerOffsets.values()) if (v > max) max = v;
-		return reversePrimers.length > 0 ? max : -1;
-	});
+	let maxForwardPrimerLayer = $derived(maxLayer(forwardPrimerOffsets));
+	let maxReversePrimerLayer = $derived(maxLayer(reversePrimerOffsets));
 
 	/** Forward features: just outside backbone + cut site space */
 	let forwardRadius = $derived(
@@ -240,7 +224,7 @@
 				text,
 				anchorX: pt.x,
 				anchorY: pt.y,
-				color: '#d45858',
+				color: CUT_SITE_COLOR,
 				bold: cluster.enzymes.length === 1 && uniqueCutters.has(cluster.primary.enzyme),
 				cutSite: cluster.primary,
 			});
@@ -335,7 +319,7 @@
 		for (const cs of cutSites) {
 			const csEnd = cs.end ?? cs.position + 1;
 			if (rangesOverlap(range.start, range.end, cs.position, csEnd)) {
-				entries.push({ name: cs.enzyme, color: '#d45858', bold: uniqueCutters.has(cs.enzyme) });
+				entries.push({ name: cs.enzyme, color: CUT_SITE_COLOR, bold: uniqueCutters.has(cs.enzyme) });
 			}
 		}
 
@@ -504,10 +488,10 @@
 			for (const cs of cutSites) {
 				const csEnd = cs.end ?? cs.position + 1;
 				if (rangesOverlap(selectionInfo.start, selectionInfo.end, cs.position, csEnd)) {
-					allEntries.push({ name: cs.enzyme, color: '#d45858', bold: uniqueCutters.has(cs.enzyme) });
+					allEntries.push({ name: cs.enzyme, color: CUT_SITE_COLOR, bold: uniqueCutters.has(cs.enzyme) });
 				}
 			}
-			const items = allEntries.map(e => ({ label: e.name, value: e.color === '#d45858' ? 'cut site' : 'feature' }));
+			const items = allEntries.map(e => ({ label: e.name, value: e.color === CUT_SITE_COLOR ? 'cut site' : 'feature' }));
 			onhoverinfo?.({
 				title: `${selectionInfo.start}..${selectionInfo.end} (${formatBp(selectionInfo.length)} bp)`,
 				items,

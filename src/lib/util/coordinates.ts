@@ -2,8 +2,50 @@
 
 import { IntervalTree } from './interval-tree.js';
 import type { Part } from '../types/sequence.js';
+import { CHAR_PX } from './layout.js';
 
 const TWO_PI = 2 * Math.PI;
+
+/** DNA complement base map */
+export const COMPLEMENT_MAP: Record<string, string> = {
+	A: 'T', T: 'A', G: 'C', C: 'G', N: 'N',
+};
+
+/** Return the complement of a single DNA base */
+export function complementBase(b: string): string {
+	return COMPLEMENT_MAP[b.toUpperCase()] ?? b;
+}
+
+/** Truncate a label with ellipsis if it would exceed maxWidth pixels */
+export function truncateLabel(text: string, maxWidth: number, charPx = CHAR_PX): string {
+	const maxChars = Math.floor(maxWidth / charPx) - 1;
+	if (maxChars <= 0) return '';
+	if (text.length <= maxChars) return text;
+	if (maxChars <= 2) return '';
+	return text.slice(0, maxChars - 1) + '\u2026';
+}
+
+/** Count the number of non-overlapping lanes needed for a set of intervals */
+export function countLanes(intervals: { start: number; end: number }[]): number {
+	if (intervals.length === 0) return 0;
+	const sorted = [...intervals].sort((a, b) => a.start - b.start);
+	const lanes: { end: number }[] = [];
+	for (const item of sorted) {
+		let placed = false;
+		for (const lane of lanes) {
+			if (item.start >= lane.end) { lane.end = item.end; placed = true; break; }
+		}
+		if (!placed) lanes.push({ end: item.end });
+	}
+	return lanes.length;
+}
+
+/** Get the maximum layer value from a layer assignment map (-1 if empty) */
+export function maxLayer(layers: Map<unknown, number>): number {
+	let max = -1;
+	for (const v of layers.values()) if (v > max) max = v;
+	return max;
+}
 
 /** Label position for relaxation */
 export interface LabelPosition {
@@ -380,7 +422,6 @@ export function analyzePrimerBinding(
 
 	if (!primer.sequence) return defaults;
 
-	const COMP: Record<string, string> = { A: 'T', T: 'A', G: 'C', C: 'G' };
 	const primerSeq = primer.sequence.toUpperCase();
 	const len = primer.end - primer.start;
 
@@ -393,7 +434,7 @@ export function analyzePrimerBinding(
 		if (primer.strand === 1) {
 			expected = (templateSeq[primer.start + i] ?? '').toUpperCase();
 		} else {
-			expected = COMP[(templateSeq[primer.end - 1 - i] ?? '').toUpperCase()] ?? '';
+			expected = COMPLEMENT_MAP[(templateSeq[primer.end - 1 - i] ?? '').toUpperCase()] ?? '';
 		}
 		matches.push(primerSeq[i] === expected);
 	}

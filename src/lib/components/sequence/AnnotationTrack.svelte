@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { Part } from '../../types/index.js';
 	import { getFeatureColor } from '../../util/colors.js';
+	import { truncateLabel } from '../../util/coordinates.js';
 	import { IntervalTree } from '../../util/interval-tree.js';
-	import { ANNOTATION_H, ANNOTATION_GAP, CHAR_PX } from '../../util/layout.js';
+	import { ANNOTATION_H, ANNOTATION_GAP } from '../../util/layout.js';
 
 	interface Props {
 		parts: Part[];
@@ -42,15 +43,6 @@
 		const visStart = Math.max(part.start, start);
 		const visEnd = Math.min(part.end, end);
 		return (visEnd - visStart) * charWidth;
-	}
-
-	/** Truncate label with ellipsis if too wide */
-	function truncateLabel(text: string, maxWidth: number): string {
-		const maxChars = Math.floor(maxWidth / CHAR_PX) - 1;
-		if (maxChars <= 0) return '';
-		if (text.length <= maxChars) return text;
-		if (maxChars <= 2) return '';
-		return text.slice(0, maxChars - 1) + '\u2026';
 	}
 
 	function arrowPath(part: Part, lane: number): string {

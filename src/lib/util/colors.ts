@@ -124,6 +124,9 @@ export const categoricalColors = [
 /** Primer color — teal */
 export const PRIMER_COLOR = '#22d3ee';
 
+/** Cut site color — soft red */
+export const CUT_SITE_COLOR = '#d45858';
+
 /** Check if a part is a primer */
 export function isPrimer(part: { type: string }): boolean {
 	return part.type === 'primer_bind' || part.type === 'primer';

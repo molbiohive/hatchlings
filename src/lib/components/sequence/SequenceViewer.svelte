@@ -3,7 +3,7 @@
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { isPrimer } from '../../util/colors.js';
-	import { analyzePrimerBinding } from '../../util/coordinates.js';
+	import { analyzePrimerBinding, countLanes } from '../../util/coordinates.js';
 	import { SEQ_PAD, ROW_PADDING, BUFFER_ROWS, CUTSITE_LABEL_H, FONT_SECONDARY } from '../../util/layout.js';
 	import SequenceRow from './SequenceRow.svelte';
 
@@ -109,43 +109,13 @@
 	/** Count annotation lanes for a row (features only, no primers) */
 	function countAnnotationLanes(rowStart: number, rowEnd: number): number {
 		if (!showAnnotations) return 0;
-		const visParts = enrichedParts.filter((p) => !isPrimer(p) && p.start < rowEnd && p.end > rowStart);
-		if (visParts.length === 0) return 0;
-		const sorted = [...visParts].sort((a, b) => a.start - b.start);
-		const lanes: { end: number }[] = [];
-		for (const part of sorted) {
-			let assigned = false;
-			for (const lane of lanes) {
-				if (part.start >= lane.end) {
-					lane.end = part.end;
-					assigned = true;
-					break;
-				}
-			}
-			if (!assigned) lanes.push({ end: part.end });
-		}
-		return lanes.length;
+		return countLanes(enrichedParts.filter((p) => !isPrimer(p) && p.start < rowEnd && p.end > rowStart));
 	}
 
 	/** Count primer lanes for a row */
 	function countPrimerLanes(rowStart: number, rowEnd: number): number {
 		if (!showAnnotations) return 0;
-		const visPrimers = enrichedParts.filter((p) => isPrimer(p) && p.start < rowEnd && p.end > rowStart);
-		if (visPrimers.length === 0) return 0;
-		const sorted = [...visPrimers].sort((a, b) => a.start - b.start);
-		const lanes: { end: number }[] = [];
-		for (const primer of sorted) {
-			let assigned = false;
-			for (const lane of lanes) {
-				if (primer.start >= lane.end) {
-					lane.end = primer.end;
-					assigned = true;
-					break;
-				}
-			}
-			if (!assigned) lanes.push({ end: primer.end });
-		}
-		return lanes.length;
+		return countLanes(enrichedParts.filter((p) => isPrimer(p) && p.start < rowEnd && p.end > rowStart));
 	}
 
 	/** Height of the inline position ruler */

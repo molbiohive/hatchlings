@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Part, Translation } from '../../types/index.js';
 	import { nucleotideColors } from '../../util/colors.js';
+	import { complementBase, countLanes } from '../../util/coordinates.js';
 	import { SEQ_PAD, LINE_HEIGHT, FONT_SECONDARY } from '../../util/layout.js';
 	import AnnotationTrack from './AnnotationTrack.svelte';
 	import PrimerTrack from './PrimerTrack.svelte';
@@ -54,13 +55,6 @@
 		onparthover,
 	}: Props = $props();
 
-	const COMPLEMENT_MAP: Record<string, string> = {
-		A: 'T', T: 'A', G: 'C', C: 'G',
-	};
-	function complementBase(b: string): string {
-		return COMPLEMENT_MAP[b.toUpperCase()] ?? b;
-	}
-
 	const MONO_COLOR = 'var(--hatch-seq-base-mono, #8a95a5)';
 
 	const colorMap = nucleotideColors;
@@ -71,25 +65,7 @@
 	/** Compute lane count for annotation track */
 	const annotationLanes = $derived.by(() => {
 		if (!showAnnotations || parts.length === 0) return 0;
-		const visible = parts.filter((p) => p.start < end && p.end > start);
-		if (visible.length === 0) return 0;
-
-		const sorted = [...visible].sort((a, b) => a.start - b.start);
-		const lanes: { end: number }[] = [];
-		for (const part of sorted) {
-			let assigned = false;
-			for (const lane of lanes) {
-				if (part.start >= lane.end) {
-					lane.end = part.end;
-					assigned = true;
-					break;
-				}
-			}
-			if (!assigned) {
-				lanes.push({ end: part.end });
-			}
-		}
-		return lanes.length;
+		return countLanes(parts.filter((p) => p.start < end && p.end > start));
 	});
 
 	const ANNOTATION_TRACK_HEIGHT = $derived(annotationLanes * 18);
@@ -97,25 +73,7 @@
 	/** Compute lane count for primer track */
 	const primerLanes = $derived.by(() => {
 		if (!showAnnotations || primers.length === 0) return 0;
-		const visible = primers.filter((p) => p.start < end && p.end > start);
-		if (visible.length === 0) return 0;
-
-		const sorted = [...visible].sort((a, b) => a.start - b.start);
-		const lanes: { end: number }[] = [];
-		for (const primer of sorted) {
-			let assigned = false;
-			for (const lane of lanes) {
-				if (primer.start >= lane.end) {
-					lane.end = primer.end;
-					assigned = true;
-					break;
-				}
-			}
-			if (!assigned) {
-				lanes.push({ end: primer.end });
-			}
-		}
-		return lanes.length;
+		return countLanes(primers.filter((p) => p.start < end && p.end > start));
 	});
 
 	const PRIMER_TRACK_HEIGHT = $derived(primerLanes > 0 ? primerLanes * 25 + 8 : 0);

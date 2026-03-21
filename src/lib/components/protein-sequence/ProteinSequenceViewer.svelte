@@ -2,6 +2,7 @@
 	import type { ProteinAnnotation } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
+	import { countLanes } from '../../util/coordinates.js';
 	import { SEQ_PAD, ROW_PADDING, BUFFER_ROWS, AA_BLOCK_H } from '../../util/layout.js';
 	import ProteinRow from './ProteinRow.svelte';
 
@@ -105,18 +106,7 @@
 	const CODON_TRACK_H = $derived(showCodons && allCodons.length > 0 ? 16 : 0);
 
 	function countAnnotationLanes(rowStart: number, rowEnd: number): number {
-		const vis = annotations.filter((a) => a.start < rowEnd && a.end > rowStart);
-		if (vis.length === 0) return 0;
-		const sorted = [...vis].sort((a, b) => a.start - b.start);
-		const lanes: { end: number }[] = [];
-		for (const ann of sorted) {
-			let assigned = false;
-			for (const lane of lanes) {
-				if (ann.start >= lane.end) { lane.end = ann.end; assigned = true; break; }
-			}
-			if (!assigned) lanes.push({ end: ann.end });
-		}
-		return lanes.length;
+		return countLanes(annotations.filter((a) => a.start < rowEnd && a.end > rowStart));
 	}
 
 	function estimateRowHeight(rowStart: number, rowEnd: number): number {

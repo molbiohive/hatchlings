@@ -27,6 +27,7 @@
 	type FragmentEnd = ClosedEnd | BluntEnd | StickyEnd | HomologyEnd | TypeIISEnd;
 	import type { HoverInfo } from '../../types/utility.js';
 	import type { CutSite } from '../../types/sequence.js';
+	import { complementBase } from '../../util/coordinates.js';
 
 	interface Props {
 		node: CloningNode;
@@ -81,11 +82,6 @@
 		'BpiI':    { seq: 'GAAGAC',   senseCut: 8, compCut: 12 },
 	};
 
-	// ── Complement base ──
-	function complement(base: string): string {
-		const map: Record<string, string> = { A: 'T', T: 'A', G: 'C', C: 'G', N: 'N' };
-		return map[base.toUpperCase()] ?? 'N';
-	}
 
 	// ── Sequence extraction helpers ──
 	function getLeftSeq(cn: CloningNode, n: number): string {
@@ -196,7 +192,7 @@
 	 */
 	function buildEndBlock(seq: string, end: FragmentEnd, side: 'left' | 'right', ohColor?: string): SeqBlock {
 		const n = seq.length;
-		const compSeq = seq.split('').map(complement).join('');
+		const compSeq = seq.split('').map(complementBase).join('');
 
 		if (end.type === 'closed' || end.type === 'blunt') {
 			return { sense: seq, comp: compSeq, charType: Array(n).fill('ds') };
@@ -209,7 +205,7 @@
 
 			const is5p = end.direction === '5prime';
 			const ohUpper = oh.toUpperCase();
-			const ohComp = ohUpper.split('').map(complement).join('');
+			const ohComp = ohUpper.split('').map(complementBase).join('');
 
 			// Both strands filled: extending strand colored (oh-s/oh-c),
 			// non-extending strand shows complementary bases rendered in grey.
@@ -253,7 +249,7 @@
 	/** Build a greyed-out context block from raw sequence */
 	function buildContextBlock(seq: string): SeqBlock {
 		const upper = seq.toUpperCase();
-		const comp = upper.split('').map(complement).join('');
+		const comp = upper.split('').map(complementBase).join('');
 		return { sense: upper, comp, charType: Array(upper.length).fill('ds') as ('ds')[] };
 	}
 
@@ -303,7 +299,7 @@
 		if (cutsOutside) {
 			// Type IIS: rec site is in discarded flanking DNA
 			const fwd = recSeq.toUpperCase();
-			const rc = fwd.split('').reverse().map(complement).join('');
+			const rc = fwd.split('').reverse().map(complementBase).join('');
 			const strand = cs.strand ?? 1;
 			const seq = (side === 'left')
 				? (strand === 1 ? fwd : rc)
@@ -323,7 +319,7 @@
 
 	function buildWindowBlock(seq: string, bgColors: (string | null)[]): SeqBlock {
 		const upper = seq.toUpperCase();
-		const comp = upper.split('').map(complement).join('');
+		const comp = upper.split('').map(complementBase).join('');
 		return {
 			sense: upper,
 			comp,

@@ -2,7 +2,7 @@
 	import type { Part, CutSite } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
-	import { formatBp, generateTicks, computeAnnotationLayers } from '../../util/coordinates.js';
+	import { formatBp, generateTicks, computeAnnotationLayers, maxLayer } from '../../util/coordinates.js';
 	import { getFeatureColor, isPrimer, PRIMER_COLOR } from '../../util/colors.js';
 	import {
 		LINEAR_MARGIN_LEFT, LINEAR_MARGIN_RIGHT,
@@ -102,12 +102,6 @@
 		const intervals = reversePrimers.map(p => ({ start: p.start, end: p.end }));
 		return computeAnnotationLayers(intervals);
 	});
-
-	function maxLayer(layers: Map<number, number>): number {
-		let max = -1;
-		for (const v of layers.values()) if (v > max) max = v;
-		return max;
-	}
 
 	let maxFwdFeatureLayer = $derived(maxLayer(fwdFeatureLayers));
 	let maxRevFeatureLayer = $derived(maxLayer(revFeatureLayers));

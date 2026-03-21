@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { ProteinAnnotation } from '../../types/index.js';
 	import { aminoAcidColors, getFeatureColor } from '../../util/colors.js';
+	import { truncateLabel, maxLayer as getMaxLayer } from '../../util/coordinates.js';
 	import { IntervalTree } from '../../util/interval-tree.js';
-	import { SEQ_PAD, LINE_HEIGHT, AA_BLOCK_H, CODON_H, ANNOTATION_H, ANNOTATION_GAP, CHAR_PX, FONT_PRIMARY, FONT_SECONDARY } from '../../util/layout.js';
+	import { SEQ_PAD, LINE_HEIGHT, AA_BLOCK_H, CODON_H, ANNOTATION_H, ANNOTATION_GAP, FONT_PRIMARY, FONT_SECONDARY } from '../../util/layout.js';
 
 	interface Props {
 		seq: string;
@@ -48,13 +49,7 @@
 		return assignments;
 	});
 
-	const maxLane = $derived.by(() => {
-		let max = -1;
-		for (const lane of laneAssignments.values()) {
-			if (lane > max) max = lane;
-		}
-		return max;
-	});
+	const maxLane = $derived(getMaxLayer(laneAssignments));
 
 	const ANNOTATION_TOTAL_H = $derived(maxLane >= 0 ? (maxLane + 1) * (ANNOTATION_H + ANNOTATION_GAP) + 4 : 0);
 
@@ -83,14 +78,6 @@
 		const visStart = Math.max(ann.start, start);
 		const visEnd = Math.min(ann.end, end);
 		return (visEnd - visStart) * charWidth;
-	}
-
-	function truncateLabel(text: string, maxWidth: number): string {
-		const maxChars = Math.floor(maxWidth / CHAR_PX) - 1;
-		if (maxChars <= 0) return '';
-		if (text.length <= maxChars) return text;
-		if (maxChars <= 2) return '';
-		return text.slice(0, maxChars - 1) + '\u2026';
 	}
 
 	/** Arrow-shaped path for AA residue — same chevron as TranslationTrack.

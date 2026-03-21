@@ -4,6 +4,7 @@
 	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
+	import { CHART_MARGIN } from '../../util/layout.js';
 
 	interface Props {
 		x: number[];
@@ -33,7 +34,7 @@
 		onhoverinfo,
 	}: Props = $props();
 
-	const margin = { top: 20, right: 20, bottom: 50, left: 60 };
+	const margin = CHART_MARGIN;
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
 

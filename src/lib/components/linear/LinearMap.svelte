@@ -4,6 +4,13 @@
 	import type { HoverInfo } from '../../types/utility.js';
 	import { formatBp, generateTicks, computeAnnotationLayers } from '../../util/coordinates.js';
 	import { getFeatureColor, isPrimer, PRIMER_COLOR } from '../../util/colors.js';
+	import {
+		LINEAR_MARGIN_LEFT, LINEAR_MARGIN_RIGHT,
+		FEATURE_H, PRIMER_H, LANE_GAP, BACKBONE_STROKE,
+		RULER_TICK, RULER_LABEL_GAP, RULER_LABEL_H,
+		CUT_SITE_EXTEND, CUT_SITE_LABEL_H, ZONE_GAP,
+		LABEL_ROW_H, CHAR_PX_SMALL,
+	} from '../../util/layout.js';
 	import LinearFeature from './LinearFeature.svelte';
 
 	interface Props {
@@ -44,26 +51,16 @@
 
 	let svgElement: SVGSVGElement | undefined = $state(undefined);
 
-	// --- Layout constants ---
-	const MARGIN_LEFT = 20;
-	const MARGIN_RIGHT = 20;
-	const FEATURE_HEIGHT = 14;
-	const PRIMER_HEIGHT = 8;
-	const LANE_GAP = 3;
-	const BACKBONE_STROKE = 1.5;
-	const RULER_TICK_UP = 4;
-	const RULER_TICK_DOWN = 4;
-	const RULER_LABEL_GAP = 3;
-	const RULER_LABEL_HEIGHT = 8;
-	const CUT_SITE_EXTEND = 8;
-	const CUT_SITE_LABEL_HEIGHT = 14;
-	const ZONE_GAP = 4;
-	const LABEL_ROW_HEIGHT = 12;
+	// --- Layout aliases ---
+	const MARGIN_LEFT = LINEAR_MARGIN_LEFT;
+	const MARGIN_RIGHT = LINEAR_MARGIN_RIGHT;
+	const RULER_TICK_UP = RULER_TICK;
+	const RULER_TICK_DOWN = RULER_TICK;
 
 	/** Total height of the ruler zone (backbone + ticks + labels) */
 	let rulerZoneH = $derived(
 		showTicks
-			? RULER_TICK_UP + RULER_TICK_DOWN + RULER_LABEL_GAP + RULER_LABEL_HEIGHT
+			? RULER_TICK_UP + RULER_TICK_DOWN + RULER_LABEL_GAP + RULER_LABEL_H
 			: RULER_TICK_UP + RULER_TICK_DOWN
 	);
 
@@ -140,12 +137,11 @@
 		if (!interactive) return [];
 		const labels: { cs: CutSite; x: number; text: string; bold: boolean }[] = [];
 		let lastRightEdge = -Infinity;
-		const CHAR_WIDTH = 5.5;
 		const PADDING = 6;
 
 		for (const cs of sortedCutSites) {
 			const cx = bpToX(cs.position);
-			const textW = cs.enzyme.length * CHAR_WIDTH + PADDING;
+			const textW = cs.enzyme.length * CHAR_PX_SMALL + PADDING;
 			const left = cx - textW / 2;
 			if (left > lastRightEdge) {
 				labels.push({
@@ -161,29 +157,29 @@
 	});
 
 	// --- Zone Y positions (computed top-down) ---
-	let cutSiteLabelZoneH = $derived(cutSiteLabels.length > 0 ? CUT_SITE_LABEL_HEIGHT + ZONE_GAP : 0);
+	let cutSiteLabelZoneH = $derived(cutSiteLabels.length > 0 ? CUT_SITE_LABEL_H + ZONE_GAP : 0);
 
 	let fwdPrimerLaneCount = $derived(maxFwdPrimerLayer + 1);
 	let fwdPrimerZoneH = $derived(
-		fwdPrimerLaneCount > 0 ? fwdPrimerLaneCount * (PRIMER_HEIGHT + LANE_GAP) + ZONE_GAP : 0
+		fwdPrimerLaneCount > 0 ? fwdPrimerLaneCount * (PRIMER_H + LANE_GAP) + ZONE_GAP : 0
 	);
 
 	let fwdFeatureLaneCount = $derived(maxFwdFeatureLayer + 1);
 	let fwdFeatureZoneH = $derived(
-		fwdFeatureLaneCount > 0 ? fwdFeatureLaneCount * (FEATURE_HEIGHT + LANE_GAP) + ZONE_GAP : 0
+		fwdFeatureLaneCount > 0 ? fwdFeatureLaneCount * (FEATURE_H + LANE_GAP) + ZONE_GAP : 0
 	);
 
 	let revFeatureLaneCount = $derived(maxRevFeatureLayer + 1);
 	let revFeatureZoneH = $derived(
-		revFeatureLaneCount > 0 ? revFeatureLaneCount * (FEATURE_HEIGHT + LANE_GAP) + ZONE_GAP : 0
+		revFeatureLaneCount > 0 ? revFeatureLaneCount * (FEATURE_H + LANE_GAP) + ZONE_GAP : 0
 	);
 
 	let revPrimerLaneCount = $derived(maxRevPrimerLayer + 1);
 	let revPrimerZoneH = $derived(
-		revPrimerLaneCount > 0 ? revPrimerLaneCount * (PRIMER_HEIGHT + LANE_GAP) + ZONE_GAP : 0
+		revPrimerLaneCount > 0 ? revPrimerLaneCount * (PRIMER_H + LANE_GAP) + ZONE_GAP : 0
 	);
 
-	let nameLabelH = LABEL_ROW_HEIGHT + ZONE_GAP;
+	let nameLabelH = LABEL_ROW_H + ZONE_GAP;
 
 	// Zone Y offsets (top to bottom)
 	let nameY = nameLabelH / 2;
@@ -385,7 +381,7 @@
 				<!-- Connector line from label to backbone -->
 				<line
 					x1={cx}
-					y1={cutSiteLabelY + CUT_SITE_LABEL_HEIGHT - 2}
+					y1={cutSiteLabelY + CUT_SITE_LABEL_H - 2}
 					x2={cx}
 					y2={backboneY}
 					stroke="var(--hatch-cutsite-color, #d45858)"
@@ -396,7 +392,7 @@
 				<!-- svelte-ignore a11y_mouse_events_have_key_events -->
 				<text
 					x={cx}
-					y={cutSiteLabelY + CUT_SITE_LABEL_HEIGHT / 2}
+					y={cutSiteLabelY + CUT_SITE_LABEL_H / 2}
 					text-anchor="middle"
 					dominant-baseline="central"
 					class="cutsite-label"
@@ -418,14 +414,14 @@
 			{@const layer = fwdPrimerLayers.get(i) ?? 0}
 			{@const px = bpToX(primer.start)}
 			{@const pw = bpToX(primer.end) - px}
-			{@const py = fwdPrimerY + layer * (PRIMER_HEIGHT + LANE_GAP)}
+			{@const py = fwdPrimerY + layer * (PRIMER_H + LANE_GAP)}
 			{@const oh = primerOverhangs(primer)}
 			<LinearFeature
 				part={{ ...primer, bindingStart: undefined, bindingEnd: undefined, mismatches: undefined }}
 				x={px}
 				y={py}
 				width={pw}
-				height={PRIMER_HEIGHT}
+				height={PRIMER_H}
 				halfArrow={true}
 				overrideColor={PRIMER_COLOR}
 				fillOpacity={0.5}
@@ -444,13 +440,13 @@
 			{@const layer = fwdFeatureLayers.get(i) ?? 0}
 			{@const fx = bpToX(feature.start)}
 			{@const fw = bpToX(feature.end) - fx}
-			{@const fy = fwdFeatureY + layer * (FEATURE_HEIGHT + LANE_GAP)}
+			{@const fy = fwdFeatureY + layer * (FEATURE_H + LANE_GAP)}
 			<LinearFeature
 				part={feature}
 				x={fx}
 				y={fy}
 				width={fw}
-				height={FEATURE_HEIGHT}
+				height={FEATURE_H}
 				showInternalLabel={showInternalLabels}
 				selected={selectedPart === feature}
 				onmouseenter={(e) => handlePartMouseEnter(e, feature)}
@@ -504,7 +500,7 @@
 					{#if tick.major && tick.label}
 						<text
 							x={tx}
-							y={backboneY + RULER_TICK_DOWN + RULER_LABEL_GAP + RULER_LABEL_HEIGHT / 2}
+							y={backboneY + RULER_TICK_DOWN + RULER_LABEL_GAP + RULER_LABEL_H / 2}
 							text-anchor="middle"
 							dominant-baseline="central"
 							class="tick-label"
@@ -575,13 +571,13 @@
 			{@const layer = revFeatureLayers.get(i) ?? 0}
 			{@const fx = bpToX(feature.start)}
 			{@const fw = bpToX(feature.end) - fx}
-			{@const fy = revFeatureY + layer * (FEATURE_HEIGHT + LANE_GAP)}
+			{@const fy = revFeatureY + layer * (FEATURE_H + LANE_GAP)}
 			<LinearFeature
 				part={feature}
 				x={fx}
 				y={fy}
 				width={fw}
-				height={FEATURE_HEIGHT}
+				height={FEATURE_H}
 				showInternalLabel={showInternalLabels}
 				selected={selectedPart === feature}
 				onmouseenter={(e) => handlePartMouseEnter(e, feature)}
@@ -595,14 +591,14 @@
 			{@const layer = revPrimerLayers.get(i) ?? 0}
 			{@const px = bpToX(primer.start)}
 			{@const pw = bpToX(primer.end) - px}
-			{@const py = revPrimerY + layer * (PRIMER_HEIGHT + LANE_GAP)}
+			{@const py = revPrimerY + layer * (PRIMER_H + LANE_GAP)}
 			{@const oh = primerOverhangs(primer)}
 			<LinearFeature
 				part={{ ...primer, bindingStart: undefined, bindingEnd: undefined, mismatches: undefined }}
 				x={px}
 				y={py}
 				width={pw}
-				height={PRIMER_HEIGHT}
+				height={PRIMER_H}
 				halfArrow={true}
 				overrideColor={PRIMER_COLOR}
 				fillOpacity={0.5}

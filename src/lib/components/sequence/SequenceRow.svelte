@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Part, Translation } from '../../types/index.js';
 	import { nucleotideColors } from '../../util/colors.js';
+	import { SEQ_PAD, LINE_HEIGHT, FONT_SECONDARY } from '../../util/layout.js';
 	import AnnotationTrack from './AnnotationTrack.svelte';
 	import PrimerTrack from './PrimerTrack.svelte';
 	import TranslationTrack from './TranslationTrack.svelte';
@@ -65,9 +66,7 @@
 	const colorMap = nucleotideColors;
 
 	const end = $derived(start + seq.length);
-	const LEFT_PAD = 12;
-	const SEQ_X = LEFT_PAD;
-	const LINE_HEIGHT = 14;
+	const SEQ_X = SEQ_PAD;
 
 	/** Compute lane count for annotation track */
 	const annotationLanes = $derived.by(() => {
@@ -179,7 +178,7 @@
 					y={RULER_HEIGHT - 7}
 					text-anchor="middle"
 					fill="var(--hatch-line-number, #566070)"
-					font-size="8"
+					font-size={FONT_SECONDARY}
 					font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 				>{bp}</text>
 			{/if}
@@ -224,7 +223,7 @@
 		text-anchor="start"
 		dominant-baseline="middle"
 		fill="var(--hatch-text-dim, #566070)"
-		font-size="8"
+		font-size={FONT_SECONDARY}
 		font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 	>5'</text>
 	{#if showComplement}
@@ -234,7 +233,7 @@
 			text-anchor="start"
 			dominant-baseline="middle"
 			fill="var(--hatch-text-dim, #566070)"
-			font-size="8"
+			font-size={FONT_SECONDARY}
 			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 		>3'</text>
 	{/if}
@@ -246,7 +245,7 @@
 		text-anchor="start"
 		dominant-baseline="middle"
 		fill="var(--hatch-text-dim, #566070)"
-		font-size="8"
+		font-size={FONT_SECONDARY}
 		font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 	>3'</text>
 	{#if showComplement}
@@ -256,7 +255,7 @@
 			text-anchor="start"
 			dominant-baseline="middle"
 			fill="var(--hatch-text-dim, #566070)"
-			font-size="8"
+			font-size={FONT_SECONDARY}
 			font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 		>5'</text>
 	{/if}

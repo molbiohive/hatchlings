@@ -2,6 +2,7 @@
 	import type { ProteinAnnotation } from '../../types/index.js';
 	import { aminoAcidColors, getFeatureColor } from '../../util/colors.js';
 	import { IntervalTree } from '../../util/interval-tree.js';
+	import { SEQ_PAD, LINE_HEIGHT, AA_BLOCK_H, CODON_H, ANNOTATION_H, ANNOTATION_GAP, CHAR_PX, FONT_PRIMARY, FONT_SECONDARY } from '../../util/layout.js';
 
 	interface Props {
 		seq: string;
@@ -29,13 +30,7 @@
 		onannotationhover,
 	}: Props = $props();
 
-	const LEFT_PAD = 12;
-	const SEQ_X = LEFT_PAD;
-	const LINE_HEIGHT = 14;
-	const AA_BLOCK_H = 18;
-	const CODON_H = 12;
-	const ANNOTATION_TRACK_H = 16;
-	const ANNOTATION_GAP = 2;
+	const SEQ_X = SEQ_PAD;
 
 	const end = $derived(start + seq.length);
 
@@ -61,7 +56,7 @@
 		return max;
 	});
 
-	const ANNOTATION_TOTAL_H = $derived(maxLane >= 0 ? (maxLane + 1) * (ANNOTATION_TRACK_H + ANNOTATION_GAP) + 4 : 0);
+	const ANNOTATION_TOTAL_H = $derived(maxLane >= 0 ? (maxLane + 1) * (ANNOTATION_H + ANNOTATION_GAP) + 4 : 0);
 
 	const RULER_HEIGHT = $derived(showNumbers ? 16 : 0);
 	const CODON_TRACK_H = $derived(showCodons && codons.length > 0 ? CODON_H + 4 : 0);
@@ -91,8 +86,7 @@
 	}
 
 	function truncateLabel(text: string, maxWidth: number): string {
-		const charPx = 6;
-		const maxChars = Math.floor(maxWidth / charPx) - 1;
+		const maxChars = Math.floor(maxWidth / CHAR_PX) - 1;
 		if (maxChars <= 0) return '';
 		if (text.length <= maxChars) return text;
 		if (maxChars <= 2) return '';
@@ -154,7 +148,7 @@
 					y={RULER_HEIGHT - 7}
 					text-anchor="middle"
 					fill="var(--hatch-line-number, #566070)"
-					font-size="8"
+					font-size={FONT_SECONDARY}
 					font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 				>{pos}</text>
 			{/if}
@@ -169,7 +163,7 @@
 				{@const color = getFeatureColor(ann.type, ann.color)}
 				{@const fx = annX(Math.max(ann.start, start))}
 				{@const fw = annWidth(ann)}
-				{@const fy = lane * (ANNOTATION_TRACK_H + ANNOTATION_GAP)}
+				{@const fy = lane * (ANNOTATION_H + ANNOTATION_GAP)}
 				{@const labelText = ann.label ?? ann.name}
 				{@const displayLabel = truncateLabel(labelText, fw - 8)}
 				<!-- svelte-ignore a11y_mouse_events_have_key_events -->
@@ -186,7 +180,7 @@
 						x={fx}
 						y={fy}
 						width={fw}
-						height={ANNOTATION_TRACK_H}
+						height={ANNOTATION_H}
 						fill={color}
 						fill-opacity="0.8"
 						stroke="var(--hatch-annotation-stroke, #fff)"
@@ -196,7 +190,7 @@
 					{#if displayLabel}
 						<text
 							x={fx + fw / 2}
-							y={fy + ANNOTATION_TRACK_H / 2 + 1}
+							y={fy + ANNOTATION_H / 2 + 1}
 							text-anchor="middle"
 							dominant-baseline="middle"
 							fill="var(--hatch-annotation-text, #fff)"
@@ -218,7 +212,7 @@
 		text-anchor="start"
 		dominant-baseline="middle"
 		fill="var(--hatch-text-dim, #566070)"
-		font-size="7"
+		font-size={FONT_SECONDARY}
 		font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 	>N</text>
 	<text
@@ -227,7 +221,7 @@
 		text-anchor="start"
 		dominant-baseline="middle"
 		fill="var(--hatch-text-dim, #566070)"
-		font-size="7"
+		font-size={FONT_SECONDARY}
 		font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 	>C</text>
 
@@ -248,7 +242,7 @@
 				text-anchor="middle"
 				dominant-baseline="middle"
 				fill={textColor}
-				font-size="11"
+				font-size={FONT_PRIMARY}
 				font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 				font-weight="600"
 			>{upper}</text>
@@ -275,7 +269,7 @@
 						text-anchor="middle"
 						dominant-baseline="middle"
 						fill="var(--hatch-text-dim, #566070)"
-						font-size="7"
+						font-size={FONT_SECONDARY}
 						font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 					>{codon}</text>
 				{/if}

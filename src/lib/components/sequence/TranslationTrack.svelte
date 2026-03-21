@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Translation } from '../../types/index.js';
 	import { aminoAcidColors } from '../../util/colors.js';
+	import { ANNOTATION_H, FONT_PRIMARY } from '../../util/layout.js';
 
 	interface Props {
 		/** Translation data */
@@ -18,7 +19,6 @@
 	let { translation, start, end, y = 0, charWidth = 10 }: Props = $props();
 
 	const CODON_WIDTH = $derived(charWidth * 3);
-	const AA_HEIGHT = 16;
 
 	// Start and stop codon colors
 	const START_CODON_COLOR = '#2ecc71';
@@ -82,7 +82,7 @@
 
 		<!-- Arrow-shaped amino acid background -->
 		<path
-			d={aaArrowPath(x, visibleWidth, y, AA_HEIGHT, translation.strand ?? 1, index === 0)}
+			d={aaArrowPath(x, visibleWidth, y, ANNOTATION_H, translation.strand ?? 1, index === 0)}
 			fill={color}
 			fill-opacity={isStart || isStop ? 0.35 : 0.2}
 			stroke={color}
@@ -94,11 +94,11 @@
 		{#if visibleWidth >= charWidth}
 			<text
 				x={x + visibleWidth / 2}
-				y={y + AA_HEIGHT / 2 + 1}
+				y={y + ANNOTATION_H / 2 + 1}
 				text-anchor="middle"
 				dominant-baseline="middle"
 				fill={color}
-				font-size="11"
+				font-size={FONT_PRIMARY}
 				font-weight="bold"
 				font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 			>{aa}</text>

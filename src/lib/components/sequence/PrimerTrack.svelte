@@ -2,6 +2,7 @@
 	import type { Part } from '../../types/index.js';
 	import { PRIMER_COLOR } from '../../util/colors.js';
 	import { IntervalTree } from '../../util/interval-tree.js';
+	import { ZONE_GAP } from '../../util/layout.js';
 
 	interface Props {
 		primers: Part[];
@@ -16,7 +17,6 @@
 	let { primers, start, end, y = 0, charWidth = 10, onpartclick, onparthover }: Props = $props();
 
 	const TRACK_HEIGHT = 21;
-	const TRACK_GAP = 4;
 	const SHIFT_Y = 8;
 	const ARROW_SKEW = 10;
 
@@ -66,7 +66,7 @@
 		const bases: BaseInfo[] = [];
 		const clippedStart = Math.max(primer.start, start);
 		const clippedEnd = Math.min(primer.end, end);
-		const fy = y + lane * (TRACK_HEIGHT + TRACK_GAP);
+		const fy = y + lane * (TRACK_HEIGHT + ZONE_GAP);
 
 		for (let pos = clippedStart; pos < clippedEnd; pos++) {
 			const type = classifyPos(primer, pos);
@@ -88,7 +88,7 @@
 		{@const lane = laneAssignments.get(primer) ?? 0}
 		{@const bases = primerBases(primer, lane)}
 		{@const labelText = primer.label ?? primer.name}
-		{@const laneY = y + lane * (TRACK_HEIGHT + TRACK_GAP)}
+		{@const laneY = y + lane * (TRACK_HEIGHT + ZONE_GAP)}
 		{@const botY = laneY + TRACK_HEIGHT}
 		{@const primerLeftX = (Math.max(primer.start, start) - start) * charWidth}
 		{@const primerRightX = (Math.min(primer.end, end) - start) * charWidth}

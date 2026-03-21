@@ -4,6 +4,7 @@
 	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels } from '../../util/coordinates.js';
 	import type { LabelPosition } from '../../util/coordinates.js';
 	import { getFeatureColor, isPrimer, PRIMER_COLOR } from '../../util/colors.js';
+	import { PART_WIDTH, PART_GAP, CUTSITE_SPACE, SCALE_BAND } from '../../util/layout.js';
 	import { LinearMap } from '../linear/index.js';
 	import PlasmidRing from './PlasmidRing.svelte';
 	import PartArc from './PartArc.svelte';
@@ -65,9 +66,6 @@
 
 	// --- Layer computation ---
 
-	const PART_WIDTH = 14;
-	const PART_GAP = 4;
-	const CUTSITE_SPACE = 14;
 
 	/** Split parts into features and primers (no enrichment — plasmid shows simple arcs) */
 	let features = $derived(parts.filter(p => !isPrimer(p)));
@@ -122,9 +120,6 @@
 		for (const v of reversePrimerOffsets.values()) if (v > max) max = v;
 		return reversePrimers.length > 0 ? max : -1;
 	});
-
-	/** Scale band width — ticks and labels live between two circles */
-	const SCALE_BAND = 16;
 
 	/** Forward features: just outside backbone + cut site space */
 	let forwardRadius = $derived(

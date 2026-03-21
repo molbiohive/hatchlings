@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Gate } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
+	import { CHART_MARGIN } from '../../util/layout.js';
 
 	interface Props {
 		events: number[][];
@@ -37,7 +38,7 @@
 		return getComputedStyle(el).getPropertyValue(prop).trim() || fallback;
 	}
 
-	const margin = { top: 20, right: 20, bottom: 50, left: 60 };
+	const margin = CHART_MARGIN;
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
 

@@ -2,6 +2,7 @@
 	import type { ProteinAnnotation } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
+	import { SEQ_PAD, ROW_PADDING, BUFFER_ROWS, AA_BLOCK_H } from '../../util/layout.js';
 	import ProteinRow from './ProteinRow.svelte';
 
 	interface Props {
@@ -79,12 +80,7 @@
 	const allCodons = $derived(translated?.codons ?? []);
 
 	// --- Layout ---
-	const LEFT_PAD = 12;
-	const RIGHT_PAD = 14;
-	const ROW_PADDING = 4;
-	const BUFFER_ROWS = 2;
-
-	const availableW = $derived(width - LEFT_PAD - RIGHT_PAD);
+	const availableW = $derived(width - SEQ_PAD - SEQ_PAD);
 	let charsPerRow = $derived(
 		charsPerRowProp ?? Math.max(10, Math.floor(availableW / charWidth))
 	);
@@ -106,7 +102,6 @@
 
 	// --- Row height estimation ---
 	const RULER_H = $derived(showNumbers ? 16 : 0);
-	const AA_BLOCK_H = 18;
 	const CODON_TRACK_H = $derived(showCodons && allCodons.length > 0 ? 16 : 0);
 
 	function countAnnotationLanes(rowStart: number, rowEnd: number): number {
@@ -150,7 +145,7 @@
 		return last.y + last.height + ROW_PADDING;
 	});
 
-	const svgWidth = $derived(LEFT_PAD + charsPerRow * effectiveCharWidth + RIGHT_PAD);
+	const svgWidth = $derived(SEQ_PAD + charsPerRow * effectiveCharWidth + SEQ_PAD);
 
 	// --- Virtual scroll ---
 	let scrollTop = $state(0);
@@ -201,7 +196,7 @@
 		return -1;
 	});
 
-	const SEQ_X = LEFT_PAD;
+	const SEQ_X = SEQ_PAD;
 
 	function aaFromMouseEvent(e: MouseEvent): number {
 		const svgEl = (e.currentTarget as Element).closest('svg');

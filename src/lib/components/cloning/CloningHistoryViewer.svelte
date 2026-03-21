@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CloningNode, CloningSource } from '../../types/cloning.js';
 	import type { HoverInfo } from '../../types/utility.js';
+	import { FEATURE_H, PRIMER_H, LANE_GAP, ZONE_GAP, RULER_TICK, LABEL_ROW_H, CUT_SITE_LABEL_H } from '../../util/layout.js';
 	import PlasmidViewer from '../plasmid/PlasmidViewer.svelte';
 
 	interface Props {
@@ -30,9 +31,8 @@
 	function estimateLinearHeight(node: CloningNode): number {
 		const parts = node.parts ?? [];
 		const cs = node.cutSites ?? [];
-		const FEATURE_H = 14, PRIMER_H = 8, LANE_GAP = 3, ZONE_GAP = 4;
-		const RULER_H = 8; // TICK_UP + TICK_DOWN only (showTicks=false)
-		const LABEL_ROW = 12 + ZONE_GAP;
+		const RULER_H = RULER_TICK * 2; // TICK_UP + TICK_DOWN only (showTicks=false)
+		const LABEL_ROW = LABEL_ROW_H + ZONE_GAP;
 
 		const isPrimer = (p: { type: string }) => p.type === 'primer_bind' || p.type === 'primer';
 		const fwdFeat = parts.filter(p => !isPrimer(p) && p.strand !== -1);
@@ -58,7 +58,7 @@
 			count > 0 ? count * (itemH + LANE_GAP) + ZONE_GAP : 0;
 
 		let h = LABEL_ROW; // name label
-		h += cs.length > 0 ? 14 + ZONE_GAP : 0; // cut site labels (interactive=false => 0, but include for safety)
+		h += cs.length > 0 ? CUT_SITE_LABEL_H + ZONE_GAP : 0; // cut site labels
 		h += zoneH(laneCount(fwdPrim), PRIMER_H);
 		h += zoneH(laneCount(fwdFeat), FEATURE_H);
 		h += RULER_H;

@@ -4,6 +4,7 @@
 	import type { HoverInfo } from '../../types/utility.js';
 	import { isPrimer } from '../../util/colors.js';
 	import { analyzePrimerBinding } from '../../util/coordinates.js';
+	import { SEQ_PAD, ROW_PADDING, BUFFER_ROWS, CUTSITE_LABEL_H, FONT_SECONDARY } from '../../util/layout.js';
 	import SequenceRow from './SequenceRow.svelte';
 
 	interface Props {
@@ -74,12 +75,9 @@
 		parts.map(p => (isPrimer(p) && p.sequence) ? { ...p, ...analyzePrimerBinding(p, seq) } : p)
 	);
 
-	const LEFT_PAD = 12; // space for left 5'/3' labels
-	const RIGHT_PAD = 14; // space for right 3'/5' labels + gap
-	const SEQ_X = LEFT_PAD;
-	const ROW_PADDING = 4;
+	const SEQ_X = SEQ_PAD;
 
-	const availableW = $derived(width - LEFT_PAD - RIGHT_PAD);
+	const availableW = $derived(width - SEQ_PAD - SEQ_PAD);
 
 	/** Auto-compute chars per row from width, then stretch charWidth to fill exactly */
 	let charsPerRow = $derived(
@@ -88,9 +86,6 @@
 	let effectiveCharWidth = $derived(
 		charsPerRowProp ? charWidth : availableW / charsPerRow
 	);
-	const BUFFER_ROWS = 2;
-	const CUTSITE_LABEL_H = 14;
-
 	/** Split the sequence into rows */
 	const rows = $derived.by(() => {
 		const result: { seq: string; start: number }[] = [];
@@ -198,7 +193,7 @@
 		return last.y + last.height + ROW_PADDING;
 	});
 
-	const svgWidth = $derived(LEFT_PAD + charsPerRow * effectiveCharWidth + RIGHT_PAD);
+	const svgWidth = $derived(SEQ_PAD + charsPerRow * effectiveCharWidth + SEQ_PAD);
 
 	/** Virtual scrolling state */
 	let scrollTop = $state(0);
@@ -666,7 +661,7 @@
 									text-anchor="middle"
 									dominant-baseline="middle"
 									fill="var(--hatch-cutsite-text, #d45858)"
-									font-size="8"
+									font-size={FONT_SECONDARY}
 									font-family="var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace)"
 									class="cutsite-label"
 								>{labelText}</text>

@@ -2,6 +2,7 @@
 	import type { Part } from '../../types/index.js';
 	import { getFeatureColor } from '../../util/colors.js';
 	import { IntervalTree } from '../../util/interval-tree.js';
+	import { ANNOTATION_H, ANNOTATION_GAP, CHAR_PX } from '../../util/layout.js';
 
 	interface Props {
 		parts: Part[];
@@ -16,8 +17,6 @@
 
 	let { parts, start, end, y = 0, charsPerRow = 60, charWidth = 10, onpartclick, onparthover }: Props = $props();
 
-	const TRACK_HEIGHT = 16;
-	const TRACK_GAP = 2;
 	const ARROW_WIDTH = 6;
 
 	const visibleParts = $derived.by(() => {
@@ -47,8 +46,7 @@
 
 	/** Truncate label with ellipsis if too wide */
 	function truncateLabel(text: string, maxWidth: number): string {
-		const charPx = 6;
-		const maxChars = Math.floor(maxWidth / charPx) - 1;
+		const maxChars = Math.floor(maxWidth / CHAR_PX) - 1;
 		if (maxChars <= 0) return '';
 		if (text.length <= maxChars) return text;
 		if (maxChars <= 2) return '';
@@ -60,8 +58,8 @@
 		const clippedEnd = Math.min(part.end, end);
 		const fx = partX(clippedStart);
 		const fw = partWidth(part);
-		const fy = y + lane * (TRACK_HEIGHT + TRACK_GAP);
-		const h = TRACK_HEIGHT;
+		const fy = y + lane * (ANNOTATION_H + ANNOTATION_GAP);
+		const h = ANNOTATION_H;
 		const r = h / 2;
 
 		const continuesLeft = part.start < start;
@@ -124,7 +122,7 @@
 		{@const color = getFeatureColor(part.type, part.color)}
 		{@const fx = partX(Math.max(part.start, start))}
 		{@const fw = partWidth(part)}
-		{@const fy = y + lane * (TRACK_HEIGHT + TRACK_GAP)}
+		{@const fy = y + lane * (ANNOTATION_H + ANNOTATION_GAP)}
 		{@const labelText = part.label ?? part.name}
 		{@const displayLabel = truncateLabel(labelText, fw - 8)}
 
@@ -149,7 +147,7 @@
 			{#if displayLabel}
 				<text
 					x={fx + fw / 2}
-					y={fy + TRACK_HEIGHT / 2 + 1}
+					y={fy + ANNOTATION_H / 2 + 1}
 					text-anchor="middle"
 					dominant-baseline="middle"
 					fill="var(--hatch-annotation-text, #fff)"

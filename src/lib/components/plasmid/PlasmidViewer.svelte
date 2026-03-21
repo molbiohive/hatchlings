@@ -4,6 +4,7 @@
 	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels } from '../../util/coordinates.js';
 	import type { LabelPosition } from '../../util/coordinates.js';
 	import { getFeatureColor, isPrimer, PRIMER_COLOR } from '../../util/colors.js';
+	import { LinearMap } from '../linear/index.js';
 	import PlasmidRing from './PlasmidRing.svelte';
 	import PartArc from './PartArc.svelte';
 	import CutSiteMarker from './CutSiteMarker.svelte';
@@ -570,6 +571,12 @@
 	});
 </script>
 
+{#if topology === 'linear'}
+	<LinearMap {name} {size} {parts} {cutSites} {width} {selectionState}
+		{showTicks} {showInternalLabels} {interactive}
+		{onselect} {onselectionchange} {oncaretmove} {onpartclick}
+		{oncopysequence} {onhoverinfo} />
+{:else}
 <div class="plasmid-viewer" style:width="{width}px" style:height="{height}px" style:position="relative">
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<svg
@@ -781,6 +788,7 @@
 			{/if}
 			</svg>
 	</div>
+{/if}
 
 <style>
 	.plasmid-viewer {

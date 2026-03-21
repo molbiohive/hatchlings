@@ -250,12 +250,7 @@
 		return -1;
 	});
 
-	function bpFromMouseEvent(e: MouseEvent): number {
-		const svgEl = (e.currentTarget as Element).closest('svg');
-		if (!svgEl) return -1;
-		const rect = svgEl.getBoundingClientRect();
-		const mouseX = e.clientX - rect.left;
-		const mouseY = e.clientY - rect.top;
+	function bpFromSvgCoords(mouseX: number, mouseY: number): number {
 		for (let i = 0; i < rows.length; i++) {
 			const rp = rowPositions[i];
 			if (mouseY >= rp.y && mouseY <= rp.y + rp.height) {
@@ -268,8 +263,17 @@
 		return -1;
 	}
 
+	function svgCoordsFromEvent(e: MouseEvent): { x: number; y: number } | null {
+		const svgEl = containerEl?.querySelector('svg');
+		if (!svgEl) return null;
+		const rect = svgEl.getBoundingClientRect();
+		return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+	}
+
 	function handleMouseDown(e: MouseEvent) {
-		const bp = bpFromMouseEvent(e);
+		const coords = svgCoordsFromEvent(e);
+		if (!coords) return;
+		const bp = bpFromSvgCoords(coords.x, coords.y);
 		if (bp >= 0) {
 			if (selectionState) {
 				selectionState.startDrag(bp);
@@ -278,12 +282,16 @@
 				internalSelEnd = bp;
 			}
 			isSelecting = true;
+			window.addEventListener('mousemove', handleWindowMouseMove);
+			window.addEventListener('mouseup', handleWindowMouseUp);
 		}
 	}
 
-	function handleMouseMove(e: MouseEvent) {
+	function handleWindowMouseMove(e: MouseEvent) {
 		if (!isSelecting) return;
-		const bp = bpFromMouseEvent(e);
+		const coords = svgCoordsFromEvent(e);
+		if (!coords) return;
+		const bp = bpFromSvgCoords(coords.x, coords.y);
 		if (bp >= 0) {
 			if (selectionState) {
 				selectionState.updateDragLinear(bp);
@@ -293,9 +301,11 @@
 		}
 	}
 
-	function handleMouseUp() {
+	function handleWindowMouseUp() {
 		if (isSelecting) {
 			isSelecting = false;
+			window.removeEventListener('mousemove', handleWindowMouseMove);
+			window.removeEventListener('mouseup', handleWindowMouseUp);
 			if (selectionState) {
 				selectionState.endDrag();
 				const range = selectionState.range;
@@ -534,9 +544,6 @@
 		role="application"
 		aria-label="DNA sequence viewer"
 		onmousedown={handleMouseDown}
-		onmousemove={handleMouseMove}
-		onmouseup={handleMouseUp}
-		onmouseleave={handleMouseUp}
 	>
 		{#each rows as row, i (row.start)}
 			{#if i >= visibleRange.start && i < visibleRange.end}
@@ -707,16 +714,18 @@
 
 	.selection-bar {
 		position: sticky;
-		top: 0;
+		top: 4px;
+		float: right;
 		z-index: 10;
-		display: inline-block;
 		padding: 2px 8px;
+		margin-right: 4px;
+		margin-bottom: -20px;
 		border-radius: 3px;
-		margin: 2px 4px;
-		background: var(--hatch-bg, #0c1018);
+		background: var(--hatch-bg, rgba(12, 16, 24, 0.85));
 		color: var(--hatch-highlight, #6ab8e0);
 		font-size: 10px;
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+		pointer-events: none;
 	}
 
 	.caret-line {

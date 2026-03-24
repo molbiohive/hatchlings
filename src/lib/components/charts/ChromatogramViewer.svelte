@@ -3,6 +3,7 @@
 	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import { hover } from '../../util/hover.js';
+	import { findNearestIndex } from '../../util/chart.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -81,12 +82,7 @@
 		if (mx < margin.left || mx > margin.left + plotW) { onhoverinfo(null); return; }
 		const xVal = xRange.min + ((mx - margin.left) / plotW) * (xRange.max - xRange.min);
 		const items = traces.map((t, idx) => {
-			let closest = 0;
-			let minDist = Infinity;
-			for (let i = 0; i < t.x.length; i++) {
-				const d = Math.abs(t.x[i] - xVal);
-				if (d < minDist) { minDist = d; closest = i; }
-			}
+			const closest = findNearestIndex(t.x, xVal);
 			return { label: t.name, value: t.y[closest].toFixed(1), unit: t.unit, color: traceColor(t, idx) };
 		});
 		onhoverinfo({ title: `${xLabel}: ${xVal.toFixed(2)}`, items, position: { x: e.clientX, y: e.clientY } });

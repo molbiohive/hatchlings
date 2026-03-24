@@ -3,6 +3,7 @@
 	import type { HoverInfo, InfoItem } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import { hover } from '../../util/hover.js';
+	import { findNearestIndex } from '../../util/chart.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -84,12 +85,7 @@
 		];
 		for (let ci = 0; ci < curves.length; ci++) {
 			const c = curves[ci];
-			let closest = 0;
-			let minDist = Infinity;
-			for (let i = 0; i < c.temp.length; i++) {
-				const d = Math.abs(c.temp[i] - temp);
-				if (d < minDist) { minDist = d; closest = i; }
-			}
+			const closest = findNearestIndex(c.temp, temp);
 			const color = categoricalColors[ci % categoricalColors.length];
 			items.push({ label: c.name, value: c.ratio[closest].toFixed(3), color });
 		}

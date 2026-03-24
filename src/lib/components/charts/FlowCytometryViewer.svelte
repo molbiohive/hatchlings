@@ -2,6 +2,7 @@
 	import type { Gate } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { CHART_MARGIN } from '../../util/layout.js';
+	import { dataRange } from '../../util/chart.js';
 
 	interface Props {
 		events: number[][];
@@ -49,14 +50,8 @@
 	const xName = $derived(axes[xAxisIdx]?.name ?? 'X');
 	const yName = $derived(axes[yAxisIdx]?.name ?? 'Y');
 
-	function range(values: number[], log: boolean): { min: number; max: number } {
-		const filtered = log ? values.filter(v => v > 0) : values;
-		if (filtered.length === 0) return { min: 0, max: 1 };
-		return { min: Math.min(...filtered), max: Math.max(...filtered) };
-	}
-
-	const xRange = $derived(range(events.map(e => e[xIdx]), logX));
-	const yRange = $derived(range(events.map(e => e[yIdx]), logY));
+	const xRange = $derived(dataRange(events.map(e => e[xIdx]), logX));
+	const yRange = $derived(dataRange(events.map(e => e[yIdx]), logY));
 
 	function scaleX(val: number): number {
 		if (logX) {

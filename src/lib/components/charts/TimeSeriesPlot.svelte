@@ -3,6 +3,7 @@
 	import type { HoverInfo, InfoItem } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import { hover } from '../../util/hover.js';
+	import { findNearestIndex } from '../../util/chart.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
@@ -77,12 +78,7 @@
 		const items: InfoItem[] = [];
 		for (let si = 0; si < series.length; si++) {
 			const s = series[si];
-			let closest = 0;
-			let minDist = Infinity;
-			for (let i = 0; i < s.x.length; i++) {
-				const d = Math.abs(s.x[i] - xVal);
-				if (d < minDist) { minDist = d; closest = i; }
-			}
+			const closest = findNearestIndex(s.x, xVal);
 			items.push({ label: s.name, value: s.y[closest].toFixed(2), unit: s.unit, color: lineColor(s, si) });
 		}
 		onhoverinfo({ title: `${xLabel}: ${xVal.toFixed(1)}`, items, position: { x: e.clientX, y: e.clientY } });

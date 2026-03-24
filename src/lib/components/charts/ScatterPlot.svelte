@@ -6,6 +6,7 @@
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 	import { CHART_MARGIN } from '../../util/layout.js';
+	import { dataRange } from '../../util/chart.js';
 
 	interface Props {
 		points: DataPoint[];
@@ -39,13 +40,8 @@
 	const plotW = $derived(width - margin.left - margin.right);
 	const plotH = $derived(height - margin.top - margin.bottom);
 
-	function range(vals: number[], log: boolean): { min: number; max: number } {
-		const filtered = log ? vals.filter(v => v > 0) : vals;
-		return { min: Math.min(...filtered), max: Math.max(...filtered) };
-	}
-
-	const xRange = $derived(range(points.map(p => p.x), logX));
-	const yRange = $derived(range(points.map(p => p.y), logY));
+	const xRange = $derived(dataRange(points.map(p => p.x), logX));
+	const yRange = $derived(dataRange(points.map(p => p.y), logY));
 
 	function scaleX(val: number): number {
 		if (logX) {

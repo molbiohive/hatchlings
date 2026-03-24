@@ -6,6 +6,7 @@
 	import { findNearestIndex } from '../../util/chart.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
+	import SvgLegend from '../shared/SvgLegend.svelte';
 
 	interface Props {
 		series: TimeSeriesLine[];
@@ -134,12 +135,7 @@
 		{/if}
 
 		<!-- Legend -->
-		{#each series as s, idx}
-			<g transform="translate({margin.left + 10}, {margin.top + 10 + idx * 16})">
-				<line x1="0" y1="0" x2="16" y2="0" stroke={lineColor(s, idx)} stroke-width="2" />
-				<text x="22" y="4" fill="var(--hatch-legend-color, #95a3b3)" font-size="10">{s.name}</text>
-			</g>
-		{/each}
+		<SvgLegend items={series.map((s, i) => ({ name: s.name, color: lineColor(s, i) }))} x={margin.left + 10} y={margin.top + 10} />
 	</svg>
 
 </div>

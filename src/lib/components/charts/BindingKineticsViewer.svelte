@@ -6,6 +6,7 @@
 	import { findNearestIndex } from '../../util/chart.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
+	import SvgLegend from '../shared/SvgLegend.svelte';
 	import { CHART_MARGIN } from '../../util/layout.js';
 
 	interface Props {
@@ -159,15 +160,7 @@
 		<AxisY min={yRange.min} max={yRange.max} height={plotH} x={margin.left} y={margin.top} label={yLabel} />
 
 		<!-- Legend -->
-		{#each curves as curve, idx}
-			{@const color = categoricalColors[idx % categoricalColors.length]}
-			<g transform="translate({margin.left + 10}, {margin.top + 10 + idx * 16})">
-				<line x1="0" y1="0" x2="16" y2="0" stroke={color} stroke-width="2" />
-				<text x="22" y="4" fill="var(--hatch-legend-color, #95a3b3)" font-size="9">
-					{curve.name}{curve.concentration ? ` (${formatSI(curve.concentration)}M)` : ''}
-				</text>
-			</g>
-		{/each}
+		<SvgLegend items={curves.map((c, i) => ({ name: c.name + (c.concentration ? ` (${formatSI(c.concentration)}M)` : ''), color: categoricalColors[i % categoricalColors.length] }))} x={margin.left + 10} y={margin.top + 10} fontSize={9} />
 	</svg>
 
 </div>

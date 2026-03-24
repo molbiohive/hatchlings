@@ -6,6 +6,7 @@
 	import { findNearestIndex } from '../../util/chart.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
+	import SvgLegend from '../shared/SvgLegend.svelte';
 
 	interface Props {
 		curves: MeltingCurveData['curves'];
@@ -134,13 +135,7 @@
 		{/if}
 
 		<!-- Legend -->
-		{#each curves as curve, idx}
-			{@const color = categoricalColors[idx % categoricalColors.length]}
-			<g transform="translate({margin.left + 10}, {margin.top + 10 + idx * 18})">
-				<line x1="0" y1="0" x2="16" y2="0" stroke={color} stroke-width="2" />
-				<text x="22" y="4" fill="var(--hatch-legend-color, #95a3b3)" font-size="10">{curve.name}</text>
-			</g>
-		{/each}
+		<SvgLegend items={curves.map((c, i) => ({ name: c.name, color: categoricalColors[i % categoricalColors.length] }))} x={margin.left + 10} y={margin.top + 10} rowHeight={18} />
 	</svg>
 
 </div>

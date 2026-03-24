@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { Part, CutSite } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
-	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels, maxLayer, TWO_PI, cutSiteEnd, buildPartHoverInfo, buildCutSiteHoverInfo } from '../../util/coordinates.js';
+	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels, maxLayer, TWO_PI, cutSiteEnd, buildPartHoverInfo, buildCutSiteHoverInfo, isPrimer } from '../../util/coordinates.js';
 	import type { LabelPosition } from '../../util/coordinates.js';
-	import { getFeatureColor, isPrimer, PRIMER_COLOR, CUT_SITE_COLOR } from '../../util/colors.js';
+	import { getFeatureColor, PRIMER_COLOR, CUT_SITE_COLOR } from '../../util/colors.js';
 	import { PART_WIDTH, PART_GAP, CUTSITE_SPACE, SCALE_BAND } from '../../util/layout.js';
 	import { LinearMap } from '../linear/index.js';
 	import PlasmidRing from './PlasmidRing.svelte';

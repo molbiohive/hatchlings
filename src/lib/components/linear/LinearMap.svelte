@@ -2,8 +2,8 @@
 	import type { Part, CutSite } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
-	import { formatBp, generateTicks, computeAnnotationLayers, maxLayer, buildPartHoverInfo, buildCutSiteHoverInfo } from '../../util/coordinates.js';
-	import { getFeatureColor, isPrimer, PRIMER_COLOR } from '../../util/colors.js';
+	import { formatBp, generateTicks, computeAnnotationLayers, maxLayer, buildPartHoverInfo, buildCutSiteHoverInfo, isPrimer } from '../../util/coordinates.js';
+	import { getFeatureColor, PRIMER_COLOR } from '../../util/colors.js';
 	import {
 		LINEAR_MARGIN_LEFT, LINEAR_MARGIN_RIGHT,
 		FEATURE_H, PRIMER_H, LANE_GAP, BACKBONE_STROKE,

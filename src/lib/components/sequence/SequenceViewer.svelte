@@ -2,8 +2,7 @@
 	import type { Part, CutSite, Translation } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
-	import { isPrimer } from '../../util/colors.js';
-	import { analyzePrimerBinding, countLanes, cutSiteEnd, buildPartHoverInfo, buildCutSiteHoverInfo } from '../../util/coordinates.js';
+	import { analyzePrimerBinding, countLanes, cutSiteEnd, buildPartHoverInfo, buildCutSiteHoverInfo, isPrimer } from '../../util/coordinates.js';
 	import { SEQ_PAD, ROW_PADDING, BUFFER_ROWS, CUTSITE_LABEL_H, FONT_SECONDARY } from '../../util/layout.js';
 	import SequenceRow from './SequenceRow.svelte';
 

@@ -1,8 +1,7 @@
 <script lang="ts">
 	import type { CloningNode, CloningSource } from '../../types/cloning.js';
 	import type { HoverInfo } from '../../types/utility.js';
-	import { countLanes } from '../../util/coordinates.js';
-	import { isPrimer } from '../../util/colors.js';
+	import { countLanes, isPrimer } from '../../util/coordinates.js';
 	import { FEATURE_H, PRIMER_H, LANE_GAP, ZONE_GAP, RULER_TICK, LABEL_ROW_H, CUT_SITE_LABEL_H } from '../../util/layout.js';
 	import PlasmidViewer from '../plasmid/PlasmidViewer.svelte';
 

@@ -54,6 +54,11 @@ export function cutSiteEnd(site: CutSite): number {
 	return site.position + Math.max(site.cutPosition ?? 1, site.complementCutPosition ?? 1);
 }
 
+/** Check if a part is a primer */
+export function isPrimer(part: { type: string }): boolean {
+	return part.type === 'primer_bind' || part.type === 'primer';
+}
+
 /** Build HoverInfo for a Part (feature/primer). Pass size for circular sequences. */
 export function buildPartHoverInfo(part: Part, e: MouseEvent, size?: number): HoverInfo {
 	const bpLen = size ? ((part.end - part.start + size) % size) || size : Math.abs(part.end - part.start);

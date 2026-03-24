@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Part, CutSite } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
-	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels, maxLayer } from '../../util/coordinates.js';
+	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels, maxLayer, TWO_PI, cutSiteEnd } from '../../util/coordinates.js';
 	import type { LabelPosition } from '../../util/coordinates.js';
 	import { getFeatureColor, isPrimer, PRIMER_COLOR, CUT_SITE_COLOR } from '../../util/colors.js';
 	import { PART_WIDTH, PART_GAP, CUTSITE_SPACE, SCALE_BAND } from '../../util/layout.js';
@@ -12,8 +12,6 @@
 	import PlasmidLabel from './PlasmidLabel.svelte';
 	import CircularSelection from './CircularSelection.svelte';
 	import type { HoverInfo } from '../../types/utility.js';
-
-	const TWO_PI = 2 * Math.PI;
 
 	interface Props {
 		name: string;
@@ -522,11 +520,6 @@
 				selectionState.selectAnnotation(part.id);
 			}
 		}
-	}
-
-	function cutSiteEnd(site: CutSite): number {
-		if (site.end !== undefined) return site.end;
-		return site.position + Math.max(site.cutPosition ?? 1, site.complementCutPosition ?? 1);
 	}
 
 	function handleCutSiteClick(cutSite: CutSite) {

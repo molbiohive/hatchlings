@@ -1,10 +1,10 @@
 /** Coordinate math for circular and linear sequence rendering */
 
 import { IntervalTree } from './interval-tree.js';
-import type { Part } from '../types/sequence.js';
+import type { Part, CutSite } from '../types/sequence.js';
 import { CHAR_PX } from './layout.js';
 
-const TWO_PI = 2 * Math.PI;
+export const TWO_PI = 2 * Math.PI;
 
 /** DNA complement base map */
 export const COMPLEMENT_MAP: Record<string, string> = {
@@ -45,6 +45,12 @@ export function maxLayer(layers: Map<unknown, number>): number {
 	let max = -1;
 	for (const v of layers.values()) if (v > max) max = v;
 	return max;
+}
+
+/** Compute the end position of a cut site */
+export function cutSiteEnd(site: CutSite): number {
+	if (site.end !== undefined) return site.end;
+	return site.position + Math.max(site.cutPosition ?? 1, site.complementCutPosition ?? 1);
 }
 
 /** Label position for relaxation */

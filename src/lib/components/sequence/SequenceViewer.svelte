@@ -3,7 +3,7 @@
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { isPrimer } from '../../util/colors.js';
-	import { analyzePrimerBinding, countLanes } from '../../util/coordinates.js';
+	import { analyzePrimerBinding, countLanes, cutSiteEnd } from '../../util/coordinates.js';
 	import { SEQ_PAD, ROW_PADDING, BUFFER_ROWS, CUTSITE_LABEL_H, FONT_SECONDARY } from '../../util/layout.js';
 	import SequenceRow from './SequenceRow.svelte';
 
@@ -356,11 +356,6 @@
 			],
 			position: { x: e.clientX, y: e.clientY },
 		});
-	}
-
-	function cutSiteEnd(site: CutSite): number {
-		if (site.end !== undefined) return site.end;
-		return site.position + Math.max(site.cutPosition ?? 1, site.complementCutPosition ?? 1);
 	}
 
 	/** Cluster nearby cut sites per row so dense MCS regions show "+N" */

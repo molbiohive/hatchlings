@@ -1,9 +1,7 @@
 <script lang="ts">
 	import type { Part } from '../../types/index.js';
-	import { drawDirectedArc, drawHalfArrowArc, arcPath, bpToAngle, angleToXY } from '../../util/coordinates.js';
+	import { drawDirectedArc, drawHalfArrowArc, arcPath, bpToAngle, angleToXY, TWO_PI } from '../../util/coordinates.js';
 	import { getFeatureColor } from '../../util/colors.js';
-
-	const TWO_PI = 2 * Math.PI;
 
 	interface Props {
 		part: Part;

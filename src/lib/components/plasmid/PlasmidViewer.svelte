@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Part, CutSite } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
-	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels, maxLayer, TWO_PI, cutSiteEnd } from '../../util/coordinates.js';
+	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels, maxLayer, TWO_PI, cutSiteEnd, buildPartHoverInfo, buildCutSiteHoverInfo } from '../../util/coordinates.js';
 	import type { LabelPosition } from '../../util/coordinates.js';
 	import { getFeatureColor, isPrimer, PRIMER_COLOR, CUT_SITE_COLOR } from '../../util/colors.js';
 	import { PART_WIDTH, PART_GAP, CUTSITE_SPACE, SCALE_BAND } from '../../util/layout.js';
@@ -428,30 +428,11 @@
 	}
 
 	function handlePartMouseEnter(e: MouseEvent, part: Part) {
-		const bpLen = ((part.end - part.start + size) % size) || size;
-		onhoverinfo?.({
-			title: part.name,
-			items: [
-				{ label: 'Type', value: part.type },
-				{ label: 'Location', value: `${part.start}..${part.end}` },
-				{ label: 'Strand', value: part.strand === 1 ? 'Forward (+)' : 'Reverse (-)' },
-				{ label: 'Length', value: bpLen, unit: 'bp' },
-				...(part.tm !== undefined ? [{ label: 'Tm', value: part.tm.toFixed(1), unit: '°C' }] : []),
-			],
-			position: { x: e.clientX, y: e.clientY },
-		});
+		onhoverinfo?.(buildPartHoverInfo(part, e, size));
 	}
 
 	function handleCutSiteMouseEnter(e: MouseEvent, cutSite: CutSite) {
-		onhoverinfo?.({
-			title: cutSite.enzyme,
-			items: [
-				{ label: 'Position', value: cutSite.position, unit: 'bp' },
-				{ label: 'Strand', value: cutSite.strand === 1 ? 'Forward (+)' : 'Reverse (-)' },
-				...(cutSite.overhang ? [{ label: 'Overhang', value: cutSite.overhang }] : []),
-			],
-			position: { x: e.clientX, y: e.clientY },
-		});
+		onhoverinfo?.(buildCutSiteHoverInfo(cutSite, e));
 	}
 
 	function handleLabelClick(cutSite: CutSite) {

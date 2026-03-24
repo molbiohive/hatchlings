@@ -3,7 +3,7 @@
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { isPrimer } from '../../util/colors.js';
-	import { analyzePrimerBinding, countLanes, cutSiteEnd } from '../../util/coordinates.js';
+	import { analyzePrimerBinding, countLanes, cutSiteEnd, buildPartHoverInfo, buildCutSiteHoverInfo } from '../../util/coordinates.js';
 	import { SEQ_PAD, ROW_PADDING, BUFFER_ROWS, CUTSITE_LABEL_H, FONT_SECONDARY } from '../../util/layout.js';
 	import SequenceRow from './SequenceRow.svelte';
 
@@ -331,31 +331,12 @@
 
 	function handlePartHover(part: Part | null, e?: MouseEvent) {
 		if (!part || !e) { onhoverinfo?.(null); return; }
-		const bpLen = part.end - part.start;
-		onhoverinfo?.({
-			title: part.name,
-			items: [
-				{ label: 'Type', value: part.type },
-				{ label: 'Location', value: `${part.start}..${part.end}` },
-				{ label: 'Strand', value: part.strand === 1 ? 'Forward (+)' : 'Reverse (-)' },
-				{ label: 'Length', value: bpLen, unit: 'bp' },
-				...(part.tm !== undefined ? [{ label: 'Tm', value: part.tm.toFixed(1), unit: '°C' }] : []),
-			],
-			position: { x: e.clientX, y: e.clientY },
-		});
+		onhoverinfo?.(buildPartHoverInfo(part, e));
 	}
 
 	function handleCutSiteHover(site: CutSite | null, e?: MouseEvent) {
 		if (!site || !e) { onhoverinfo?.(null); return; }
-		onhoverinfo?.({
-			title: site.enzyme,
-			items: [
-				{ label: 'Position', value: site.position, unit: 'bp' },
-				{ label: 'Strand', value: site.strand === 1 ? 'Forward (+)' : 'Reverse (-)' },
-				...(site.overhang ? [{ label: 'Overhang', value: site.overhang }] : []),
-			],
-			position: { x: e.clientX, y: e.clientY },
-		});
+		onhoverinfo?.(buildCutSiteHoverInfo(site, e));
 	}
 
 	/** Cluster nearby cut sites per row so dense MCS regions show "+N" */

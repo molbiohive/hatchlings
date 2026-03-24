@@ -2,7 +2,7 @@
 	import type { Part, CutSite } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
-	import { formatBp, generateTicks, computeAnnotationLayers, maxLayer } from '../../util/coordinates.js';
+	import { formatBp, generateTicks, computeAnnotationLayers, maxLayer, buildPartHoverInfo, buildCutSiteHoverInfo } from '../../util/coordinates.js';
 	import { getFeatureColor, isPrimer, PRIMER_COLOR } from '../../util/colors.js';
 	import {
 		LINEAR_MARGIN_LEFT, LINEAR_MARGIN_RIGHT,
@@ -237,30 +237,11 @@
 	}
 
 	function handlePartMouseEnter(e: MouseEvent, part: Part) {
-		const bpLen = Math.abs(part.end - part.start) || size;
-		onhoverinfo?.({
-			title: part.name,
-			items: [
-				{ label: 'Type', value: part.type },
-				{ label: 'Location', value: `${part.start}..${part.end}` },
-				{ label: 'Strand', value: part.strand === 1 ? 'Forward (+)' : 'Reverse (-)' },
-				{ label: 'Length', value: bpLen, unit: 'bp' },
-				...(part.tm !== undefined ? [{ label: 'Tm', value: part.tm.toFixed(1), unit: '\u00B0C' }] : []),
-			],
-			position: { x: e.clientX, y: e.clientY },
-		});
+		onhoverinfo?.(buildPartHoverInfo(part, e));
 	}
 
 	function handleCutSiteMouseEnter(e: MouseEvent, cutSite: CutSite) {
-		onhoverinfo?.({
-			title: cutSite.enzyme,
-			items: [
-				{ label: 'Position', value: cutSite.position, unit: 'bp' },
-				{ label: 'Strand', value: cutSite.strand === 1 ? 'Forward (+)' : 'Reverse (-)' },
-				...(cutSite.overhang ? [{ label: 'Overhang', value: cutSite.overhang }] : []),
-			],
-			position: { x: e.clientX, y: e.clientY },
-		});
+		onhoverinfo?.(buildCutSiteHoverInfo(cutSite, e));
 	}
 
 	function handlePartClick(part: Part) {

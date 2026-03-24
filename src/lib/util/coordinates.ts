@@ -2,6 +2,7 @@
 
 import { IntervalTree } from './interval-tree.js';
 import type { Part, CutSite } from '../types/sequence.js';
+import type { HoverInfo } from '../types/utility.js';
 import { CHAR_PX } from './layout.js';
 
 export const TWO_PI = 2 * Math.PI;
@@ -51,6 +52,35 @@ export function maxLayer(layers: Map<unknown, number>): number {
 export function cutSiteEnd(site: CutSite): number {
 	if (site.end !== undefined) return site.end;
 	return site.position + Math.max(site.cutPosition ?? 1, site.complementCutPosition ?? 1);
+}
+
+/** Build HoverInfo for a Part (feature/primer). Pass size for circular sequences. */
+export function buildPartHoverInfo(part: Part, e: MouseEvent, size?: number): HoverInfo {
+	const bpLen = size ? ((part.end - part.start + size) % size) || size : Math.abs(part.end - part.start);
+	return {
+		title: part.name,
+		items: [
+			{ label: 'Type', value: part.type },
+			{ label: 'Location', value: `${part.start}..${part.end}` },
+			{ label: 'Strand', value: part.strand === 1 ? 'Forward (+)' : 'Reverse (-)' },
+			{ label: 'Length', value: bpLen, unit: 'bp' },
+			...(part.tm !== undefined ? [{ label: 'Tm', value: part.tm.toFixed(1), unit: '\u00B0C' }] : []),
+		],
+		position: { x: e.clientX, y: e.clientY },
+	};
+}
+
+/** Build HoverInfo for a CutSite */
+export function buildCutSiteHoverInfo(cutSite: CutSite, e: MouseEvent): HoverInfo {
+	return {
+		title: cutSite.enzyme,
+		items: [
+			{ label: 'Position', value: cutSite.position, unit: 'bp' },
+			{ label: 'Strand', value: cutSite.strand === 1 ? 'Forward (+)' : 'Reverse (-)' },
+			...(cutSite.overhang ? [{ label: 'Overhang', value: cutSite.overhang }] : []),
+		],
+		position: { x: e.clientX, y: e.clientY },
+	};
 }
 
 /** Label position for relaxation */

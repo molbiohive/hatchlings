@@ -1,5 +1,7 @@
 /** Types for multiple sequence alignment visualization */
 
+import type { Alphabet } from './sequence.js';
+
 export interface AlignmentSequence {
 	id: string;
 	name: string;
@@ -22,7 +24,7 @@ export interface AlignmentAnnotation {
 
 export interface AlignmentData {
 	sequences: AlignmentSequence[];
-	alphabet?: 'dna' | 'rna' | 'protein';
+	alphabet?: Alphabet;
 	conservation?: ConservationScore[];
 	annotations?: AlignmentAnnotation[];
 	name?: string;

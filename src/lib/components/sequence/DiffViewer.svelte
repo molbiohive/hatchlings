@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Part } from '../../types/index.js';
+	import type { Part, Alphabet } from '../../types/index.js';
 	import { nucleotideColors, aminoAcidColors, getFeatureColor } from '../../util/colors.js';
 
 	interface Props {
@@ -16,7 +16,7 @@
 		/** Features on construct B */
 		featuresB?: Part[];
 		/** Sequence alphabet */
-		alphabet?: 'dna' | 'rna' | 'protein';
+		alphabet?: Alphabet;
 		/** Width of the SVG */
 		width?: number;
 	}

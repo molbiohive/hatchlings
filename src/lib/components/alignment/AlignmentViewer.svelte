@@ -1,12 +1,12 @@
 <script lang="ts">
-	import type { AlignmentSequence, ConservationScore, AlignmentAnnotation } from '../../types/index.js';
+	import type { AlignmentSequence, ConservationScore, AlignmentAnnotation, Alphabet } from '../../types/index.js';
 	import { nucleotideColors, aminoAcidColors } from '../../util/colors.js';
 
 	interface Props {
 		/** Array of aligned sequences */
 		sequences: AlignmentSequence[];
 		/** Sequence alphabet */
-		alphabet?: 'dna' | 'rna' | 'protein';
+		alphabet?: Alphabet;
 		/** Per-position conservation scores */
 		conservation?: ConservationScore[];
 		/** Annotations to highlight */

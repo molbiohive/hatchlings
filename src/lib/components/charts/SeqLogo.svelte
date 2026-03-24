@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { LogoPosition } from '../../types/index.js';
+	import type { LogoPosition, Alphabet } from '../../types/index.js';
 	import { nucleotideColors, aminoAcidColors } from '../../util/colors.js';
 
 	interface Props {
 		positions: LogoPosition[];
-		alphabet?: 'dna' | 'rna' | 'protein';
+		alphabet?: Alphabet;
 		width?: number;
 		height?: number;
 		title?: string;

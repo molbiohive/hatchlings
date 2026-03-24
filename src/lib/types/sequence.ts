@@ -1,5 +1,7 @@
 /** Sequence and annotation types for PlasmidViewer and SequenceViewer */
 
+export type Alphabet = 'dna' | 'rna' | 'protein';
+
 export interface Part {
 	id?: string;
 	name: string;
@@ -79,5 +81,5 @@ export interface SequenceData {
 	parts: Part[];
 	cutSites: CutSite[];
 	translations: Translation[];
-	alphabet?: 'dna' | 'rna' | 'protein';
+	alphabet?: Alphabet;
 }

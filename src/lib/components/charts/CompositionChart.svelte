@@ -1,11 +1,12 @@
 <script lang="ts">
+	import type { Alphabet } from '../../types/index.js';
 	import { nucleotideColors, aminoAcidColors } from '../../util/colors.js';
 
 	interface Props {
 		/** Residue counts, e.g. { A: 150, T: 120, G: 130, C: 100 } */
 		counts: Record<string, number>;
 		/** Sequence alphabet */
-		alphabet?: 'dna' | 'rna' | 'protein';
+		alphabet?: Alphabet;
 		/** GC content (0-1) for DNA/RNA — if provided, shows donut */
 		gc?: number;
 		/** Total width */

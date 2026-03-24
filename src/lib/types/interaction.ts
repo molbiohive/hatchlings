@@ -1,5 +1,7 @@
 /** Interaction and viewport types shared across components */
 
+import type { Alphabet } from './sequence.js';
+
 export interface Selection {
 	start: number;
 	end: number;
@@ -55,7 +57,7 @@ export interface LogoPosition {
 
 export interface SeqLogoData {
 	positions: LogoPosition[];
-	alphabet?: 'dna' | 'rna' | 'protein';
+	alphabet?: Alphabet;
 }
 
 /** Waterfall bar */

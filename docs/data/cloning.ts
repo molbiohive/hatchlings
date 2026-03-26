@@ -127,6 +127,87 @@ export const creLoxExcisionResult: CloningNode = {
 	},
 };
 
+// Cre-loxP Inversion
+const invertibleLocus: CloningNode = {
+	id: 'cre-inv-in', name: 'Invertible cassette', size: 6000, topology: 'linear',
+	parts: [
+		{ name: 'Promoter', type: 'promoter', start: 800, end: 1200, strand: 1, color: '#31a354' },
+		{ name: 'FLEX-GFP (inv)', type: 'CDS', start: 1800, end: 2600, strand: -1, color: '#22c55e' },
+	],
+	sequence: randSeq(1800, 51) + LOXP_FWD + randSeq(800, 52) + 'ATAACTTCGTATAGCATACATTATACGAAGTTAT' + randSeq(2334, 53),
+};
+
+export const creLoxInversionResult: CloningNode = {
+	id: 'cre-inv-res', name: 'Activated cassette', size: 6000, topology: 'linear',
+	sequence: randSeq(6000, 61),
+	source: {
+		action: { paradigm: 'cre-lox', label: 'Cre recombinase', operation: 'inversion', notes: 'inverted loxP sites (lox66/lox71)' },
+		inputs: [{ label: '+ Cre recombinase', node: invertibleLocus }],
+	},
+};
+
+// Cre-loxP Insertion (RMCE)
+const rmceDonor: CloningNode = {
+	id: 'cre-rmce-donor', name: 'RMCE donor', size: 4200, topology: 'circular',
+	parts: [
+		{ name: 'mCherry', type: 'CDS', start: 200, end: 920, strand: 1, color: '#ef4444' },
+		{ name: 'PuroR', type: 'CDS', start: 1100, end: 1800, strand: 1, color: '#f59e0b' },
+	],
+	sequence: randSeq(4200, 71),
+};
+const rmceTarget: CloningNode = {
+	id: 'cre-rmce-target', name: 'Landing pad locus', size: 9000, topology: 'linear',
+	parts: [
+		{ name: 'GFP (to replace)', type: 'CDS', start: 2400, end: 3200, strand: 1, color: '#22c55e' },
+		{ name: 'NeoR (to replace)', type: 'CDS', start: 3400, end: 4100, strand: 1, color: '#f59e0b' },
+	],
+	sequence: randSeq(9000, 72),
+};
+
+export const creLoxInsertionResult: CloningNode = {
+	id: 'cre-rmce-res', name: 'Exchanged locus', size: 9800, topology: 'linear',
+	sequence: randSeq(9800, 98),
+	source: {
+		action: { paradigm: 'cre-lox', label: 'Cre recombinase (RMCE)', operation: 'insertion', notes: 'lox2272 + loxP heterospecific sites' },
+		inputs: [
+			{ label: 'Landing pad (loxP + lox2272)', node: rmceTarget },
+			{ label: 'Donor (loxP + lox2272)', node: rmceDonor },
+		],
+	},
+};
+
+// Cre-loxP Translocation
+const chrALocus: CloningNode = {
+	id: 'cre-tr-a', name: 'Chr5 locus', size: 10000, topology: 'linear',
+	parts: [
+		{ name: 'Gene A', type: 'CDS', start: 3000, end: 5000, strand: 1, color: '#3b82f6' },
+	],
+	sequence: randSeq(10000, 81),
+};
+const chrBLocus: CloningNode = {
+	id: 'cre-tr-b', name: 'Chr11 locus', size: 12000, topology: 'linear',
+	parts: [
+		{ name: 'Gene B', type: 'CDS', start: 4000, end: 7000, strand: 1, color: '#a855f7' },
+	],
+	sequence: randSeq(12000, 82),
+};
+
+export const creLoxTranslocationResult: CloningNode = {
+	id: 'cre-tr-res', name: 'Der(5) translocation', size: 16000, topology: 'linear',
+	sequence: randSeq(16000, 160),
+	source: {
+		action: { paradigm: 'cre-lox', label: 'Cre recombinase', operation: 'translocation', notes: 'loxP sites on different chromosomes' },
+		inputs: [
+			{ label: 'loxP on Chr5', node: chrALocus },
+			{ label: 'loxP on Chr11', node: chrBLocus },
+		],
+		byproducts: [{
+			id: 'cre-tr-bp', name: 'Der(11)', size: 6000, topology: 'linear',
+			sequence: randSeq(6000, 60),
+		}],
+	},
+};
+
 // Gateway LR
 const gwEntry: CloningNode = {
 	id: 'gw-entry', name: 'pENTR-GOI', size: 3800, topology: 'circular',
@@ -191,6 +272,9 @@ export const allStrategies = [
 	{ title: 'Gibson Assembly', sub: '30bp homology overlaps, 50°C isothermal', node: gibsonResult },
 	{ title: 'Golden Gate (BsaI)', sub: 'Type IIS: 4nt overhang codes AATG->TTCG->GCAA->AATG', node: goldenGateResult },
 	{ title: 'Cre-loxP Excision', sub: 'Same-orientation loxP sites, floxed region excised', node: creLoxExcisionResult },
+	{ title: 'Cre-loxP Inversion', sub: 'Inverted loxP sites (lox66/lox71), FLEX cassette activation', node: creLoxInversionResult },
+	{ title: 'Cre-loxP Insertion (RMCE)', sub: 'Heterospecific lox sites, cassette exchange at landing pad', node: creLoxInsertionResult },
+	{ title: 'Cre-loxP Translocation', sub: 'loxP sites on different chromosomes, reciprocal translocation', node: creLoxTranslocationResult },
 	{ title: 'Gateway LR', sub: 'attL x attR recombination (LR Clonase II)', node: gatewayResult },
 	{ title: 'CRISPR-Cas9 HDR', sub: 'sgRNA-guided DSB + homology-directed repair', node: crisprResult },
 ];

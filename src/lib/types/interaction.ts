@@ -1,27 +1,6 @@
-/** Interaction and viewport types shared across components */
+/** Shared data model types for scatter, volcano, heatmap, flow cytometry etc. */
 
 import type { Alphabet } from './sequence.js';
-
-export interface Selection {
-	start: number;
-	end: number;
-	/** For circular sequences, whether the selection wraps around the origin */
-	wrapsOrigin?: boolean;
-}
-
-export interface Viewport {
-	/** Start position in data coordinates */
-	start: number;
-	/** End position in data coordinates */
-	end: number;
-	/** Zoom level (1.0 = full view) */
-	zoom: number;
-}
-
-export interface Point2D {
-	x: number;
-	y: number;
-}
 
 /** Volcano / scatter point */
 export interface DataPoint {

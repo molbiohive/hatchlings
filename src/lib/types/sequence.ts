@@ -40,16 +40,6 @@ export interface CutSite {
 	complementCutOffset?: number;
 }
 
-export interface ORF {
-	id?: string;
-	start: number;
-	end: number;
-	strand: 1 | -1;
-	frame: 0 | 1 | 2;
-	length: number;
-	aminoAcids?: string;
-}
-
 export interface Translation {
 	start: number;
 	end: number;

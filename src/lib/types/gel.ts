@@ -21,12 +21,6 @@ export interface GelLane {
 export type GelType = 'agarose' | 'sds-page' | 'native-page';
 export type StainType = 'ethidium' | 'sybr-safe' | 'sybr-gold' | 'coomassie' | 'silver';
 
-export interface GelConfig {
-	gelType: GelType;
-	stain: StainType;
-	percentage?: number;
-}
-
 export interface GelData {
 	lanes: GelLane[];
 	gelType: GelType;

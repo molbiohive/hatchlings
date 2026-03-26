@@ -24,9 +24,23 @@ features:
     details: Built with Svelte 5 runes ($state, $derived, $effect, $props) for fine-grained reactivity.
 ---
 
+<script setup>
+import { markRaw } from 'vue';
+import SvelteMount from './.vitepress/components/SvelteMount.vue';
+import PlasmidViewerRaw from '../src/lib/components/plasmid/PlasmidViewer.svelte';
+import { puc19 } from './data/plasmid.ts';
+const PlasmidViewer = markRaw(PlasmidViewerRaw);
+</script>
+
 <div style="text-align: center; margin-top: -20px; margin-bottom: 24px;">
 
 [![npm version](https://img.shields.io/npm/v/@molbiohive/hatchlings?color=4dc3ff&label=npm)](https://www.npmjs.com/package/@molbiohive/hatchlings)
 [![license](https://img.shields.io/npm/l/@molbiohive/hatchlings?color=58b56a)](https://github.com/molbiohive/hatchlings/blob/main/LICENSE)
 
 </div>
+
+<ClientOnly>
+  <div style="display: flex; justify-content: center; margin: 24px 0 48px;">
+    <SvelteMount :component="PlasmidViewer" :props="{ data: puc19, width: 500, height: 500 }" />
+  </div>
+</ClientOnly>

@@ -19,7 +19,7 @@ const RestrictionMap = markRaw(RestrictionMapRaw);
 
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="RestrictionMap" :props="{ length: puc19.size, cutSites: puc19.cutSites, features: puc19.parts, width: 700 }" />
+    <SvelteMount :component="RestrictionMap" :props="{ length: puc19.size, cutSites: puc19.cutSites, features: puc19.parts, width: 660 }" />
   </div>
 </ClientOnly>
 

@@ -19,7 +19,7 @@ const SequenceViewer = markRaw(SequenceViewerRaw);
 
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="SequenceViewer" :props="{ data: sequenceData, width: 700, height: 500 }" />
+    <SvelteMount :component="SequenceViewer" :props="{ data: sequenceData, width: 660, height: 500 }" />
   </div>
 </ClientOnly>
 

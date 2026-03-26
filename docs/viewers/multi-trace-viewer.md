@@ -19,7 +19,7 @@ const MultiTraceViewer = markRaw(MultiTraceViewerRaw);
 
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="MultiTraceViewer" :props="{ traces: multiTraceData, width: 800, height: 600, zoom: 2 }" />
+    <SvelteMount :component="MultiTraceViewer" :props="{ traces: multiTraceData, width: 660, height: 500, zoom: 2 }" />
   </div>
 </ClientOnly>
 

@@ -25,7 +25,7 @@ const CloningStrategyViewer = markRaw(CloningStrategyViewerRaw);
 
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="CloningStrategyViewer" :props="{ node: strat.node, width: 760, height: 160, marginBp: 10 }" />
+    <SvelteMount :component="CloningStrategyViewer" :props="{ node: strat.node, width: 660, height: 160, marginBp: 10 }" />
   </div>
 </ClientOnly>
 

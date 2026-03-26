@@ -19,7 +19,7 @@ const CloningHistoryViewer = markRaw(CloningHistoryViewerRaw);
 
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="CloningHistoryViewer" :props="{ root: cloningHistoryRoot, width: 800, height: 500 }" />
+    <SvelteMount :component="CloningHistoryViewer" :props="{ root: cloningHistoryRoot, width: 660, height: 450 }" />
   </div>
 </ClientOnly>
 

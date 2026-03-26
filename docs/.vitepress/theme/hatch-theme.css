@@ -169,5 +169,5 @@
 /* Demo container — no background, just spacing */
 .demo-container {
 	margin: 16px 0;
-	overflow: hidden;
+	overflow-x: auto;
 }

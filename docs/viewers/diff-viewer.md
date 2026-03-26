@@ -19,7 +19,7 @@ const DiffViewer = markRaw(DiffViewerRaw);
 
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="DiffViewer" :props="{ data: diffData, width: 700 }" />
+    <SvelteMount :component="DiffViewer" :props="{ data: diffData, width: 660 }" />
   </div>
 </ClientOnly>
 

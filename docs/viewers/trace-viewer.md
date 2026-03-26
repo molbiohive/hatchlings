@@ -19,7 +19,7 @@ const TraceViewer = markRaw(TraceViewerRaw);
 
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="TraceViewer" :props="{ data: traceData, width: 800, height: 300, zoom: 2 }" />
+    <SvelteMount :component="TraceViewer" :props="{ data: traceData, width: 660, height: 300, zoom: 2 }" />
   </div>
 </ClientOnly>
 

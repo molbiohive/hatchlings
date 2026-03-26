@@ -19,7 +19,7 @@ const AlignmentViewer = markRaw(AlignmentViewerRaw);
 
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="AlignmentViewer" :props="{ data: alignmentData, width: 800, height: 400, cellWidth: 8 }" />
+    <SvelteMount :component="AlignmentViewer" :props="{ data: alignmentData, width: 660, height: 400, cellWidth: 8 }" />
   </div>
 </ClientOnly>
 

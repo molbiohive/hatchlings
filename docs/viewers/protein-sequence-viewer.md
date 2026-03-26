@@ -19,7 +19,7 @@ const ProteinSequenceViewer = markRaw(ProteinSequenceViewerRaw);
 
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="ProteinSequenceViewer" :props="{ data: proteinSequenceData, width: 700, height: 400, colorResidues: true }" />
+    <SvelteMount :component="ProteinSequenceViewer" :props="{ data: proteinSequenceData, width: 660, height: 400, colorResidues: true }" />
   </div>
 </ClientOnly>
 

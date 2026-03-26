@@ -19,7 +19,7 @@ const PlasmidViewer = markRaw(PlasmidViewerRaw);
 
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="PlasmidViewer" :props="{ data: puc19, width: 600, height: 600 }" />
+    <SvelteMount :component="PlasmidViewer" :props="{ data: puc19, width: 550, height: 550 }" />
   </div>
 </ClientOnly>
 

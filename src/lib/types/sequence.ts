@@ -72,4 +72,5 @@ export interface SequenceData {
 	cutSites: CutSite[];
 	translations: Translation[];
 	alphabet?: Alphabet;
+	topology?: 'circular' | 'linear';
 }

@@ -20,9 +20,6 @@ export interface ProteinLabel {
 export interface ProteinStructureData {
 	pdbData: string;
 	format?: 'pdb' | 'mmcif' | 'sdf';
-	style?: 'cartoon' | 'stick' | 'sphere' | 'line' | 'cross' | 'surface';
-	colorScheme?: 'chain' | 'secondary' | 'residue' | 'element' | 'spectrum';
-	backgroundColor?: string;
 	name?: string;
 	selection?: ProteinSelection;
 	labels?: ProteinLabel[];

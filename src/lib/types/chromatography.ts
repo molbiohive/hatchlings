@@ -44,8 +44,8 @@ export interface SpectrumData {
 	x: number[];
 	y: number[];
 	peaks?: SpectrumPeak[];
-	xLabel: string;
-	yLabel: string;
+	xLabel?: string;
+	yLabel?: string;
 	title?: string;
 }
 

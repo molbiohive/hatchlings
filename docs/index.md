@@ -23,3 +23,10 @@ features:
   - title: Svelte 5 Runes
     details: Built with Svelte 5 runes ($state, $derived, $effect, $props) for fine-grained reactivity.
 ---
+
+<div style="text-align: center; margin-top: -20px; margin-bottom: 24px;">
+
+[![npm version](https://img.shields.io/npm/v/@molbiohive/hatchlings?color=4dc3ff&label=npm)](https://www.npmjs.com/package/@molbiohive/hatchlings)
+[![license](https://img.shields.io/npm/l/@molbiohive/hatchlings?color=58b56a)](https://github.com/molbiohive/hatchlings/blob/main/LICENSE)
+
+</div>

@@ -4,24 +4,32 @@ title: CloningStrategyViewer
 
 # CloningStrategyViewer
 
-Sequence-level visualization of cloning strategies showing inputs, actions (restriction, Gibson, Golden Gate, etc.), and resulting constructs.
+Sequence-level visualization of cloning strategies showing inputs, actions, and resulting constructs.
 
-## Demo
+## Demos
 
 <script setup>
 import { markRaw } from 'vue';
 import SvelteMount from '../.vitepress/components/SvelteMount.vue';
 import CloningStrategyViewerRaw from '../../src/lib/components/cloning/CloningStrategyViewer.svelte';
-import { restrictionLigationResult } from '../data/cloning.ts';
+import { allStrategies } from '../data/cloning.ts';
 
 const CloningStrategyViewer = markRaw(CloningStrategyViewerRaw);
 </script>
 
+<div v-for="strat in allStrategies" :key="strat.title">
+
+### {{ strat.title }}
+
+<p style="color: var(--vp-c-text-2); font-size: 14px; margin-top: -8px;">{{ strat.sub }}</p>
+
 <ClientOnly>
   <div class="demo-container">
-    <SvelteMount :component="CloningStrategyViewer" :props="{ node: restrictionLigationResult, width: 800, height: 160, marginBp: 10 }" />
+    <SvelteMount :component="CloningStrategyViewer" :props="{ node: strat.node, width: 760, height: 160, marginBp: 10 }" />
   </div>
 </ClientOnly>
+
+</div>
 
 ## Usage
 

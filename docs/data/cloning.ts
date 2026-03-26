@@ -68,6 +68,133 @@ export const gibsonResult: CloningNode = {
 	},
 };
 
+// Golden Gate (BsaI, 3 parts)
+const ggPart1: CloningNode = {
+	id: 'gg-p1', name: 'Part1 (Pro)', size: 520, topology: 'linear',
+	parts: [{ name: 'T7 pro', type: 'promoter', start: 20, end: 500, strand: 1, color: '#31a354' }],
+	cutSites: [
+		{ enzyme: 'BsaI', position: 0, end: 7, strand: 1, cutPosition: 4, complementCutPosition: 8, overhang: 'AATG' },
+		{ enzyme: 'BsaI', position: 513, end: 520, strand: -1, cutPosition: 4, complementCutPosition: 8, overhang: 'TTCG' },
+	],
+};
+const ggPart2: CloningNode = {
+	id: 'gg-p2', name: 'Part2 (CDS)', size: 840, topology: 'linear',
+	parts: [{ name: 'sfGFP', type: 'CDS', start: 20, end: 820, strand: 1, color: '#22c55e' }],
+	cutSites: [
+		{ enzyme: 'BsaI', position: 0, end: 7, strand: 1, cutPosition: 4, complementCutPosition: 8, overhang: 'TTCG' },
+		{ enzyme: 'BsaI', position: 833, end: 840, strand: -1, cutPosition: 4, complementCutPosition: 8, overhang: 'GCAA' },
+	],
+};
+const ggPart3: CloningNode = {
+	id: 'gg-p3', name: 'Part3 (Ter)', size: 280, topology: 'linear',
+	parts: [{ name: 'rrnB T1', type: 'terminator', start: 20, end: 260, strand: 1, color: '#e377c2' }],
+	cutSites: [
+		{ enzyme: 'BsaI', position: 0, end: 7, strand: 1, cutPosition: 4, complementCutPosition: 8, overhang: 'GCAA' },
+		{ enzyme: 'BsaI', position: 273, end: 280, strand: -1, cutPosition: 4, complementCutPosition: 8, overhang: 'AATG' },
+	],
+};
+
+export const goldenGateResult: CloningNode = {
+	id: 'gg-res', name: 'pGG-T7sfGFP', size: 4200, topology: 'circular',
+	sequence: randSeq(4200, 42),
+	source: {
+		action: { paradigm: 'golden-gate', label: 'Golden Gate (BsaI)', enzymes: ['BsaI'], temperature: '37°C/16°C', notes: '30 cycles' },
+		inputs: [
+			{ label: 'BsaI flanked', node: ggPart1 },
+			{ label: 'BsaI flanked', node: ggPart2 },
+			{ label: 'BsaI flanked', node: ggPart3 },
+		],
+	},
+};
+
+// Cre-loxP Excision
+const LOXP_FWD = 'ATAACTTCGTATAATGTATGCTATACGAAGTTAT';
+const floxedLocus: CloningNode = {
+	id: 'cre-in', name: 'Floxed locus', size: 8000, topology: 'linear',
+	sequence: randSeq(2400, 44) + LOXP_FWD + randSeq(1200, 45) + LOXP_FWD + randSeq(3332, 46),
+};
+
+export const creLoxExcisionResult: CloningNode = {
+	id: 'cre-exc-res', name: 'KO locus', size: 6600, topology: 'linear',
+	sequence: randSeq(6600, 66),
+	source: {
+		action: { paradigm: 'cre-lox', label: 'Cre recombinase', operation: 'excision', notes: 'same-orientation loxP sites' },
+		inputs: [{ label: '+ Cre recombinase', node: floxedLocus }],
+		byproducts: [{
+			id: 'cre-ex', name: 'Excised circle', size: 1400, topology: 'circular',
+			sequence: randSeq(1400, 14),
+		}],
+	},
+};
+
+// Gateway LR
+const gwEntry: CloningNode = {
+	id: 'gw-entry', name: 'pENTR-GOI', size: 3800, topology: 'circular',
+	sequence: randSeq(3800, 38),
+};
+const gwDest: CloningNode = {
+	id: 'gw-dest', name: 'pDEST-AmpR', size: 5600, topology: 'circular',
+	sequence: randSeq(5600, 56),
+};
+
+export const gatewayResult: CloningNode = {
+	id: 'gw-res', name: 'pEXP-GOI', size: 6200, topology: 'circular',
+	sequence: randSeq(6200, 62),
+	source: {
+		action: {
+			paradigm: 'gateway', label: 'LR Clonase II', temperature: '25°C',
+			attSites: [{ name: 'attL1' }, { name: 'attL2' }, { name: 'attR1' }, { name: 'attR2' }],
+			notes: 'attL x attR -> attB + attP',
+		},
+		inputs: [
+			{ label: 'Entry clone (attL)', node: gwEntry },
+			{ label: 'Dest vector (attR)', node: gwDest },
+		],
+		byproducts: [{
+			id: 'gw-bp', name: 'Byproduct', size: 2400, topology: 'circular',
+			sequence: randSeq(2400, 24),
+			description: 'ccdB counter-selected',
+		}],
+	},
+};
+
+// CRISPR-Cas9 HDR
+const genomicLocus: CloningNode = {
+	id: 'cr-locus', name: 'Rosa26 locus', size: 12000, topology: 'linear',
+	sequence: randSeq(12000, 120),
+};
+const donorTemplate: CloningNode = {
+	id: 'cr-donor', name: 'HDR donor', size: 2400, topology: 'linear',
+	sequence: randSeq(2400, 77),
+};
+
+export const crisprResult: CloningNode = {
+	id: 'cr-res', name: 'Rosa26::GFP', size: 13200, topology: 'linear',
+	sequence: randSeq(13200, 132),
+	source: {
+		action: {
+			paradigm: 'crispr', label: 'CRISPR-Cas9 HDR',
+			guide: 'ATGCGATCGTACGATCGATC',
+			pam: 'AGG',
+			notes: 'sgRNA + Cas9 RNP + HDR donor',
+		},
+		inputs: [
+			{ label: 'Cas9 + sgRNA (DSB)', node: genomicLocus },
+			{ label: 'HDR donor (800bp arms)', node: donorTemplate },
+		],
+	},
+};
+
+// All strategies for the demo page
+export const allStrategies = [
+	{ title: 'Restriction / Ligation', sub: 'EcoRI + BamHI directional cloning', node: restrictionLigationResult },
+	{ title: 'Gibson Assembly', sub: '30bp homology overlaps, 50°C isothermal', node: gibsonResult },
+	{ title: 'Golden Gate (BsaI)', sub: 'Type IIS: 4nt overhang codes AATG->TTCG->GCAA->AATG', node: goldenGateResult },
+	{ title: 'Cre-loxP Excision', sub: 'Same-orientation loxP sites, floxed region excised', node: creLoxExcisionResult },
+	{ title: 'Gateway LR', sub: 'attL x attR recombination (LR Clonase II)', node: gatewayResult },
+	{ title: 'CRISPR-Cas9 HDR', sub: 'sgRNA-guided DSB + homology-directed repair', node: crisprResult },
+];
+
 // Cloning history tree
 const cblnRNA: CloningNode = {
 	id: 'cbln-rna', name: 'Cbln1.rna', size: 1620, topology: 'linear',

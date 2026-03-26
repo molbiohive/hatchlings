@@ -189,8 +189,8 @@
 		return unique;
 	});
 
-	/** Label radius (just beyond outermost ring) */
-	const LABEL_PADDING = 16;
+	/** Label radius (just beyond outermost ring, short arms) */
+	const LABEL_PADDING = 6;
 	let labelRadius = $derived(outerRingRadius);
 
 	/** Cluster nearby cut sites into single labels */
@@ -211,7 +211,7 @@
 			}
 		}
 
-		// Build label positions
+		// Build label positions — short arm outward from backbone
 		const raw: (LabelPosition & { color: string; bold: boolean; cutSite: CutSite })[] = [];
 		for (const cluster of clusters) {
 			const pt = bpToXY(cluster.primary.position, size, baseRadius, cx, cy);
@@ -255,19 +255,7 @@
 			}
 		}
 
-		const relaxed = relaxLabels(capped, labelRadius + 60, 18);
-
-		// Soft clamp to viewport
-		const MARGIN = -40;
-		for (const lbl of relaxed) {
-			lbl.y = Math.max(MARGIN, Math.min(height - MARGIN, lbl.y));
-			const tw = lbl.text.length * 6;
-			if (lbl.x < cx) {
-				if (lbl.x - tw < MARGIN) lbl.x = MARGIN + tw;
-			} else {
-				if (lbl.x + tw > width - MARGIN) lbl.x = width - MARGIN - tw;
-			}
-		}
+		const relaxed = relaxLabels(capped, labelRadius + 20, 16);
 
 		return relaxed as typeof raw;
 	});
@@ -545,6 +533,7 @@
 			{width}
 			{height}
 			viewBox="0 0 {width} {height}"
+			overflow="visible"
 			xmlns="http://www.w3.org/2000/svg"
 			role="application"
 			aria-label="Circular plasmid map for {name}"
@@ -755,7 +744,9 @@
 	.plasmid-viewer {
 		display: inline-block;
 		background: var(--hatch-bg, #0c1018);
-		overflow: hidden;
+		overflow: visible;
+		position: relative;
+		z-index: 1000;
 	}
 
 	.center-name {

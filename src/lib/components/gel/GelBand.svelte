@@ -78,7 +78,7 @@
 		fill-opacity={bandOpacity}
 		class="gel-band"
 		role="button"
-		tabindex="0"
+		tabindex="-1"
 		onmouseover={onmouseenter}
 		onmouseout={onmouseleave}
 		{onclick}
@@ -98,7 +98,7 @@
 		fill-opacity={bandOpacity}
 		class="gel-band"
 		role="button"
-		tabindex="0"
+		tabindex="-1"
 		onmouseover={onmouseenter}
 		onmouseout={onmouseleave}
 		{onclick}

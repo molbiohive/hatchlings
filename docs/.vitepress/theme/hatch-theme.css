@@ -166,8 +166,16 @@
 	--hatch-tooltip-label: #8a95a5;
 }
 
-/* Demo container — no background, just spacing */
+/* Demo container — allow SVG labels to extend outside */
 .demo-container {
 	margin: 16px 0;
-	overflow-x: auto;
+	overflow: visible;
+}
+
+/* Prevent VitePress wrappers from clipping component overflow */
+.vp-doc,
+.VPDoc .content-container,
+.VPDoc .content,
+.VPContent {
+	overflow: visible !important;
 }

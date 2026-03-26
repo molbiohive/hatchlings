@@ -89,15 +89,14 @@
 {#if renderPart === 'label' || renderPart === 'all'}
 	<!-- Counter-rotate group to keep labels upright during map rotation -->
 	<!-- svelte-ignore a11y_mouse_events_have_key_events -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<g
 		transform="rotate({counterRotation}, {x}, {y})"
 		class="plasmid-label-group"
-		role="button"
-		tabindex="-1"
 		onmouseover={onmouseenter}
 		onmouseout={(e) => { if (e.currentTarget?.contains(e.relatedTarget as Node)) return; onmouseleave?.(e); }}
 		onclick={onclick}
-		onkeydown={(e) => { if (e.key === 'Enter' && onclick) onclick(e as unknown as MouseEvent); }}
 	>
 		<text
 			{x}
@@ -116,6 +115,7 @@
 <style>
 	.plasmid-label-group {
 		cursor: pointer;
+		outline: none;
 	}
 
 	.plasmid-label {

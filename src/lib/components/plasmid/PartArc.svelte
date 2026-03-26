@@ -161,7 +161,7 @@
 	class="part-arc"
 	class:selected
 	role="button"
-	tabindex="0"
+	tabindex="-1"
 	onmouseover={onmouseenter}
 	onmouseout={(e) => { if (e.currentTarget?.contains(e.relatedTarget as Node)) return; onmouseleave?.(e); }}
 	onclick={onclick}

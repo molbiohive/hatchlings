@@ -373,7 +373,7 @@
 					class="cutsite-label"
 					class:bold={lbl.bold}
 					role="button"
-					tabindex="0"
+					tabindex="-1"
 					onmouseover={(e) => handleCutSiteMouseEnter(e, lbl.cs)}
 					onmouseout={handleMouseLeave}
 					onclick={() => handleCutSiteClick(lbl.cs)}
@@ -509,7 +509,7 @@
 			<g
 				class="cutsite-mark"
 				role="button"
-				tabindex="0"
+				tabindex="-1"
 				onmouseover={(e) => handleCutSiteMouseEnter(e, cs)}
 				onmouseout={(e) => { if (e.currentTarget?.contains(e.relatedTarget as Node)) return; handleMouseLeave(); }}
 				onclick={() => handleCutSiteClick(cs)}

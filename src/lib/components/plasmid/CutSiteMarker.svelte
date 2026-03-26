@@ -38,7 +38,7 @@
 <g
 	class="cut-site-marker"
 	role="button"
-	tabindex="0"
+	tabindex="-1"
 	aria-label="{cutSite.enzyme} cut site at position {cutSite.position}"
 	onmouseover={onmouseenter}
 	onmouseout={(e) => { if (e.currentTarget?.contains(e.relatedTarget as Node)) return; onmouseleave?.(e); }}
@@ -75,5 +75,6 @@
 <style>
 	.cut-site-marker {
 		cursor: pointer;
+		outline: none;
 	}
 </style>

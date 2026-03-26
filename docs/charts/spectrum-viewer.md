@@ -58,16 +58,20 @@ const SpectrumViewer = markRaw(SpectrumViewerRaw);
 import type { SpectrumData } from '@molbiohive/hatchlings';
 
 const data: SpectrumData = {
-  x: [200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300],
-  y: [0.1, 0.15, 0.3, 0.25, 0.2, 0.18, 0.45, 0.35, 0.8, 0.2, 0.05],
+  x: Array.from({ length: 200 }, (_, i) => 200 + i * 2),
+  y: Array.from({ length: 200 }, (_, i) => {
+    const w = 200 + i * 2;
+    return 0.8 * Math.exp(-((w - 280) ** 2) / 400) +
+      0.3 * Math.exp(-((w - 220) ** 2) / 200);
+  }),
   peaks: [
-    { x: 280, y: 0.8, label: 'A280 (Trp/Tyr)' },
-    { x: 260, y: 0.45, label: 'A260 (nucleic acid)' },
+    { x: 220, y: 0.3, label: '220 nm' },
+    { x: 280, y: 0.8, label: '280 nm' },
   ],
   xLabel: 'Wavelength (nm)',
-  yLabel: 'Absorbance (AU)',
-  title: 'UV absorption spectrum',
+  yLabel: 'Absorbance',
+  title: 'UV Absorption Spectrum',
 };
 ```
 
-Works for UV-Vis, CD, fluorescence, mass spectra -- any x/y data with optional peak annotations.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

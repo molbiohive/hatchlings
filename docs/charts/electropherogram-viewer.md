@@ -60,19 +60,23 @@ const ElectropherogramViewer = markRaw(ElectropherogramViewerRaw);
 import type { ElectropherogramData } from '@molbiohive/hatchlings';
 
 const data: ElectropherogramData = {
-  x: [20, 21, 22, 23, ...],                     // migration time (seconds)
-  y: [0, 5, 120, 15, ...],                      // fluorescence intensity
+  x: Array.from({ length: 300 }, (_, i) => i * 0.5),
+  y: Array.from({ length: 300 }, (_, i) => {
+    const x = i * 0.5;
+    return 50 * Math.exp(-((x - 30) ** 2) / 10) +
+      120 * Math.exp(-((x - 60) ** 2) / 15) +
+      35 * Math.exp(-((x - 90) ** 2) / 8) +
+      80 * Math.exp(-((x - 120) ** 2) / 12);
+  }),
   peaks: [
-    { x: 22, height: 120, area: 450, size: 200, label: 'Lower marker' },
-    { x: 45, height: 85, area: 1200, size: 1500, label: '18S' },
-    { x: 52, height: 110, area: 1800, size: 4000, label: '28S' },
+    { x: 30, height: 50, size: 200, label: '200 bp' },
+    { x: 60, height: 120, size: 500, label: '500 bp' },
+    { x: 90, height: 35, size: 1000, label: '1000 bp' },
+    { x: 120, height: 80, size: 2000, label: '2000 bp' },
   ],
-  ladder: [
-    { x: 22, size: 200 }, { x: 35, size: 500 }, { x: 45, size: 1500 },
-  ],
-  xLabel: 'Time (s)',
-  yLabel: 'Fluorescence (FU)',
+  xLabel: 'Migration time (s)',
+  yLabel: 'Fluorescence (RFU)',
 };
 ```
 
-Used for Bioanalyzer / TapeStation electropherograms. The `ladder` maps migration times to fragment sizes for size calling.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

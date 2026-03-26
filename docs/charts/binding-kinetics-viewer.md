@@ -67,24 +67,29 @@ const BindingKineticsViewer = markRaw(BindingKineticsViewerRaw);
 import type { KineticsData } from '@molbiohive/hatchlings';
 
 const data: KineticsData = {
-  curves: [
-    { name: '100 nM', concentration: 100e-9, x: [0, 10, 20, ...], y: [0, 0.5, 0.8, ...] },
-    { name: '50 nM', concentration: 50e-9, x: [0, 10, 20, ...], y: [0, 0.3, 0.5, ...] },
-    { name: '25 nM', concentration: 25e-9, x: [0, 10, 20, ...], y: [0, 0.15, 0.25, ...] },
-  ],
+  curves: [100, 50, 25, 12.5].map((conc) => {
+    const x = Array.from({ length: 200 }, (_, i) => i * 0.5);
+    const ka = 1e5, kd = 1e-3, rmax = 80;
+    const y = x.map((t) => {
+      const cM = conc * 1e-9;
+      if (t < 30) return 0;
+      if (t < 130) {
+        const tA = t - 30;
+        return rmax * cM * ka / (cM * ka + kd) * (1 - Math.exp(-(cM * ka + kd) * tA));
+      }
+      const tA = 100;
+      const rEq = rmax * cM * ka / (cM * ka + kd) * (1 - Math.exp(-(cM * ka + kd) * tA));
+      return rEq * Math.exp(-kd * (t - 130));
+    });
+    return { name: `${conc} nM`, concentration: conc * 1e-9, x, y };
+  }),
   steps: [
-    { name: 'Baseline', start: 0, end: 60, type: 'baseline' },
-    { name: 'Association', start: 60, end: 360, type: 'association' },
-    { name: 'Dissociation', start: 360, end: 660, type: 'dissociation' },
+    { name: 'Baseline', start: 0, end: 30, type: 'baseline' },
+    { name: 'Association', start: 30, end: 130, type: 'association' },
+    { name: 'Dissociation', start: 130, end: 200, type: 'dissociation' },
   ],
-  params: {
-    ka: 2.5e5,     // M⁻¹s⁻¹
-    kd: 1.2e-3,    // s⁻¹
-    KD: 4.8e-9,    // M (= kd/ka)
-    chi2: 0.15,
-    rMax: 1.2,
-  },
+  params: { ka: 1e5, kd: 1e-3, KD: 1e-8, chi2: 0.15, rMax: 80 },
 };
 ```
 
-Steps define the phase boundaries drawn as background regions. The fit curves and residuals are computed by your backend.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

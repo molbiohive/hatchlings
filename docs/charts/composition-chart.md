@@ -56,12 +56,11 @@ const CompositionChart = markRaw(CompositionChartRaw);
 import type { CompositionData } from '@molbiohive/hatchlings';
 
 const data: CompositionData = {
-  counts: { A: 682, T: 671, G: 678, C: 655 },
+  counts: { A: 58, T: 42, G: 55, C: 48 },
   alphabet: 'dna',
-  gc: 0.497,       // (G+C) / total
-  length: 2686,
-  name: 'pUC19',
+  gc: 0.507,
+  length: 203,
 };
 ```
 
-When `gc` is provided, it's shown as a donut overlay. The `alphabet` determines the color scheme (DNA bases, RNA bases, or amino acids).
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

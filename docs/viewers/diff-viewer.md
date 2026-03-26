@@ -57,18 +57,22 @@ const DiffViewer = markRaw(DiffViewerRaw);
 ```ts
 import type { DiffData } from '@molbiohive/hatchlings';
 
-const data: DiffData = {
-  seqA: 'ATGCGATCGATCGATCGATCG',
-  seqB: 'ATGCGATTGATCAATCG---G',
+const diffData: DiffData = {
+  seqA: 'ATGCGATCGATCGATCGATCGATCGATCGATCGATCG',
+  seqB: 'ATGCGATTGATCAATCGATC---GATCGATCAATCGATCGATCG',
   nameA: 'Wild type',
-  nameB: 'Clone #3',
+  nameB: 'Mutant',
   featuresA: [
-    { name: 'CDS', type: 'CDS', start: 0, end: 21, strand: 1, color: '#4dc3ff' },
+    { name: 'CDS', type: 'CDS', start: 0, end: 36, strand: 1, color: '#4dc3ff' },
   ],
   featuresB: [
     { name: 'CDS', type: 'CDS', start: 0, end: 18, strand: 1, color: '#4dc3ff' },
+    { name: 'Insert', type: 'misc_feature', start: 18, end: 25, strand: 1, color: '#58b56a' },
+    { name: 'CDS-2', type: 'CDS', start: 25, end: 44, strand: 1, color: '#4dc3ff' },
   ],
 };
 ```
+
+This is the data used in the demo above. See [`docs/data/plasmid.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/plasmid.ts) for the full source.
 
 Substitutions, insertions, and deletions are highlighted automatically. Gaps are represented as `-` in the sequence strings.

@@ -58,17 +58,20 @@ const HeatmapViewer = markRaw(HeatmapViewerRaw);
 import type { HeatmapData } from '@molbiohive/hatchlings';
 
 const data: HeatmapData = {
-  rows: ['BRCA1', 'TP53', 'MYC', 'EGFR', 'KRAS'],
-  cols: ['Sample A', 'Sample B', 'Sample C', 'Sample D'],
+  rows: ['Gene1', 'Gene2', 'Gene3', 'Gene4', 'Gene5', 'Gene6', 'Gene7', 'Gene8'],
+  cols: ['WT', 'KO_1', 'KO_2', 'OE_1', 'OE_2', 'Drug_1', 'Drug_2'],
   values: [
-    [2.1, -0.5, 1.8, 0.3],
-    [-1.2, 3.0, -0.8, 2.5],
-    [0.5, 0.8, -2.1, 1.0],
-    [1.9, -1.5, 0.2, -0.3],
-    [-0.3, 2.2, 1.5, -1.8],
+    [0.2, -1.8, -1.5, 1.2, 1.4, 0.3, 0.1],
+    [-0.5, 1.2, 1.0, -0.8, -1.1, 0.6, 0.4],
+    [1.5, -0.3, -0.5, 1.8, 2.0, -1.2, -1.0],
+    [-1.2, 0.8, 0.6, -1.5, -1.3, 0.9, 1.1],
+    [0.8, -1.0, -0.8, 0.5, 0.7, -0.4, -0.2],
+    [-0.3, 1.5, 1.3, -0.6, -0.4, 1.2, 1.4],
+    [1.0, -0.5, -0.7, 1.0, 0.8, -0.8, -0.6],
+    [-0.8, 0.3, 0.5, -1.0, -0.9, 0.5, 0.7],
   ],
-  colorScale: 'RdBu',
+  colorScale: 'diverging',
 };
 ```
 
-Each row in `values` corresponds to a row label. Values are typically z-scores or log2 fold-changes.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

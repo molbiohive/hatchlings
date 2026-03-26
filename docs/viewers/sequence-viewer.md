@@ -62,23 +62,30 @@ const SequenceViewer = markRaw(SequenceViewerRaw);
 ## Example — Constructing Data
 
 ```ts
-import type { SequenceData } from '@molbiohive/hatchlings';
+import type { SequenceData, Part, CutSite, Translation } from '@molbiohive/hatchlings';
 
-const data: SequenceData = {
-  seq: 'ATGCGATCGATCG...', // full nucleotide sequence
-  parts: [
-    { name: 'GFP', type: 'CDS', start: 100, end: 820, strand: 1, color: '#22c55e' },
-    { name: 'T7 pro', type: 'promoter', start: 50, end: 98, strand: 1, color: '#31a354' },
-    { name: 'M13 fwd', type: 'primer_bind', start: 85, end: 105, strand: 1, tm: 56.2 },
-  ],
-  cutSites: [
-    { enzyme: 'EcoRI', position: 396, end: 402, strand: 1, cutPosition: 1, complementCutPosition: 5 },
-  ],
-  translations: [
-    { start: 100, end: 820, strand: 1, aminoAcids: 'MSKGEEL...', frame: 0 },
-  ],
-  topology: 'linear',
+// plasmidParts and plasmidCutSites are the same arrays used in PlasmidViewer
+// (see the PlasmidViewer example for the full definitions)
+
+const seqTranslations: Translation[] = [
+  {
+    start: 2533,
+    end: 2686,
+    strand: 1,
+    aminoAcids: '...',  // translated from pUC19 sequence positions 2533–2686
+    frame: 0,
+  },
+];
+
+const sequenceData: SequenceData = {
+  seq: 'ATGCGA...',  // 2686 bp pUC19 sequence (generated programmatically)
+  parts: plasmidParts,
+  cutSites: plasmidCutSites,
+  translations: seqTranslations,
+  topology: 'circular',
 };
 ```
+
+This is the data used in the demo above. See [`docs/data/plasmid.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/plasmid.ts) for the full source.
 
 Primers with overhangs use `bindingStart`/`bindingEnd` to distinguish the binding region from the full oligo. See [Data Interfaces](/reference/data-interfaces) for the complete `Part` definition.

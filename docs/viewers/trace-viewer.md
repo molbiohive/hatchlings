@@ -61,29 +61,57 @@ const TraceViewer = markRaw(TraceViewerRaw);
 ## Example — Constructing Data
 
 ```ts
-import type { TraceData } from '@molbiohive/hatchlings';
+import type { TraceData, TraceChannel, TraceAlignment } from '@molbiohive/hatchlings';
 
-const data: TraceData = {
-  label: 'Sample_001_fwd',
-  baseCalls: 'ATGCGATCGATCG...',
-  qualityScores: [30, 35, 40, 38, ...],       // Phred scores per base
-  peakPositions: [12, 24, 36, 48, ...],        // signal index of each peak
-  channels: {
-    A: [0, 10, 80, 5, ...],                    // fluorescence intensities
-    C: [5, 2, 0, 90, ...],
-    G: [2, 70, 5, 0, ...],
-    T: [90, 0, 3, 2, ...],
-  },
-  alignment: {                                  // optional reference alignment
-    refSeq: 'ATGCGATCGATCG...',
-    querySeq: 'ATGCGATTGATCG...',
-    mismatches: [
-      { position: 7, type: 'substitution', refBase: 'C', queryBase: 'T' },
-    ],
-    identity: 0.98,
-  },
-  trimQuality: 20,                              // quality threshold for trimming
+const baseCalls = 'ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG';
+const numBases = baseCalls.length;  // 60
+const ppb = 10;                     // data points per base
+const tp = numBases * ppb;          // 600 total data points
+
+// Deterministic quality scores — mostly 32–45, with dips at positions 8, 22, 37, 51
+// and ramps at the start/end of the read
+const qualityScores: number[] = [];
+for (let i = 0; i < numBases; i++) {
+  let q = 32 + ((i * 7 + 3) % 14);
+  if (i === 8 || i === 22 || i === 37 || i === 51) q = 12;
+  if (i < 4) q = Math.max(15, q - (4 - i) * 5);
+  if (i > numBases - 5) q = Math.max(12, q - (i - numBases + 5) * 4);
+  qualityScores.push(q);
+}
+
+const peakPositions = Array.from({ length: numBases }, (_, i) => 5 + i * ppb);
+
+// Channel signals generated via Gaussian peaks centered at each base call.
+// Each channel is a number[] of length 600.
+// Primary base gets amplitude ~800, off-bases get ~5% crosstalk.
+const channels: TraceChannel = {
+  A: [/* ... 600 values generated programmatically */],
+  C: [/* ... 600 values */],
+  G: [/* ... 600 values */],
+  T: [/* ... 600 values */],
+};
+
+// Reference has substitutions at positions 12 and 30
+const traceAlignment: TraceAlignment = {
+  refSeq: 'ATCGATCGATCGGTCGATCGATCGATCGATCCTCGATCGATCGATCGATCGATCGATCG',
+  querySeq: baseCalls,
+  mismatches: [
+    { pos: 12, type: 'substitution', refBase: 'G', queryBase: 'A' },
+    { pos: 30, type: 'substitution', refBase: 'C', queryBase: 'T' },
+  ],
+  identity: 0.9667,
+};
+
+const traceData: TraceData = {
+  label: 'Forward',
+  baseCalls,
+  qualityScores,
+  channels,
+  peakPositions,
+  alignment: traceAlignment,
 };
 ```
+
+This is the data used in the demo above. Channel arrays are generated via Gaussian peak functions -- see [`docs/data/trace.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/trace.ts) for the full source.
 
 The `channels` object contains raw fluorescence arrays (same length). `peakPositions` maps each base call to a signal index in the channel arrays. `qualityScores` and `baseCalls` must be the same length.

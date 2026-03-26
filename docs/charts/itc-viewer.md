@@ -68,25 +68,31 @@ import type { ITCData } from '@molbiohive/hatchlings';
 
 const data: ITCData = {
   rawThermogram: {
-    time: [0, 120, 240, 360, ...],       // seconds
-    power: [0, -2.5, -0.3, -2.2, ...],  // µcal/sec
+    time: Array.from({ length: 300 }, (_, i) => i * 10),
+    power: Array.from({ length: 300 }, (_, i) => {
+      const injection = Math.floor(i / 15);
+      const inPeak = i % 15 < 3;
+      if (!inPeak) return 0.1 + Math.sin(i * 0.1) * 0.05;
+      const decay = Math.exp(-(injection * 0.3));
+      return -8 * decay + 0.1;
+    }),
   },
   isotherm: {
-    ratio: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0],   // molar ratio [ligand]/[protein]
-    heat: [-12, -10, -7, -3, -1, -0.5],        // kcal/mol of injectant
+    ratio: Array.from({ length: 20 }, (_, i) => (i + 1) * 0.15),
+    heat: Array.from({ length: 20 }, (_, i) => {
+      const r = (i + 1) * 0.15;
+      return -12 / (1 + Math.exp((r - 1.0) * 4)) - 0.5;
+    }),
     fit: {
-      x: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0],
-      y: [-11.5, -9.8, -6.5, -3.2, -1.1, -0.4],
+      x: Array.from({ length: 100 }, (_, i) => i * 0.035),
+      y: Array.from({ length: 100 }, (_, i) => {
+        const r = i * 0.035;
+        return -12 / (1 + Math.exp((r - 1.0) * 4)) - 0.5;
+      }),
     },
   },
-  params: {
-    N: 1.02,           // stoichiometry
-    Ka: 2.5e6,         // M⁻¹
-    deltaH: -12.3,     // kcal/mol
-    deltaS: -8.5,      // cal/mol/K
-    Kd: 400e-9,        // M
-  },
+  params: { N: 1.02, Ka: 2.5e6, deltaH: -12.3, deltaS: -8.1, Kd: 4e-7 },
 };
 ```
 
-Top panel shows the raw thermogram (power vs time). Bottom panel shows integrated heats vs molar ratio with the fitted binding isotherm.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

@@ -55,15 +55,21 @@ const TimeSeriesPlot = markRaw(TimeSeriesPlotRaw);
 import type { TimeSeriesData } from '@molbiohive/hatchlings';
 
 const data: TimeSeriesData = {
-  series: [
-    { name: 'OD600', x: [0, 1, 2, 3, 4, 5], y: [0.1, 0.15, 0.3, 0.8, 1.5, 2.1], unit: 'AU', yAxis: 'left', color: '#3b82f6' },
-    { name: 'pH', x: [0, 1, 2, 3, 4, 5], y: [7.0, 6.9, 6.7, 6.3, 5.8, 5.5], unit: '', yAxis: 'right', color: '#ef4444' },
-  ],
+  series: [{
+    name: 'OD600',
+    x: Array.from({ length: 25 }, (_, i) => i),
+    y: Array.from({ length: 25 }, (_, i) => {
+      const growth = 0.05 * Math.exp(0.3 * Math.min(i, 12)) /
+        (1 + (0.05 / 2.0) * (Math.exp(0.3 * Math.min(i, 12)) - 1));
+      return growth + Math.sin(i * 0.5) * 0.02;
+    }),
+    unit: 'OD600',
+  }],
   events: [
-    { time: 2, label: 'Induction', color: '#22c55e' },
+    { time: 5, label: 'IPTG induction', color: '#d45858' },
   ],
-  xLabel: 'Time (hours)',
+  xLabel: 'Time (hr)',
 };
 ```
 
-Events are drawn as vertical marker lines. Use dual Y-axes to overlay measurements with different units.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

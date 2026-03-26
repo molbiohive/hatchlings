@@ -62,17 +62,21 @@ An object mapping base characters to their frequencies (0–1):
 ```ts
 import type { SeqLogoData } from '@molbiohive/hatchlings';
 
-// Each position maps base characters to frequencies (0-1)
 const data: SeqLogoData = {
   positions: [
+    { A: 0.1, C: 0.1, G: 0.1, T: 0.7 },
     { A: 0.8, C: 0.05, G: 0.1, T: 0.05 },
+    { A: 0.05, C: 0.05, G: 0.05, T: 0.85 },
+    { A: 0.9, C: 0.03, G: 0.04, T: 0.03 },
+    { A: 0.25, C: 0.25, G: 0.25, T: 0.25 },
+    { A: 0.05, C: 0.8, G: 0.1, T: 0.05 },
+    { A: 0.05, C: 0.05, G: 0.85, T: 0.05 },
     { A: 0.1, C: 0.1, G: 0.7, T: 0.1 },
-    { A: 0.05, C: 0.85, G: 0.05, T: 0.05 },
-    { A: 0.25, C: 0.25, G: 0.25, T: 0.25 },  // no conservation
-    { A: 0.02, C: 0.02, G: 0.02, T: 0.94 },
+    { A: 0.6, C: 0.15, G: 0.15, T: 0.1 },
+    { A: 0.25, C: 0.25, G: 0.25, T: 0.25 },
   ],
-  alphabet: 'dna',   // or 'rna', 'protein'
+  alphabet: 'dna',
 };
 ```
 
-Letter heights represent information content. Fully conserved positions show tall single letters; degenerate positions show short stacked letters.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

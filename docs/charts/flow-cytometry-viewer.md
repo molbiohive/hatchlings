@@ -58,21 +58,30 @@ const FlowCytometryViewer = markRaw(FlowCytometryViewerRaw);
 import type { FlowData } from '@molbiohive/hatchlings';
 
 const data: FlowData = {
-  events: [
-    [250, 1500, 800],    // each sub-array is one cell event
-    [300, 2200, 1200],   // values correspond to axes by index
-    [180, 900, 600],
-    // ... typically 10,000-100,000 events
-  ],
+  events: Array.from({ length: 2000 }, (_, i) => {
+    const s1 = Math.sin(i * 127.1) * 43758.5453;
+    const s2 = Math.sin(i * 269.5) * 43758.5453;
+    const s3 = Math.sin(i * 419.2) * 43758.5453;
+    const r1 = s1 - Math.floor(s1);
+    const r2 = s2 - Math.floor(s2);
+    const cluster = s3 - Math.floor(s3);
+    if (cluster < 0.4) {
+      return [r1 * 200 + 100, r2 * 200 + 100];
+    } else if (cluster < 0.7) {
+      return [r1 * 300 + 500, r2 * 300 + 500];
+    } else {
+      return [r1 * 150 + 800, r2 * 150 + 200];
+    }
+  }),
   axes: [
     { name: 'FSC-A', index: 0 },
-    { name: 'FITC-A', index: 1 },
-    { name: 'PE-A', index: 2 },
+    { name: 'SSC-A', index: 1 },
   ],
   gates: [
-    { name: 'Live cells', type: 'polygon', coordinates: [{x:100,y:100},{x:400,y:100},{x:400,y:3000},{x:100,y:3000}], color: '#22c55e44' },
+    { name: 'Lymphocytes', type: 'rectangle', coordinates: [50, 50, 350, 350], color: '#4dc3ff' },
+    { name: 'Granulocytes', type: 'rectangle', coordinates: [400, 400, 850, 850], color: '#58b56a' },
   ],
 };
 ```
 
-Switch between `mode: 'scatter'` and `mode: 'density'` for different visualizations. Use `logX`/`logY` for fluorescence channels. Canvas-based rendering handles 100k+ events.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

@@ -58,20 +58,22 @@ const DistributionPlot = markRaw(DistributionPlotRaw);
 import type { DistributionData } from '@molbiohive/hatchlings';
 
 const data: DistributionData = {
-  bins: [
-    { start: 0, end: 10, count: 5 },
-    { start: 10, end: 20, count: 12 },
-    { start: 20, end: 30, count: 28 },
-    { start: 30, end: 40, count: 35 },
-    { start: 40, end: 50, count: 20 },
-    { start: 50, end: 60, count: 8 },
-  ],
+  bins: Array.from({ length: 30 }, (_, i) => {
+    const start = i * 2;
+    const end = start + 2;
+    // Normal-ish distribution centered at 30
+    const mid = start + 1;
+    const count = Math.round(100 * Math.exp(-((mid - 30) ** 2) / 200));
+    return { start, end, count };
+  }),
   overlay: {
-    x: [0, 10, 20, 30, 40, 50, 60],
-    y: [3, 10, 25, 35, 22, 9, 4],
+    x: Array.from({ length: 100 }, (_, i) => i * 0.6),
+    y: Array.from({ length: 100 }, (_, i) => {
+      const x = i * 0.6;
+      return 100 * Math.exp(-((x - 30) ** 2) / 200);
+    }),
   },
-  mode: 'histogram',  // or 'density', 'cumulative'
 };
 ```
 
-The `overlay` curve (e.g. fitted normal distribution) is drawn on top of the histogram bars.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

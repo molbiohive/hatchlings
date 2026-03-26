@@ -57,15 +57,24 @@ const PlateHeatmap = markRaw(PlateHeatmapRaw);
 import type { PlateData } from '@molbiohive/hatchlings';
 
 const data: PlateData = {
-  format: 96,   // 6, 12, 24, 48, 96, 384, or 1536
-  title: 'Luciferase assay — Plate 1',
-  wells: [
-    { id: 'A1', value: 45000, label: 'DMSO',  group: 'control', row: 0, col: 0 },
-    { id: 'A2', value: 38000, label: '1 µM',  group: 'compound', row: 0, col: 1 },
-    { id: 'A3', value: 12000, label: '10 µM', group: 'compound', row: 0, col: 2 },
-    // ... one entry per well
-  ],
+  format: 96,
+  wells: (() => {
+    const w = [];
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 12; c++) {
+        const id = String.fromCharCode(65 + r) + (c + 1);
+        // Deterministic values
+        const seed = Math.sin((r * 12 + c) * 127.1) * 43758.5453;
+        let v = (seed - Math.floor(seed)) * 100;
+        let g = 'sample';
+        if (c === 0) { v = 95 + (seed - Math.floor(seed)) * 5; g = 'positive'; }
+        if (c === 11) { v = (seed - Math.floor(seed)) * 8; g = 'negative'; }
+        w.push({ id, value: v, group: g });
+      }
+    }
+    return w;
+  })(),
 };
 ```
 
-Available color scales: `'viridis'`, `'plasma'`, `'inferno'`, `'magma'`, `'cividis'`, `'blues'`, `'reds'`. The `group` field is optional and can be used for categorical coloring.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

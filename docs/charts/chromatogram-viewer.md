@@ -59,18 +59,33 @@ import type { ChromData } from '@molbiohive/hatchlings';
 
 const data: ChromData = {
   traces: [
-    { name: 'UV 280nm', x: [0, 1, 2, ...], y: [0.01, 0.02, 0.5, ...], yAxis: 'left', color: '#3b82f6', unit: 'mAU' },
-    { name: 'Conductivity', x: [0, 1, 2, ...], y: [5, 5, 10, ...], yAxis: 'right', color: '#ef4444', unit: 'mS/cm' },
-  ],
-  peaks: [
-    { start: 8.2, end: 12.5, apex: 10.1, height: 450, area: 2840, label: 'Peak 1' },
+    {
+      name: 'UV 280nm',
+      x: Array.from({ length: 200 }, (_, i) => i * 0.15),
+      y: Array.from({ length: 200 }, (_, i) => {
+        const x = i * 0.15;
+        return 20 * Math.exp(-((x - 8) ** 2) / 1.5) +
+          80 * Math.exp(-((x - 12) ** 2) / 2) +
+          5 * Math.exp(-((x - 18) ** 2) / 3);
+      }),
+      unit: 'mAU',
+    },
+    {
+      name: '% Buffer B',
+      x: Array.from({ length: 200 }, (_, i) => i * 0.15),
+      y: Array.from({ length: 200 }, (_, i) => Math.min(100, Math.max(0, (i - 50) * 0.8))),
+      yAxis: 'right',
+      color: '#ff7f00',
+      unit: '%B',
+    },
   ],
   fractions: [
-    { name: 'A1', start: 8.0, end: 10.0, color: '#22c55e33' },
-    { name: 'A2', start: 10.0, end: 12.0, color: '#3b82f633' },
+    { name: 'F1', start: 6, end: 10, color: '#4daf4a' },
+    { name: 'F2', start: 10, end: 15, color: '#e41a1c' },
+    { name: 'F3', start: 16, end: 20, color: '#377eb8' },
   ],
   xLabel: 'Volume (mL)',
 };
 ```
 
-Use `yAxis: 'left'` or `'right'` for dual Y-axis support. Fractions are drawn as colored background regions.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

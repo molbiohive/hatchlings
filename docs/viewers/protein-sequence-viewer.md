@@ -58,20 +58,17 @@ const ProteinSequenceViewer = markRaw(ProteinSequenceViewerRaw);
 ```ts
 import type { ProteinSequenceData } from '@molbiohive/hatchlings';
 
-// From amino acid sequence directly
-const fromProtein: ProteinSequenceData = {
-  seq: 'MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYG...',
+const proteinSequenceData: ProteinSequenceData = {
+  seq: 'MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSH',
   annotations: [
-    { name: 'Chromophore', type: 'active_site', start: 64, end: 67, color: '#22c55e' },
-    { name: 'Beta barrel', type: 'secondary_structure', start: 10, end: 230, color: '#3b82f6' },
+    { name: 'Helix A', type: 'helix', start: 3, end: 18, color: '#e377c2' },
+    { name: 'Helix B', type: 'helix', start: 20, end: 35, color: '#ff7f0e' },
+    { name: 'Active site', type: 'site', start: 37, end: 38, color: '#d62728' },
+    { name: 'Helix C', type: 'helix', start: 40, end: 49, color: '#2ca02c' },
   ],
 };
-
-// From DNA source (shows codons underneath)
-const fromDNA: ProteinSequenceData = {
-  dnaSource: 'ATGTCCAAAGGTGAAGAATTGTTCACTGGTGTTGTC...',
-  frame: 0,
-};
 ```
+
+This is the data used in the demo above. See [`docs/data/protein.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/protein.ts) for the full source.
 
 When `dnaSource` is provided, the viewer shows codons below each amino acid.

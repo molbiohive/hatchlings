@@ -65,21 +65,29 @@ import type { MeltingCurveData } from '@molbiohive/hatchlings';
 const data: MeltingCurveData = {
   curves: [
     {
-      name: 'WT protein',
-      temp: [25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80],
-      ratio: [0.1, 0.1, 0.12, 0.15, 0.3, 0.5, 0.7, 0.85, 0.92, 0.95, 0.96, 0.97],
-      derivative: [0, 0.01, 0.02, 0.05, 0.15, 0.2, 0.15, 0.1, 0.05, 0.02, 0.01, 0],
-      tm: 52.3,
+      name: 'Protein A',
+      temp: Array.from({ length: 80 }, (_, i) => 25 + i),
+      ratio: Array.from({ length: 80 }, (_, i) =>
+        0.6 + 0.3 / (1 + Math.exp(-(25 + i - 58) / 2))),
+      derivative: Array.from({ length: 80 }, (_, i) => {
+        const e = Math.exp(-(25 + i - 58) / 2);
+        return 0.3 * e / (2 * (1 + e) ** 2);
+      }),
+      tm: 58,
     },
     {
-      name: 'Mutant',
-      temp: [25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80],
-      ratio: [0.1, 0.12, 0.2, 0.4, 0.65, 0.82, 0.9, 0.95, 0.96, 0.97, 0.97, 0.98],
-      derivative: [0, 0.02, 0.08, 0.2, 0.25, 0.17, 0.08, 0.03, 0.01, 0, 0, 0],
-      tm: 43.1,
+      name: 'Protein B',
+      temp: Array.from({ length: 80 }, (_, i) => 25 + i),
+      ratio: Array.from({ length: 80 }, (_, i) =>
+        0.55 + 0.35 / (1 + Math.exp(-(25 + i - 72) / 3))),
+      derivative: Array.from({ length: 80 }, (_, i) => {
+        const e = Math.exp(-(25 + i - 72) / 3);
+        return 0.35 * e / (3 * (1 + e) ** 2);
+      }),
+      tm: 72,
     },
   ],
 };
 ```
 
-The Tm (melting temperature) is annotated on the derivative plot. Multiple curves can be overlaid for comparison.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

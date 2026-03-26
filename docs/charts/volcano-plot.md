@@ -64,17 +64,22 @@ const VolcanoPlot = markRaw(VolcanoPlotRaw);
 import type { VolcanoData } from '@molbiohive/hatchlings';
 
 const data: VolcanoData = {
-  points: [
-    { x: 2.5, y: 8.3, label: 'BRCA1', significant: true },
-    { x: -1.8, y: 6.1, label: 'TP53', significant: true },
-    { x: 0.3, y: 1.2, label: 'GAPDH', significant: false },
-    // x = log2(fold change), y = -log10(p-value)
-  ],
-  thresholds: {
-    x: 1.0,       // |log2FC| cutoff
-    y: 2.0,       // -log10(p) cutoff (p < 0.01)
-  },
+  points: Array.from({ length: 200 }, (_, i) => {
+    // Deterministic pseudo-random
+    const seed1 = Math.sin(i * 127.1) * 43758.5453;
+    const r1 = seed1 - Math.floor(seed1);
+    const seed2 = Math.sin(i * 269.5) * 43758.5453;
+    const r2 = seed2 - Math.floor(seed2);
+    const x = (r1 - 0.5) * 8;
+    const y = r2 * 6;
+    return {
+      x, y,
+      label: Math.abs(x) > 1 && y > 1.3 ? `Gene${i}` : undefined,
+      significant: Math.abs(x) > 1 && y > 1.3,
+    };
+  }),
+  thresholds: { x: 1, y: 1.3, xNeg: -1 },
 };
 ```
 
-Points above both thresholds are colored as significant. Labels are shown for significant genes. Use `thresholds.xNeg` for asymmetric fold-change cutoffs.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

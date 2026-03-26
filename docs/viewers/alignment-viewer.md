@@ -59,23 +59,46 @@ const AlignmentViewer = markRaw(AlignmentViewerRaw);
 ## Example — Constructing Data
 
 ```ts
-import type { AlignmentData } from '@molbiohive/hatchlings';
+import type {
+  AlignmentData, AlignmentSequence, ConservationScore,
+} from '@molbiohive/hatchlings';
 
-const data: AlignmentData = {
-  sequences: [
-    { id: 'human',   name: 'H. sapiens',    sequence: 'MKTLLILAVLCLG--QSQAALGT...' },
-    { id: 'mouse',   name: 'M. musculus',    sequence: 'MKTLLILAVLCLG--QSQAALGT...' },
-    { id: 'chicken', name: 'G. gallus',      sequence: 'MKTLLILACLCLGSEQSQAALGS...' },
-    { id: 'frog',    name: 'X. tropicalis',  sequence: 'MK-LLILACLCLGSEQSQAALGS...' },
-  ],
+const sequences: AlignmentSequence[] = [
+  { id: '1', name: 'Human_HBA',
+    sequence: 'MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSH-----GSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR' },
+  { id: '2', name: 'Mouse_HBA',
+    sequence: 'MVLSGEDKSNIKAAWGKIGGHGAEYGAEALERMFASFPTTKTYFPHFDVSH-----GSAQVKGHGKKVADALTNAVAHIDDMPQALSALSDLHAHKLRVDPVNFKLLSHCLLVTLANHLPAEFTPAVHASLDKFLASVSTVLTSKYR' },
+  { id: '3', name: 'Chicken_HBA',
+    sequence: 'MVLSAADKNNVKGIFTKIAGHAEEYGAETLERMFTTYPPTKTYFPHFDLSH-----GSAQIKGHGKKVVAALIEAANHIDDIAGTLSKLSDLHAHKLRVDPVNFKLLGQCFLVVVAIHHPSALTPEVHASLDKFLCAVGTVLTAKYR' },
+  { id: '4', name: 'Zebrafish_HBA',
+    sequence: 'MSLSDKDKAAVRALWSKIGKSADAIGNDALSRMLIVYPQTKTYFSHWPDLS-----PGSAPVKKHGGVIMGALAVKAHIDDIAGALSKLSDLHAQKLRVDPVNFKLLAHCILVVLARHYPGDFTPAHHASLEKFLSHVISALVSKYR' },
+  { id: '5', name: 'Frog_HBA',
+    sequence: 'MLTADDKKLIQQAWEKAASHADEIGHDALSRMIVVYPQTKTYFSHWQDLS-----PGSAPVKKHGITIMAAVGSQAHDDIKNFLSKLSDKHAQKLRVDPANFKILAHCILVVAAAHYPSDFTPAVHASLDKFLANVHTVLTSKYR--' },
+];
+
+// Conservation computed per column: for each position, the fraction of
+// sequences sharing the most common (non-gap) residue.
+const conservation: ConservationScore[] = sequences[0].sequence
+  .split('')
+  .map((_, i) => {
+    // count residues at column i across all sequences
+    // score = maxCount / totalSequences, consensus = most frequent residue
+    return { position: i, score: /* 0.0–1.0 */, consensus: /* e.g. 'M' */ };
+  });
+// Example first 3 values:
+// { position: 0, score: 1.0, consensus: 'M' }
+// { position: 1, score: 0.4, consensus: 'V' }
+// { position: 2, score: 0.8, consensus: 'L' }
+// ... one entry per alignment column (generated programmatically)
+
+const alignmentData: AlignmentData = {
+  sequences,
   alphabet: 'protein',
-  conservation: [
-    { position: 0, score: 1.0, consensus: 'M' },
-    { position: 1, score: 1.0, consensus: 'K' },
-    { position: 2, score: 0.75, consensus: 'T' },
-    // ... one per column
-  ],
+  conservation,
+  name: 'Hemoglobin alpha subunit',
 };
 ```
+
+This is the data used in the demo above. See [`docs/data/alignment.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/alignment.ts) for the full source.
 
 Gaps are represented as `-` in the sequence strings. All sequences must be the same length (pre-aligned).

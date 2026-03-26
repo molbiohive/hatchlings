@@ -58,16 +58,17 @@ const ScatterPlot = markRaw(ScatterPlotRaw);
 import type { ScatterData } from '@molbiohive/hatchlings';
 
 const data: ScatterData = {
-  points: [
-    { x: 1.2, y: 3.5, label: 'Sample 1', group: 'treated', color: '#3b82f6' },
-    { x: 2.8, y: 1.1, label: 'Sample 2', group: 'control', color: '#ef4444' },
-    { x: 0.5, y: 4.2, label: 'Sample 3', group: 'treated', color: '#3b82f6' },
-  ],
-  axes: { x: 'PC1 (45%)', y: 'PC2 (23%)' },
-  gates: [
-    { name: 'Region A', type: 'rectangle', coordinates: [{ x: 0, y: 3 }, { x: 2, y: 5 }], color: '#22c55e44' },
-  ],
+  points: Array.from({ length: 100 }, (_, i) => {
+    const s1 = Math.sin(i * 127.1) * 43758.5453;
+    const s2 = Math.sin(i * 269.5) * 43758.5453;
+    const r1 = s1 - Math.floor(s1);
+    const r2 = s2 - Math.floor(s2);
+    const x = r1 * 10;
+    const y = x * 0.8 + (r2 - 0.5) * 3;
+    return { x, y, label: i % 20 === 0 ? `Sample ${i}` : undefined };
+  }),
+  axes: { x: 'Expression (log2)', y: 'Enrichment (fold)' },
 };
 ```
 
-Use `gates` to define rectangular, polygon, or ellipse regions. Set `logX`/`logY` for log-scale axes.
+This is the data powering the demo above. See [`docs/data/charts.ts`](https://github.com/molbiohive/hatchlings/blob/main/docs/data/charts.ts) for the full source.

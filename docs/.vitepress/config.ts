@@ -13,7 +13,7 @@ export default defineConfig({
 		nav: [
 			{ text: 'Guide', link: '/guide/getting-started' },
 			{ text: 'Viewers', link: '/viewers/plasmid-viewer' },
-			{ text: 'Cloning', link: '/cloning/cloning-strategy-viewer' },
+			{ text: 'Cloning', link: '/cloning/cloning-node' },
 			{ text: 'Charts', link: '/charts/dose-response-curve' },
 			{
 				text: 'v0.7.0',
@@ -55,6 +55,9 @@ export default defineConfig({
 				{
 					text: 'Cloning',
 					items: [
+						{ text: 'CloningNode', link: '/cloning/cloning-node' },
+						{ text: 'CloningAction', link: '/cloning/cloning-action' },
+						{ text: 'Cloning Tree', link: '/cloning/cloning-tree' },
 						{ text: 'CloningStrategyViewer', link: '/cloning/cloning-strategy-viewer' },
 						{ text: 'CloningHistoryViewer', link: '/cloning/cloning-history-viewer' },
 					],

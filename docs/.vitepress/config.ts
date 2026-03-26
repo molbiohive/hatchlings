@@ -29,6 +29,7 @@ export default defineConfig({
 					text: 'Guide',
 					items: [
 						{ text: 'Getting Started', link: '/guide/getting-started' },
+						{ text: 'Data Interfaces', link: '/guide/data-interfaces' },
 						{ text: 'Theming', link: '/guide/theming' },
 					],
 				},

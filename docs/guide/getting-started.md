@@ -72,3 +72,9 @@ Scientific data visualization:
 - **MeltingCurve** — DSF thermal shift
 - **BindingKineticsViewer** — SPR/BLI kinetics
 - And more...
+
+## Next Steps
+
+- **[Data Interfaces](/guide/data-interfaces)** — understand the typed `data` prop pattern and all type modules
+- **[Cloning Data Model](/cloning/cloning-node)** — learn how `CloningNode`, `CloningAction`, and cloning trees work
+- **[Theming](/guide/theming)** — customize component appearance with CSS custom properties

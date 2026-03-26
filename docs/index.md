@@ -60,10 +60,10 @@ const PlasmidViewer = markRaw(PlasmidViewerRaw);
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
-  opacity: 0.12;
+  opacity: 0.18;
 }
 .dark .hero-plasmid-wrapper {
-  opacity: 0.08;
+  opacity: 0.12;
 }
 .hero-plasmid {
   flex-shrink: 0;

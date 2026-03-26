@@ -203,44 +203,101 @@ const myGel: GelData = {
 };
 ```
 
-## Tooltip Callback Pattern
+## Tooltips
 
-Many components emit hover data through an `onhoverinfo` callback. The callback receives a `HoverInfo` object (or `null` when the hover ends):
+Most components emit hover data through an `onhoverinfo` callback. The library includes a `Tooltip` component that renders this data.
+
+### HoverInfo and InfoItem
 
 ```ts
 import type { HoverInfo, InfoItem } from '@molbiohive/hatchlings';
-
-// HoverInfo structure:
-interface HoverInfo {
-  title: string;
-  items: InfoItem[];
-  position: { x: number; y: number };
-}
-
-interface InfoItem {
-  label: string;
-  value: string | number;
-  unit?: string;
-  color?: string;
-}
 ```
 
-Usage in a Svelte component:
+| Field | Type | Description |
+|-------|------|-------------|
+| `HoverInfo.title` | `string` | Tooltip heading (e.g. feature name) |
+| `HoverInfo.items` | `InfoItem[]` | Rows of label/value pairs |
+| `HoverInfo.position` | `{ x: number; y: number }` | Viewport coordinates for positioning |
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `InfoItem.label` | `string` | Left-aligned label text |
+| `InfoItem.value` | `string \| number` | Right-aligned value |
+| `InfoItem.unit` | `string?` | Optional unit suffix |
+| `InfoItem.color` | `string?` | Optional CSS color for the value |
+
+### Using the Tooltip Component
+
+The `Tooltip` component renders a `HoverInfo` object as a floating panel. Wire it to any component's `onhoverinfo` callback:
 
 ```svelte
 <script>
-  import { PlasmidViewer } from '@molbiohive/hatchlings';
+  import { PlasmidViewer, Tooltip } from '@molbiohive/hatchlings';
+  import type { HoverInfo } from '@molbiohive/hatchlings';
 
-  function handleHover(info) {
-    if (info) {
-      console.log(info.title);       // e.g. "AmpR"
-      console.log(info.items);       // e.g. [{ label: "Type", value: "CDS" }, ...]
-    }
+  let hoverInfo: HoverInfo | null = $state(null);
+</script>
+
+<PlasmidViewer {data} width={500} height={500} onhoverinfo={(info) => hoverInfo = info} />
+
+<Tooltip
+  visible={!!hoverInfo}
+  x={hoverInfo?.position.x ?? 0}
+  y={hoverInfo?.position.y ?? 0}
+  title={hoverInfo?.title}
+  items={hoverInfo?.items ?? []}
+/>
+```
+
+The tooltip automatically clamps to viewport edges so it never overflows off-screen.
+
+### Source Tracking (Multiple Components)
+
+When a page has multiple components sharing one tooltip, use source tracking to prevent one component from clearing another's tooltip:
+
+```svelte
+<script>
+  import { PlasmidViewer, GelViewer, Tooltip } from '@molbiohive/hatchlings';
+  import type { HoverInfo } from '@molbiohive/hatchlings';
+
+  let hoverInfo: HoverInfo | null = $state(null);
+  let hoverSource: string | null = $state(null);
+
+  function hoverHandler(source: string) {
+    return (info: HoverInfo | null) => {
+      if (info) {
+        hoverSource = source;
+        hoverInfo = info;
+      } else if (hoverSource === source) {
+        hoverSource = null;
+        hoverInfo = null;
+      }
+    };
   }
 </script>
 
-<PlasmidViewer {data} width={500} height={500} onhoverinfo={handleHover} />
+<PlasmidViewer {plasmidData} onhoverinfo={hoverHandler('plasmid')} />
+<GelViewer {gelData} onhoverinfo={hoverHandler('gel')} />
+
+<Tooltip
+  visible={!!hoverInfo}
+  x={hoverInfo?.position.x ?? 0}
+  y={hoverInfo?.position.y ?? 0}
+  title={hoverInfo?.title}
+  items={hoverInfo?.items ?? []}
+/>
 ```
+
+### Components with Tooltip Support
+
+These components emit `onhoverinfo`:
+
+- PlasmidViewer — parts and cut sites
+- SequenceViewer — positions, features, cut sites
+- GelViewer — bands and lanes
+- TraceViewer / MultiTraceViewer — base calls and peaks
+- CloningStrategyViewer / CloningHistoryViewer — cloning nodes
+- Most chart components — data points and series
 
 ## Next Steps
 

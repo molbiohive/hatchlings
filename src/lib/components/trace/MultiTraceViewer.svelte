@@ -5,8 +5,9 @@
 	import TraceViewer from './TraceViewer.svelte';
 
 	interface Props {
+		data?: TraceData[];
 		/** Array of trace data, one per lane */
-		traces: TraceData[];
+		traces?: TraceData[];
 		/** Total width in pixels */
 		width?: number;
 		/** Height per lane in pixels */
@@ -24,7 +25,8 @@
 	}
 
 	let {
-		traces,
+		data,
+		traces: tracesProp,
 		width = 800,
 		laneHeight = 200,
 		showQuality = true,
@@ -33,6 +35,8 @@
 		onselect,
 		onhoverinfo,
 	}: Props = $props();
+
+	const traces = $derived(tracesProp ?? data ?? []);
 
 	let sharedZoom = $state(1);
 	$effect(() => { sharedZoom = initialZoom; });

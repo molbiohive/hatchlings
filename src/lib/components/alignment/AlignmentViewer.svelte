@@ -1,10 +1,11 @@
 <script lang="ts">
-	import type { AlignmentSequence, ConservationScore, AlignmentAnnotation, Alphabet } from '../../types/index.js';
+	import type { AlignmentSequence, ConservationScore, AlignmentAnnotation, AlignmentData, Alphabet } from '../../types/index.js';
 	import { nucleotideColors, aminoAcidColors } from '../../util/colors.js';
 
 	interface Props {
+		data?: AlignmentData;
 		/** Array of aligned sequences */
-		sequences: AlignmentSequence[];
+		sequences?: AlignmentSequence[];
 		/** Sequence alphabet */
 		alphabet?: Alphabet;
 		/** Per-position conservation scores */
@@ -30,10 +31,11 @@
 	}
 
 	let {
-		sequences,
-		alphabet = 'dna',
-		conservation = [],
-		annotations = [],
+		data,
+		sequences: sequencesProp,
+		alphabet: alphabetProp,
+		conservation: conservationProp,
+		annotations: annotationsProp,
 		width = 800,
 		height = 500,
 		cellWidth = 12,
@@ -43,6 +45,11 @@
 		showNames = true,
 		onselect,
 	}: Props = $props();
+
+	const sequences = $derived(sequencesProp ?? data?.sequences ?? []);
+	const alphabet = $derived(alphabetProp ?? data?.alphabet ?? 'dna');
+	const conservation = $derived(conservationProp ?? data?.conservation ?? []);
+	const annotations = $derived(annotationsProp ?? data?.annotations ?? []);
 
 	let colorMap = $derived(alphabet === 'protein' ? aminoAcidColors : nucleotideColors);
 

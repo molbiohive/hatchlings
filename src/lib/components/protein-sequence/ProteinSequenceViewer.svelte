@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProteinAnnotation } from '../../types/index.js';
+	import type { ProteinAnnotation, ProteinSequenceData } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { countLanes } from '../../util/coordinates.js';
@@ -7,6 +7,7 @@
 	import ProteinRow from './ProteinRow.svelte';
 
 	interface Props {
+		data?: ProteinSequenceData;
 		seq?: string;
 		dnaSource?: string;
 		frame?: 0 | 1 | 2;
@@ -24,10 +25,11 @@
 	}
 
 	let {
-		seq: seqProp,
-		dnaSource,
-		frame = 0,
-		annotations = [],
+		data,
+		seq: seqPropDirect,
+		dnaSource: dnaSourceProp,
+		frame: frameProp,
+		annotations: annotationsProp,
 		showCodons = false,
 		colorResidues = true,
 		showNumbers = true,
@@ -39,6 +41,11 @@
 		onselect,
 		onhoverinfo,
 	}: Props = $props();
+
+	const seqProp = $derived(seqPropDirect ?? data?.seq);
+	const dnaSource = $derived(dnaSourceProp ?? data?.dnaSource);
+	const frame = $derived(frameProp ?? data?.frame ?? 0);
+	const annotations = $derived(annotationsProp ?? data?.annotations ?? []);
 
 	// --- Codon table ---
 	const CODON_TABLE: Record<string, string> = {

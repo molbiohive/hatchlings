@@ -1,9 +1,10 @@
 <script lang="ts">
-	import type { ProteinSelection, ProteinLabel } from '../../types/index.js';
+	import type { ProteinSelection, ProteinLabel, ProteinStructureData } from '../../types/index.js';
 
 	interface Props {
+		data?: ProteinStructureData;
 		/** PDB/mmCIF/SDF data as a string */
-		pdbData: string;
+		pdbData?: string;
 		/** Format of the structure data */
 		format?: 'pdb' | 'mmcif' | 'sdf';
 		/** Rendering style */
@@ -29,19 +30,26 @@
 	}
 
 	let {
-		pdbData,
-		format = 'pdb',
+		data,
+		pdbData: pdbDataProp,
+		format: formatProp,
 		style: viewStyle = 'cartoon',
 		colorScheme = 'spectrum',
 		backgroundColor = '#0c1018',
-		name,
-		selection,
-		labels = [],
+		name: nameProp,
+		selection: selectionProp,
+		labels: labelsProp,
 		width = 500,
 		height = 400,
 		spin = false,
 		onready,
 	}: Props = $props();
+
+	const pdbData = $derived(pdbDataProp ?? data?.pdbData ?? '');
+	const format = $derived(formatProp ?? data?.format ?? 'pdb');
+	const name = $derived(nameProp ?? data?.name);
+	const selection = $derived(selectionProp ?? data?.selection);
+	const labels = $derived(labelsProp ?? data?.labels ?? []);
 
 	let container: HTMLDivElement | undefined = $state(undefined);
 	let loading = $state(true);

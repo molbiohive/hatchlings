@@ -1,19 +1,20 @@
 <script lang="ts">
-	import type { TraceChannel, TraceAlignment } from '../../types/index.js';
+	import type { TraceChannel, TraceAlignment, TraceData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import TracePeaks from './TracePeaks.svelte';
 	import BaseCallTrack from './BaseCallTrack.svelte';
 	import AlignmentView from './AlignmentView.svelte';
 
 	interface Props {
+		data?: TraceData;
 		/** Base call string (e.g. "ATCGATCG...") */
-		baseCalls: string;
+		baseCalls?: string;
 		/** Phred quality score for each base call */
-		qualityScores: number[];
+		qualityScores?: number[];
 		/** Four-channel chromatogram data */
-		channels: TraceChannel;
+		channels?: TraceChannel;
 		/** Peak position for each base call (data point index) */
-		peakPositions: number[];
+		peakPositions?: number[];
 		/** Alignment between trace and reference */
 		alignment?: TraceAlignment;
 		/** Total width of the viewer in pixels */
@@ -44,15 +45,16 @@
 	}
 
 	let {
-		baseCalls,
-		qualityScores,
-		channels,
-		peakPositions,
-		alignment,
+		data,
+		baseCalls: baseCallsProp,
+		qualityScores: qualityScoresProp,
+		channels: channelsProp,
+		peakPositions: peakPositionsProp,
+		alignment: alignmentProp,
 		width = 800,
 		height = 300,
 		showQuality = true,
-		trimQuality = 20,
+		trimQuality: trimQualityProp,
 		highlightIndels = true,
 		zoom: initialZoom = 1,
 		scrollX: externalScrollX,
@@ -63,6 +65,13 @@
 		showScrollbar = true,
 		embedded = false,
 	}: Props = $props();
+
+	const baseCalls = $derived(baseCallsProp ?? data?.baseCalls ?? '');
+	const qualityScores = $derived(qualityScoresProp ?? data?.qualityScores ?? []);
+	const channels = $derived(channelsProp ?? data?.channels ?? { A: [], C: [], G: [], T: [] });
+	const peakPositions = $derived(peakPositionsProp ?? data?.peakPositions ?? []);
+	const alignment = $derived(alignmentProp ?? data?.alignment);
+	const trimQuality = $derived(trimQualityProp ?? data?.trimQuality ?? 20);
 
 	let zoom = $state(0);
 	// Initialize zoom from prop; $effect syncs prop changes

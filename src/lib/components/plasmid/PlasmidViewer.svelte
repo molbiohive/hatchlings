@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Part, CutSite } from '../../types/index.js';
+	import type { Part, CutSite, PlasmidData } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
 	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels, maxLayer, TWO_PI, cutSiteEnd, buildPartHoverInfo, buildCutSiteHoverInfo, isPrimer } from '../../util/coordinates.js';
 	import type { LabelPosition } from '../../util/coordinates.js';
@@ -14,8 +14,9 @@
 	import type { HoverInfo } from '../../types/utility.js';
 
 	interface Props {
-		name: string;
-		size: number;
+		data?: PlasmidData;
+		name?: string;
+		size?: number;
 		parts?: Part[];
 		cutSites?: CutSite[];
 		selectionState?: SelectionState;
@@ -36,16 +37,17 @@
 	}
 
 	let {
-		name,
-		size,
-		parts = [],
-		cutSites = [],
+		data,
+		name: nameProp,
+		size: sizeProp,
+		parts: partsProp,
+		cutSites: cutSitesProp,
 		selectionState,
 		width = 500,
 		height = 500,
 		showTicks = true,
 		showInternalLabels = true,
-		topology = 'circular',
+		topology: topologyProp,
 		interactive = true,
 		onselect,
 		onselectionchange,
@@ -54,6 +56,12 @@
 		oncopysequence,
 		onhoverinfo,
 	}: Props = $props();
+
+	const name = $derived(nameProp ?? data?.name ?? '');
+	const size = $derived(sizeProp ?? data?.size ?? 0);
+	const parts = $derived(partsProp ?? data?.parts ?? []);
+	const cutSites = $derived(cutSitesProp ?? data?.cutSites ?? []);
+	const topology = $derived(topologyProp ?? data?.topology ?? 'circular');
 
 	let svgElement: SVGSVGElement | undefined = $state(undefined);
 

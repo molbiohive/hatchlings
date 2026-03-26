@@ -1,12 +1,13 @@
 <script lang="ts">
-	import type { Part, Alphabet } from '../../types/index.js';
+	import type { Part, Alphabet, DiffData } from '../../types/index.js';
 	import { nucleotideColors, aminoAcidColors, getFeatureColor } from '../../util/colors.js';
 
 	interface Props {
+		data?: DiffData;
 		/** First sequence */
-		seqA: string;
+		seqA?: string;
 		/** Second sequence */
-		seqB: string;
+		seqB?: string;
 		/** Label for first construct */
 		nameA?: string;
 		/** Label for second construct */
@@ -22,16 +23,25 @@
 	}
 
 	let {
-		seqA,
-		seqB,
-		nameA = 'Construct A',
-		nameB = 'Construct B',
-		featuresA = [],
-		featuresB = [],
-		alphabet = 'dna',
+		data,
+		seqA: seqAProp,
+		seqB: seqBProp,
+		nameA: nameAProp,
+		nameB: nameBProp,
+		featuresA: featuresAProp,
+		featuresB: featuresBProp,
+		alphabet: alphabetProp,
 		width = 750,
 		maxHeight = 500,
 	}: Props & { maxHeight?: number } = $props();
+
+	const seqA = $derived(seqAProp ?? data?.seqA ?? '');
+	const seqB = $derived(seqBProp ?? data?.seqB ?? '');
+	const nameA = $derived(nameAProp ?? data?.nameA ?? 'Construct A');
+	const nameB = $derived(nameBProp ?? data?.nameB ?? 'Construct B');
+	const featuresA = $derived(featuresAProp ?? data?.featuresA ?? []);
+	const featuresB = $derived(featuresBProp ?? data?.featuresB ?? []);
+	const alphabet = $derived(alphabetProp ?? data?.alphabet ?? 'dna');
 
 	let colorMap = $derived(alphabet === 'protein' ? aminoAcidColors : nucleotideColors);
 

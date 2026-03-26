@@ -30,7 +30,8 @@
 	import { complementBase } from '../../util/coordinates.js';
 
 	interface Props {
-		node: CloningNode;
+		data?: CloningNode;
+		node?: CloningNode;
 		width?: number;
 		height?: number;
 		/** How many bp to show at each end of a construct */
@@ -38,7 +39,9 @@
 		onhoverinfo?: (info: HoverInfo | null) => void;
 	}
 
-	let { node, width = 1100, height = 160, marginBp = 10, onhoverinfo }: Props = $props();
+	let { data, node: nodeProp, width = 1100, height = 160, marginBp = 10, onhoverinfo }: Props = $props();
+
+	const node = $derived(nodeProp ?? data!);
 
 	// ── Constants ──
 	const CHAR_W = 8.5;         // monospace character width

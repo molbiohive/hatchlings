@@ -1,12 +1,13 @@
 <script lang="ts">
-	import type { GelLane, GelBand, GelType, StainType } from '../../types/index.js';
+	import type { GelLane, GelBand, GelType, StainType, GelData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { stainColors } from '../../util/colors.js';
 	import GelLaneComponent from './GelLane.svelte';
 	import GelLadder from './GelLadder.svelte';
 
 	interface Props {
-		lanes: GelLane[];
+		data?: GelData;
+		lanes?: GelLane[];
 		gelType?: GelType;
 		stain?: StainType;
 		width?: number;
@@ -21,9 +22,10 @@
 	}
 
 	let {
-		lanes,
-		gelType = 'agarose',
-		stain = 'ethidium',
+		data,
+		lanes: lanesProp,
+		gelType: gelTypeProp,
+		stain: stainProp,
 		width = 400,
 		height = 500,
 		showSizeLabels = true,
@@ -34,6 +36,10 @@
 		onbandclick,
 		onhoverinfo,
 	}: Props = $props();
+
+	const lanes = $derived(lanesProp ?? data?.lanes ?? []);
+	const gelType = $derived(gelTypeProp ?? data?.gelType ?? 'agarose');
+	const stain = $derived(stainProp ?? data?.stain ?? 'ethidium');
 
 
 	let colors = $derived(stainColors[stain]);

@@ -6,7 +6,8 @@
 	import PlasmidViewer from '../plasmid/PlasmidViewer.svelte';
 
 	interface Props {
-		root: CloningNode;
+		data?: CloningNode;
+		root?: CloningNode;
 		width?: number;
 		height?: number;
 		nodeSize?: number;
@@ -16,7 +17,8 @@
 	}
 
 	let {
-		root,
+		data,
+		root: rootProp,
 		width = 900,
 		height = 600,
 		nodeSize = 140,
@@ -24,6 +26,8 @@
 		onnodeclick,
 		onhoverinfo,
 	}: Props = $props();
+
+	const root = $derived(rootProp ?? data!);
 
 	const RENDER_SIZE = 500;
 	let cssScale = $derived(nodeSize / RENDER_SIZE);

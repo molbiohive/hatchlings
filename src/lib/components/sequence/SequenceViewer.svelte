@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Part, CutSite, Translation } from '../../types/index.js';
+	import type { Part, CutSite, Translation, SequenceData } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { analyzePrimerBinding, countLanes, cutSiteEnd, buildPartHoverInfo, buildCutSiteHoverInfo, isPrimer } from '../../util/coordinates.js';
@@ -7,8 +7,9 @@
 	import SequenceRow from './SequenceRow.svelte';
 
 	interface Props {
+		data?: SequenceData;
 		/** Full sequence string */
-		seq: string;
+		seq?: string;
 		/** Part annotations (unified features + primers) */
 		parts?: Part[];
 		/** Restriction enzyme cut sites */
@@ -48,10 +49,11 @@
 	}
 
 	let {
-		seq,
-		parts = [],
-		cutSites = [],
-		translations = [],
+		data,
+		seq: seqProp,
+		parts: partsProp,
+		cutSites: cutSitesProp,
+		translations: translationsProp,
 		selectionState,
 		charsPerRow: charsPerRowProp,
 		charWidth = 10,
@@ -62,12 +64,18 @@
 		showNumbers = true,
 		showComplement = true,
 		colorBases = false,
-		topology = 'linear',
+		topology: topologyProp,
 		onselect,
 		onpartclick,
 		oncopysequence,
 		onhoverinfo,
 	}: Props = $props();
+
+	const seq = $derived(seqProp ?? data?.seq ?? '');
+	const parts = $derived(partsProp ?? data?.parts ?? []);
+	const cutSites = $derived(cutSitesProp ?? data?.cutSites ?? []);
+	const translations = $derived(translationsProp ?? data?.translations ?? []);
+	const topology = $derived(topologyProp ?? data?.topology ?? 'linear');
 
 	/** Enrich primers with auto-detected binding regions and mismatches */
 	let enrichedParts = $derived(

@@ -60,3 +60,31 @@ const BindingKineticsViewer = markRaw(BindingKineticsViewerRaw);
 | `height` | `number` | `350` | SVG height |
 | `showFit` | `boolean` | — | Show fitted curves |
 | `showParams` | `boolean` | — | Show kinetic parameters |
+
+## Example — Constructing Data
+
+```ts
+import type { KineticsData } from '@molbiohive/hatchlings';
+
+const data: KineticsData = {
+  curves: [
+    { name: '100 nM', concentration: 100e-9, x: [0, 10, 20, ...], y: [0, 0.5, 0.8, ...] },
+    { name: '50 nM', concentration: 50e-9, x: [0, 10, 20, ...], y: [0, 0.3, 0.5, ...] },
+    { name: '25 nM', concentration: 25e-9, x: [0, 10, 20, ...], y: [0, 0.15, 0.25, ...] },
+  ],
+  steps: [
+    { name: 'Baseline', start: 0, end: 60, type: 'baseline' },
+    { name: 'Association', start: 60, end: 360, type: 'association' },
+    { name: 'Dissociation', start: 360, end: 660, type: 'dissociation' },
+  ],
+  params: {
+    ka: 2.5e5,     // M⁻¹s⁻¹
+    kd: 1.2e-3,    // s⁻¹
+    KD: 4.8e-9,    // M (= kd/ka)
+    chi2: 0.15,
+    rMax: 1.2,
+  },
+};
+```
+
+Steps define the phase boundaries drawn as background regions. The fit curves and residuals are computed by your backend.

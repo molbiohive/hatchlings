@@ -61,5 +61,48 @@ const PlasmidViewer = markRaw(PlasmidViewerRaw);
 | Event | Payload | Description |
 |---|---|---|
 | `onselect` | `{ start, end }` | Sequence region selected |
+| `onselectionchange` | `{ start, end } \| null` | Selection changed (real-time) |
+| `oncaretmove` | `number` | Caret position changed |
 | `onpartclick` | `Part` | Feature/primer clicked |
+| `oncopysequence` | `string` | Sequence copied to clipboard |
 | `onhoverinfo` | `HoverInfo \| null` | Hover tooltip data |
+
+## Example — Constructing Data
+
+```ts
+import type { PlasmidData } from '@molbiohive/hatchlings';
+
+const data: PlasmidData = {
+  name: 'pET-28a',
+  size: 5369,
+  topology: 'circular',
+  parts: [
+    { name: 'KanR', type: 'CDS', start: 3995, end: 4807, strand: -1, color: '#e6a24c' },
+    { name: 'lacI', type: 'CDS', start: 773, end: 1855, strand: 1, color: '#3b82f6' },
+    { name: 'T7 promoter', type: 'promoter', start: 4918, end: 4936, strand: 1, color: '#31a354' },
+    { name: 'f1 ori', type: 'rep_origin', start: 4346, end: 4801, strand: 1, color: '#9467bd' },
+  ],
+  cutSites: [
+    { enzyme: 'NcoI', position: 296, end: 302, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+    { enzyme: 'BamHI', position: 319, end: 325, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+    { enzyme: 'XhoI', position: 158, end: 164, strand: 1, cutPosition: 1, complementCutPosition: 5 },
+  ],
+};
+```
+
+## Syncing with SequenceViewer
+
+Share a `SelectionState` to synchronize selection across views:
+
+```svelte
+<script>
+  import { PlasmidViewer, SequenceViewer, SelectionState } from '@molbiohive/hatchlings';
+
+  const selection = new SelectionState(5369);
+</script>
+
+<PlasmidViewer {data} selectionState={selection} width={500} height={500} />
+<SequenceViewer data={seqData} selectionState={selection} width={660} height={400} />
+```
+
+See [Selection & Sync](/reference/selection-sync) for details.

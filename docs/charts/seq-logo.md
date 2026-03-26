@@ -56,3 +56,23 @@ An object mapping base characters to their frequencies (0–1):
 | `width` | `number` | — | SVG width |
 | `height` | `number` | — | SVG height |
 | `title` | `string` | — | Chart title |
+
+## Example — Constructing Data
+
+```ts
+import type { SeqLogoData } from '@molbiohive/hatchlings';
+
+// Each position maps base characters to frequencies (0-1)
+const data: SeqLogoData = {
+  positions: [
+    { A: 0.8, C: 0.05, G: 0.1, T: 0.05 },
+    { A: 0.1, C: 0.1, G: 0.7, T: 0.1 },
+    { A: 0.05, C: 0.85, G: 0.05, T: 0.05 },
+    { A: 0.25, C: 0.25, G: 0.25, T: 0.25 },  // no conservation
+    { A: 0.02, C: 0.02, G: 0.02, T: 0.94 },
+  ],
+  alphabet: 'dna',   // or 'rna', 'protein'
+};
+```
+
+Letter heights represent information content. Fully conserved positions show tall single letters; degenerate positions show short stacked letters.

@@ -51,3 +51,24 @@ const HeatmapViewer = markRaw(HeatmapViewerRaw);
 | `height` | `number` | `400` | SVG height |
 | `showLabels` | `boolean` | `true` | Show row/col labels |
 | `cellBorder` | `boolean` | — | Show cell borders |
+
+## Example — Constructing Data
+
+```ts
+import type { HeatmapData } from '@molbiohive/hatchlings';
+
+const data: HeatmapData = {
+  rows: ['BRCA1', 'TP53', 'MYC', 'EGFR', 'KRAS'],
+  cols: ['Sample A', 'Sample B', 'Sample C', 'Sample D'],
+  values: [
+    [2.1, -0.5, 1.8, 0.3],
+    [-1.2, 3.0, -0.8, 2.5],
+    [0.5, 0.8, -2.1, 1.0],
+    [1.9, -1.5, 0.2, -0.3],
+    [-0.3, 2.2, 1.5, -1.8],
+  ],
+  colorScale: 'RdBu',
+};
+```
+
+Each row in `values` corresponds to a row label. Values are typically z-scores or log2 fold-changes.

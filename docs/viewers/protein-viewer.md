@@ -43,6 +43,26 @@ const ProteinViewer = markRaw(ProteinViewerRaw);
 | `selection` | `ProteinSelection` | no | Highlight selection |
 | `labels` | `ProteinLabel[]` | no | Residue labels |
 
+## Example — Loading a Structure
+
+```ts
+import type { ProteinStructureData } from '@molbiohive/hatchlings';
+
+const data: ProteinStructureData = {
+  pdbData: '...PDB file contents as string...',
+  format: 'pdb',   // or 'mmcif', 'sdf'
+  name: 'GFP (1EMA)',
+  selection: [
+    { chain: 'A', resi: '64-66', style: 'stick', color: '#22c55e' },
+  ],
+  labels: [
+    { resi: 66, chain: 'A', text: 'Chromophore', color: '#ffffff', backgroundColor: '#22c55e' },
+  ],
+};
+```
+
+Load PDB data from a file or fetch from RCSB. The `selection` array highlights specific residues. `labels` add text annotations.
+
 ## Props
 
 | Prop | Type | Default | Description |
@@ -54,6 +74,6 @@ const ProteinViewer = markRaw(ProteinViewerRaw);
 | `colorScheme` | `string` | `'chain'` | Color scheme |
 | `spin` | `boolean` | `false` | Auto-rotate |
 
-::: warning
-Requires `3dmol` as an optional peer dependency.
+::: tip
+3Dmol.js is an optional peer dependency. Install with `bun add 3dmol`.
 :::

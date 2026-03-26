@@ -49,3 +49,19 @@ const CompositionChart = markRaw(CompositionChartRaw);
 | `data` | `CompositionData` | — | Primary data prop |
 | `width` | `number` | — | SVG width |
 | `height` | `number` | — | SVG height |
+
+## Example — Constructing Data
+
+```ts
+import type { CompositionData } from '@molbiohive/hatchlings';
+
+const data: CompositionData = {
+  counts: { A: 682, T: 671, G: 678, C: 655 },
+  alphabet: 'dna',
+  gc: 0.497,       // (G+C) / total
+  length: 2686,
+  name: 'pUC19',
+};
+```
+
+When `gc` is provided, it's shown as a donut overlay. The `alphabet` determines the color scheme (DNA bases, RNA bases, or amino acids).

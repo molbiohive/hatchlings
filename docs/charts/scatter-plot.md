@@ -51,3 +51,23 @@ const ScatterPlot = markRaw(ScatterPlotRaw);
 | `logX` | `boolean` | — | Log X scale |
 | `logY` | `boolean` | — | Log Y scale |
 | `pointSize` | `number` | — | Point radius |
+
+## Example — Constructing Data
+
+```ts
+import type { ScatterData } from '@molbiohive/hatchlings';
+
+const data: ScatterData = {
+  points: [
+    { x: 1.2, y: 3.5, label: 'Sample 1', group: 'treated', color: '#3b82f6' },
+    { x: 2.8, y: 1.1, label: 'Sample 2', group: 'control', color: '#ef4444' },
+    { x: 0.5, y: 4.2, label: 'Sample 3', group: 'treated', color: '#3b82f6' },
+  ],
+  axes: { x: 'PC1 (45%)', y: 'PC2 (23%)' },
+  gates: [
+    { name: 'Region A', type: 'rectangle', coordinates: [{ x: 0, y: 3 }, { x: 2, y: 5 }], color: '#22c55e44' },
+  ],
+};
+```
+
+Use `gates` to define rectangular, polygon, or ellipse regions. Set `logX`/`logY` for log-scale axes.

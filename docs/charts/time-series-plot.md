@@ -48,3 +48,22 @@ const TimeSeriesPlot = markRaw(TimeSeriesPlotRaw);
 | `data` | `TimeSeriesData` | — | Primary data prop |
 | `width` | `number` | `600` | SVG width |
 | `height` | `number` | `350` | SVG height |
+
+## Example — Constructing Data
+
+```ts
+import type { TimeSeriesData } from '@molbiohive/hatchlings';
+
+const data: TimeSeriesData = {
+  series: [
+    { name: 'OD600', x: [0, 1, 2, 3, 4, 5], y: [0.1, 0.15, 0.3, 0.8, 1.5, 2.1], unit: 'AU', yAxis: 'left', color: '#3b82f6' },
+    { name: 'pH', x: [0, 1, 2, 3, 4, 5], y: [7.0, 6.9, 6.7, 6.3, 5.8, 5.5], unit: '', yAxis: 'right', color: '#ef4444' },
+  ],
+  events: [
+    { time: 2, label: 'Induction', color: '#22c55e' },
+  ],
+  xLabel: 'Time (hours)',
+};
+```
+
+Events are drawn as vertical marker lines. Use dual Y-axes to overlay measurements with different units.

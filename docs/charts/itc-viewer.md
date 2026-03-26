@@ -60,3 +60,33 @@ const ITCViewer = markRaw(ITCViewerRaw);
 | `height` | `number` | — | SVG height |
 | `showFit` | `boolean` | — | Show fitted curve |
 | `showParams` | `boolean` | — | Show parameters |
+
+## Example — Constructing Data
+
+```ts
+import type { ITCData } from '@molbiohive/hatchlings';
+
+const data: ITCData = {
+  rawThermogram: {
+    time: [0, 120, 240, 360, ...],       // seconds
+    power: [0, -2.5, -0.3, -2.2, ...],  // µcal/sec
+  },
+  isotherm: {
+    ratio: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0],   // molar ratio [ligand]/[protein]
+    heat: [-12, -10, -7, -3, -1, -0.5],        // kcal/mol of injectant
+    fit: {
+      x: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0],
+      y: [-11.5, -9.8, -6.5, -3.2, -1.1, -0.4],
+    },
+  },
+  params: {
+    N: 1.02,           // stoichiometry
+    Ka: 2.5e6,         // M⁻¹
+    deltaH: -12.3,     // kcal/mol
+    deltaS: -8.5,      // cal/mol/K
+    Kd: 400e-9,        // M
+  },
+};
+```
+
+Top panel shows the raw thermogram (power vs time). Bottom panel shows integrated heats vs molar ratio with the fitted binding isotherm.

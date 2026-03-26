@@ -51,3 +51,24 @@ const DiffViewer = markRaw(DiffViewerRaw);
 |---|---|---|---|
 | `data` | `DiffData` | — | Primary data prop |
 | `width` | `number` | — | SVG width |
+
+## Example — Comparing Sequences
+
+```ts
+import type { DiffData } from '@molbiohive/hatchlings';
+
+const data: DiffData = {
+  seqA: 'ATGCGATCGATCGATCGATCG',
+  seqB: 'ATGCGATTGATCAATCG---G',
+  nameA: 'Wild type',
+  nameB: 'Clone #3',
+  featuresA: [
+    { name: 'CDS', type: 'CDS', start: 0, end: 21, strand: 1, color: '#4dc3ff' },
+  ],
+  featuresB: [
+    { name: 'CDS', type: 'CDS', start: 0, end: 18, strand: 1, color: '#4dc3ff' },
+  ],
+};
+```
+
+Substitutions, insertions, and deletions are highlighted automatically. Gaps are represented as `-` in the sequence strings.

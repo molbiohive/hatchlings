@@ -57,3 +57,33 @@ const TraceViewer = markRaw(TraceViewerRaw);
 | `highlightIndels` | `boolean` | `true` | Highlight indels |
 | `zoom` | `number` | `1` | Zoom level |
 | `showScrollbar` | `boolean` | `true` | Show horizontal scrollbar |
+
+## Example — Constructing Data
+
+```ts
+import type { TraceData } from '@molbiohive/hatchlings';
+
+const data: TraceData = {
+  label: 'Sample_001_fwd',
+  baseCalls: 'ATGCGATCGATCG...',
+  qualityScores: [30, 35, 40, 38, ...],       // Phred scores per base
+  peakPositions: [12, 24, 36, 48, ...],        // signal index of each peak
+  channels: {
+    A: [0, 10, 80, 5, ...],                    // fluorescence intensities
+    C: [5, 2, 0, 90, ...],
+    G: [2, 70, 5, 0, ...],
+    T: [90, 0, 3, 2, ...],
+  },
+  alignment: {                                  // optional reference alignment
+    refSeq: 'ATGCGATCGATCG...',
+    querySeq: 'ATGCGATTGATCG...',
+    mismatches: [
+      { position: 7, type: 'substitution', refBase: 'C', queryBase: 'T' },
+    ],
+    identity: 0.98,
+  },
+  trimQuality: 20,                              // quality threshold for trimming
+};
+```
+
+The `channels` object contains raw fluorescence arrays (same length). `peakPositions` maps each base call to a signal index in the channel arrays. `qualityScores` and `baseCalls` must be the same length.

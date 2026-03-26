@@ -56,3 +56,21 @@ const WaterfallPlot = markRaw(WaterfallPlotRaw);
 | `width` | `number` | — | SVG width |
 | `height` | `number` | — | SVG height |
 | `sortDescending` | `boolean` | — | Sort bars |
+
+## Example — Constructing Data
+
+```ts
+import type { WaterfallBar } from '@molbiohive/hatchlings';
+
+const data = {
+  bars: [
+    { label: 'Patient 1', value: -45, category: 'responder', color: '#3b82f6' },
+    { label: 'Patient 2', value: -30, category: 'responder', color: '#3b82f6' },
+    { label: 'Patient 3', value: -15, category: 'stable', color: '#94a3b8' },
+    { label: 'Patient 4', value: 10, category: 'progressor', color: '#ef4444' },
+    { label: 'Patient 5', value: 25, category: 'progressor', color: '#ef4444' },
+  ],
+};
+```
+
+Commonly used for tumor response (% change from baseline). Bars are sorted by value when `sortDescending` is set.

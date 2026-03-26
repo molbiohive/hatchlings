@@ -51,3 +51,23 @@ const SpectrumViewer = markRaw(SpectrumViewerRaw);
 | `data` | `SpectrumData` | — | Primary data prop |
 | `width` | `number` | `600` | SVG width |
 | `height` | `number` | `350` | SVG height |
+
+## Example — Constructing Data
+
+```ts
+import type { SpectrumData } from '@molbiohive/hatchlings';
+
+const data: SpectrumData = {
+  x: [200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300],
+  y: [0.1, 0.15, 0.3, 0.25, 0.2, 0.18, 0.45, 0.35, 0.8, 0.2, 0.05],
+  peaks: [
+    { x: 280, y: 0.8, label: 'A280 (Trp/Tyr)' },
+    { x: 260, y: 0.45, label: 'A260 (nucleic acid)' },
+  ],
+  xLabel: 'Wavelength (nm)',
+  yLabel: 'Absorbance (AU)',
+  title: 'UV absorption spectrum',
+};
+```
+
+Works for UV-Vis, CD, fluorescence, mass spectra -- any x/y data with optional peak annotations.

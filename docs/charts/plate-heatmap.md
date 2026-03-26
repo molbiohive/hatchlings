@@ -50,3 +50,22 @@ const PlateHeatmap = markRaw(PlateHeatmapRaw);
 | `height` | `number` | `350` | SVG height |
 | `colorScale` | `string` | `'viridis'` | Color scale |
 | `showLabels` | `boolean` | `true` | Show well labels |
+
+## Example — Constructing Data
+
+```ts
+import type { PlateData } from '@molbiohive/hatchlings';
+
+const data: PlateData = {
+  format: 96,   // 6, 12, 24, 48, 96, 384, or 1536
+  title: 'Luciferase assay — Plate 1',
+  wells: [
+    { id: 'A1', value: 45000, label: 'DMSO',  group: 'control', row: 0, col: 0 },
+    { id: 'A2', value: 38000, label: '1 µM',  group: 'compound', row: 0, col: 1 },
+    { id: 'A3', value: 12000, label: '10 µM', group: 'compound', row: 0, col: 2 },
+    // ... one entry per well
+  ],
+};
+```
+
+Available color scales: `'viridis'`, `'plasma'`, `'inferno'`, `'magma'`, `'cividis'`, `'blues'`, `'reds'`. The `group` field is optional and can be used for categorical coloring.

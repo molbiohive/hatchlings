@@ -52,3 +52,26 @@ const ProteinSequenceViewer = markRaw(ProteinSequenceViewerRaw);
 | `showCodons` | `boolean` | — | Show codon view |
 | `colorResidues` | `boolean` | `false` | Color amino acids |
 | `showNumbers` | `boolean` | — | Show position numbers |
+
+## Example — Constructing Data
+
+```ts
+import type { ProteinSequenceData } from '@molbiohive/hatchlings';
+
+// From amino acid sequence directly
+const fromProtein: ProteinSequenceData = {
+  seq: 'MSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYG...',
+  annotations: [
+    { name: 'Chromophore', type: 'active_site', start: 64, end: 67, color: '#22c55e' },
+    { name: 'Beta barrel', type: 'secondary_structure', start: 10, end: 230, color: '#3b82f6' },
+  ],
+};
+
+// From DNA source (shows codons underneath)
+const fromDNA: ProteinSequenceData = {
+  dnaSource: 'ATGTCCAAAGGTGAAGAATTGTTCACTGGTGTTGTC...',
+  frame: 0,
+};
+```
+
+When `dnaSource` is provided, the viewer shows codons below each amino acid.

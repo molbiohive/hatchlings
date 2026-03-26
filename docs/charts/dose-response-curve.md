@@ -57,3 +57,31 @@ const DoseResponseCurve = markRaw(DoseResponseCurveRaw);
 | `data` | `DoseResponseData` | — | Primary data prop |
 | `width` | `number` | `500` | SVG width |
 | `height` | `number` | `350` | SVG height |
+
+## Example — Constructing Data
+
+```ts
+import type { DoseResponseData } from '@molbiohive/hatchlings';
+
+const data: DoseResponseData = {
+  curves: [
+    {
+      label: 'Compound A',
+      color: '#3b82f6',
+      points: [
+        { x: 0.001, y: 95 }, { x: 0.01, y: 90 }, { x: 0.1, y: 70 },
+        { x: 1, y: 40 }, { x: 10, y: 15 }, { x: 100, y: 5 },
+      ],
+      fit: {
+        line: [{ x: 0.001, y: 97 }, /* ... fitted points ... */ { x: 100, y: 3 }],
+        params: { top: 97, bottom: 3, ic50: 0.8, hillSlope: -1.2 },
+        r2: 0.98,
+      },
+    },
+  ],
+  xLabel: 'Concentration (µM)',
+  yLabel: '% Activity',
+};
+```
+
+X values are concentrations (plotted on log scale). Y values are response measurements. The `fit` object contains the 4-parameter logistic curve and IC50.

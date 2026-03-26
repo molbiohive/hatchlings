@@ -42,3 +42,21 @@ const MultiTraceViewer = markRaw(MultiTraceViewerRaw);
 | `height` | `number` | `600` | Total height |
 | `zoom` | `number` | `1` | Zoom level (synced across traces) |
 | `showQuality` | `boolean` | `true` | Show quality scores |
+
+## Example — Forward + Reverse Traces
+
+```svelte
+<script>
+  import { MultiTraceViewer } from '@molbiohive/hatchlings';
+
+  // Each trace is a TraceData object (see TraceViewer page)
+  const traces = [
+    { label: 'Forward', baseCalls: '...', qualityScores: [...], channels: {...}, peakPositions: [...] },
+    { label: 'Reverse', baseCalls: '...', qualityScores: [...], channels: {...}, peakPositions: [...] },
+  ];
+</script>
+
+<MultiTraceViewer {traces} width={660} height={500} zoom={2} />
+```
+
+Scroll and zoom are synchronized across all traces. Each trace is stacked vertically.

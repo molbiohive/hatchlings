@@ -55,3 +55,27 @@ const AlignmentViewer = markRaw(AlignmentViewerRaw);
 | `showConsensus` | `boolean` | `true` | Show consensus row |
 | `showConservation` | `boolean` | `true` | Show conservation bars |
 | `showNames` | `boolean` | `true` | Show sequence names |
+
+## Example — Constructing Data
+
+```ts
+import type { AlignmentData } from '@molbiohive/hatchlings';
+
+const data: AlignmentData = {
+  sequences: [
+    { id: 'human',   name: 'H. sapiens',    sequence: 'MKTLLILAVLCLG--QSQAALGT...' },
+    { id: 'mouse',   name: 'M. musculus',    sequence: 'MKTLLILAVLCLG--QSQAALGT...' },
+    { id: 'chicken', name: 'G. gallus',      sequence: 'MKTLLILACLCLGSEQSQAALGS...' },
+    { id: 'frog',    name: 'X. tropicalis',  sequence: 'MK-LLILACLCLGSEQSQAALGS...' },
+  ],
+  alphabet: 'protein',
+  conservation: [
+    { position: 0, score: 1.0, consensus: 'M' },
+    { position: 1, score: 1.0, consensus: 'K' },
+    { position: 2, score: 0.75, consensus: 'T' },
+    // ... one per column
+  ],
+};
+```
+
+Gaps are represented as `-` in the sequence strings. All sequences must be the same length (pre-aligned).

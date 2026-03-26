@@ -52,3 +52,41 @@ const GelViewer = markRaw(GelViewerRaw);
 | `showSizeLabels` | `boolean` | `true` | Show size labels on ladder |
 | `showLaneLabels` | `boolean` | `true` | Show lane labels |
 | `bandStyle` | `string` | `'realistic'` | `'realistic' \| 'simple'` |
+
+## Example — Constructing Data
+
+```ts
+import type { GelData } from '@molbiohive/hatchlings';
+
+const data: GelData = {
+  gelType: 'agarose',  // or 'sds-page', 'native-page'
+  stain: 'ethidium',   // or 'sybr-safe', 'sybr-gold', 'coomassie', 'silver'
+  lanes: [
+    {
+      label: '1kb Ladder',
+      isLadder: true,
+      bands: [
+        { size: 10000, intensity: 0.5, position: 0.08 },
+        { size: 3000, intensity: 0.8, position: 0.34 },
+        { size: 1000, intensity: 0.8, position: 0.55 },
+        { size: 500, intensity: 0.8, position: 0.73 },
+      ],
+    },
+    {
+      label: 'Uncut plasmid',
+      bands: [
+        { size: 4361, intensity: 1.0, position: 0.35, name: 'supercoiled' },
+      ],
+    },
+    {
+      label: 'EcoRI + BamHI',
+      bands: [
+        { size: 3085, intensity: 0.5, position: 0.33 },
+        { size: 1276, intensity: 0.5, position: 0.46 },
+      ],
+    },
+  ],
+};
+```
+
+The `position` field (0–1) controls vertical placement on the gel. Set `isLadder: true` on the size standard lane to enable size labels.

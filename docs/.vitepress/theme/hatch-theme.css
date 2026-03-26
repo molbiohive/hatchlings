@@ -1,0 +1,99 @@
+:root {
+	/* Core */
+	--hatch-bg: #0c1018;
+	--hatch-plot-bg: #141c26;
+	--hatch-text: #d4dce6;
+	--hatch-text-muted: #8a95a5;
+	--hatch-text-dim: #566070;
+	--hatch-border: #2a3848;
+	--hatch-grid-color: #1e2a38;
+	--hatch-highlight: #6ab8e0;
+
+	/* Axes */
+	--hatch-axis-color: #3a4858;
+	--hatch-axis-text: #7a8898;
+	--hatch-axis-label: #95a3b3;
+
+	/* Plasmid ring */
+	--hatch-ring-color: #4a5a6a;
+	--hatch-tick-major: #5a6a7a;
+	--hatch-tick-minor: #3a4858;
+	--hatch-cut-site: #d45858;
+
+	/* Semantic */
+	--hatch-positive: #58b56a;
+	--hatch-negative: #d45858;
+	--hatch-warning: #d9953a;
+
+	/* Controls */
+	--hatch-controls-bg: #1e2a38;
+	--hatch-controls-border: #3a4858;
+	--hatch-controls-color: #d4dce6;
+	--hatch-controls-hover: #2a3848;
+
+	/* Legends & titles */
+	--hatch-legend-color: #95a3b3;
+	--hatch-title-color: #d4dce6;
+
+	/* Sequence viewer */
+	--hatch-seq-bg: #0c1018;
+	--hatch-seq-border: #2a3848;
+	--hatch-ruler-color: #4a5a6a;
+	--hatch-ruler-text: #7a8898;
+	--hatch-line-number: #566070;
+	--hatch-cutsite-color: #d45858;
+	--hatch-cutsite-text: #d45858;
+
+	/* Selection */
+	--hatch-selection-fill: rgba(59, 130, 246, 0.15);
+	--hatch-selection-stroke: rgba(59, 130, 246, 0.6);
+	--hatch-selection-handle: rgba(59, 130, 246, 0.8);
+	--hatch-selection-outline: #ffffff;
+	--hatch-caret-color: #ffffff;
+
+	/* Plate heatmap */
+	--hatch-plate-bg: #0c1018;
+	--hatch-plate-border: #2a3848;
+	--hatch-well-border: #2a3848;
+	--hatch-well-text: #ffffff;
+	--hatch-empty-well: #1e2a38;
+
+	/* Primers & annotations */
+	--hatch-primer-color: #22d3ee;
+	--hatch-primer-text: #22d3ee;
+	--hatch-annotation-text: #ffffff;
+	--hatch-annotation-stroke: #ffffff;
+	--hatch-annotation-stroke-hover: #ffffff;
+
+	/* Chain steps */
+	--hatch-step-completed: #58b56a;
+	--hatch-step-failed: #d45858;
+	--hatch-step-running: #6ab8e0;
+	--hatch-step-skipped: #566070;
+	--hatch-step-pending: #3a4858;
+
+	/* Status dashboard */
+	--hatch-status-ok: #58b56a;
+	--hatch-status-warning: #d9953a;
+	--hatch-status-error: #d45858;
+	--hatch-status-info: #6ab8e0;
+
+	/* Conservation */
+	--hatch-conservation-bar: rgba(106, 184, 224, 0.6);
+
+	/* Tooltip */
+	--hatch-tooltip-bg: #141c26;
+	--hatch-tooltip-border: #2a3848;
+	--hatch-tooltip-text: #d4dce6;
+	--hatch-tooltip-label: #8a95a5;
+}
+
+/* Demo container styling */
+.demo-container {
+	background: var(--hatch-bg);
+	border: 1px solid var(--hatch-border);
+	border-radius: 8px;
+	padding: 16px;
+	margin: 16px 0;
+	overflow: hidden;
+}

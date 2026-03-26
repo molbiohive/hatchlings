@@ -23,3 +23,11 @@ fmt:
 
 clean:
 	rm -rf dist/ build/ .svelte-kit/ node_modules/.vite/
+
+.PHONY: docs-dev docs-build
+
+docs-dev:
+	bunx vitepress dev docs
+
+docs-build:
+	bunx vitepress build docs

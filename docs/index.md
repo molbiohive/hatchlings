@@ -40,7 +40,19 @@ const PlasmidViewer = markRaw(PlasmidViewerRaw);
 </div>
 
 <ClientOnly>
-  <div style="display: flex; justify-content: center; margin: 24px 0 48px;">
-    <SvelteMount :component="PlasmidViewer" :props="{ data: puc19, width: 500, height: 500 }" />
+  <div class="hero-plasmid">
+    <SvelteMount :component="PlasmidViewer" :props="{ data: puc19, width: 680, height: 680 }" />
   </div>
 </ClientOnly>
+
+<style>
+.hero-plasmid {
+  display: flex;
+  justify-content: center;
+  margin: 24px auto 48px;
+  max-height: 50vh;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+}
+</style>

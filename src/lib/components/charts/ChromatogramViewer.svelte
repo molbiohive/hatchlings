@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ChromTrace, ChromPeak, ChromFraction } from '../../types/index.js';
+	import type { ChromTrace, ChromPeak, ChromFraction, ChromData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import { hover } from '../../util/hover.js';
@@ -9,7 +9,8 @@
 	import SvgLegend from '../shared/SvgLegend.svelte';
 
 	interface Props {
-		traces: ChromTrace[];
+		data?: ChromData;
+		traces?: ChromTrace[];
 		peaks?: ChromPeak[];
 		fractions?: ChromFraction[];
 		xLabel?: string;
@@ -21,16 +22,22 @@
 	}
 
 	let {
-		traces,
-		peaks = [],
-		fractions = [],
-		xLabel = 'Volume (mL)',
+		data,
+		traces: tracesProp,
+		peaks: peaksProp,
+		fractions: fractionsProp,
+		xLabel: xLabelProp,
 		width = 600,
 		height = 350,
 		showPeaks = true,
 		showFractions = true,
 		onhoverinfo,
 	}: Props = $props();
+
+	const traces = $derived(tracesProp ?? data?.traces ?? []);
+	const peaks = $derived(peaksProp ?? data?.peaks ?? []);
+	const fractions = $derived(fractionsProp ?? data?.fractions ?? []);
+	const xLabel = $derived(xLabelProp ?? data?.xLabel ?? 'Volume (mL)');
 
 	const margin = { top: 20, right: 60, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);

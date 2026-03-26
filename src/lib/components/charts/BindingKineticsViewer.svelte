@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { KineticsCurve, KineticsStep, BindingParams } from '../../types/index.js';
+	import type { KineticsCurve, KineticsStep, BindingParams, KineticsData } from '../../types/index.js';
 	import type { HoverInfo, InfoItem } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import { hover } from '../../util/hover.js';
@@ -10,7 +10,8 @@
 	import { CHART_MARGIN } from '../../util/layout.js';
 
 	interface Props {
-		curves: KineticsCurve[];
+		data?: KineticsData;
+		curves?: KineticsCurve[];
 		fit?: { x: number[]; y: number[] }[];
 		steps?: KineticsStep[];
 		params?: BindingParams;
@@ -24,10 +25,11 @@
 	}
 
 	let {
-		curves,
-		fit,
-		steps = [],
-		params,
+		data,
+		curves: curvesProp,
+		fit: fitProp,
+		steps: stepsProp,
+		params: paramsProp,
 		width = 600,
 		height = 350,
 		xLabel = 'Time (s)',
@@ -36,6 +38,11 @@
 		showParams = true,
 		onhoverinfo,
 	}: Props = $props();
+
+	const curves = $derived(curvesProp ?? data?.curves ?? []);
+	const fit = $derived(fitProp ?? data?.fit);
+	const steps = $derived(stepsProp ?? data?.steps ?? []);
+	const params = $derived(paramsProp ?? data?.params);
 
 	const margin = CHART_MARGIN;
 	const plotW = $derived(width - margin.left - margin.right);

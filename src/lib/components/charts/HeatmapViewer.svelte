@@ -1,12 +1,14 @@
 <script lang="ts">
+	import type { HeatmapData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { interpolateColor, type colorScales } from '../../util/colors.js';
 	import { hover } from '../../util/hover.js';
 
 	interface Props {
-		rows: string[];
-		cols: string[];
-		values: number[][];
+		data?: HeatmapData;
+		rows?: string[];
+		cols?: string[];
+		values?: number[][];
 		colorScale?: keyof typeof colorScales;
 		width?: number;
 		height?: number;
@@ -16,16 +18,22 @@
 	}
 
 	let {
-		rows,
-		cols,
-		values,
-		colorScale = 'viridis',
+		data,
+		rows: rowsProp,
+		cols: colsProp,
+		values: valuesProp,
+		colorScale: colorScaleProp,
 		width = 500,
 		height = 400,
 		showLabels = true,
 		cellBorder = true,
 		onhoverinfo,
 	}: Props = $props();
+
+	const rows = $derived(rowsProp ?? data?.rows ?? []);
+	const cols = $derived(colsProp ?? data?.cols ?? []);
+	const values = $derived(valuesProp ?? data?.values ?? []);
+	const colorScale = $derived(colorScaleProp ?? data?.colorScale ?? 'viridis');
 
 	const margin = { top: 60, right: 20, bottom: 20, left: 80 };
 	const plotW = $derived(width - margin.left - margin.right);

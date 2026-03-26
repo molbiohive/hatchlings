@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { DataPoint, Thresholds } from '../../types/index.js';
+	import type { DataPoint, Thresholds, VolcanoData } from '../../types/index.js';
 	import type { HoverInfo, InfoItem } from '../../types/utility.js';
 	import { hover } from '../../util/hover.js';
 	import { CHART_MARGIN } from '../../util/layout.js';
@@ -7,7 +7,8 @@
 	import AxisY from '../shared/AxisY.svelte';
 
 	interface Props {
-		points: DataPoint[];
+		data?: VolcanoData;
+		points?: DataPoint[];
 		thresholds?: Thresholds;
 		xLabel?: string;
 		yLabel?: string;
@@ -18,8 +19,9 @@
 	}
 
 	let {
-		points,
-		thresholds = { x: 1, xNeg: -1, y: 1.3 },
+		data,
+		points: pointsProp,
+		thresholds: thresholdsProp,
 		xLabel = 'log2(Fold Change)',
 		yLabel = '-log10(p-value)',
 		width = 500,
@@ -27,6 +29,9 @@
 		highlightSignificant = true,
 		onhoverinfo,
 	}: Props = $props();
+
+	const points = $derived(pointsProp ?? data?.points ?? []);
+	const thresholds = $derived(thresholdsProp ?? data?.thresholds ?? { x: 1, xNeg: -1, y: 1.3 });
 
 	const margin = CHART_MARGIN;
 	const plotW = $derived(width - margin.left - margin.right);

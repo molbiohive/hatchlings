@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { DoseResponseCurveData } from '../../types/index.js';
+	import type { DoseResponseCurveData, DoseResponseData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import { hover } from '../../util/hover.js';
@@ -8,7 +8,8 @@
 	import { CHART_MARGIN } from '../../util/layout.js';
 
 	interface Props {
-		curves: DoseResponseCurveData[];
+		data?: DoseResponseData;
+		curves?: DoseResponseCurveData[];
 		logX?: boolean;
 		showFit?: boolean;
 		xLabel?: string;
@@ -20,16 +21,21 @@
 	}
 
 	let {
-		curves,
+		data,
+		curves: curvesProp,
 		logX = true,
 		showFit = true,
-		xLabel = 'Concentration',
-		yLabel = 'Response',
+		xLabel: xLabelProp,
+		yLabel: yLabelProp,
 		width = 500,
 		height = 350,
 		showCI = false,
 		onhoverinfo,
 	}: Props = $props();
+
+	const curves = $derived(curvesProp ?? data?.curves ?? []);
+	const xLabel = $derived(xLabelProp ?? data?.xLabel ?? 'Concentration');
+	const yLabel = $derived(yLabelProp ?? data?.yLabel ?? 'Response');
 
 	const margin = CHART_MARGIN;
 	const plotW = $derived(width - margin.left - margin.right);

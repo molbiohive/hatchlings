@@ -1,13 +1,14 @@
 <script lang="ts">
-	import type { ITCParams } from '../../types/index.js';
+	import type { ITCParams, ITCData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
 	interface Props {
-		rawThermogram: { time: number[]; power: number[] };
-		isotherm: { ratio: number[]; heat: number[]; fit?: { x: number[]; y: number[] } };
+		data?: ITCData;
+		rawThermogram?: { time: number[]; power: number[] };
+		isotherm?: { ratio: number[]; heat: number[]; fit?: { x: number[]; y: number[] } };
 		params?: ITCParams;
 		width?: number;
 		height?: number;
@@ -17,15 +18,20 @@
 	}
 
 	let {
-		rawThermogram,
-		isotherm,
-		params,
+		data,
+		rawThermogram: rawThermogramProp,
+		isotherm: isothermProp,
+		params: paramsProp,
 		width = 450,
 		height = 600,
 		showFit = true,
 		showParams = true,
 		onhoverinfo,
 	}: Props = $props();
+
+	const rawThermogram = $derived(rawThermogramProp ?? data?.rawThermogram ?? { time: [], power: [] });
+	const isotherm = $derived(isothermProp ?? data?.isotherm ?? { ratio: [], heat: [] });
+	const params = $derived(paramsProp ?? data?.params);
 
 	const margin = { top: 20, right: 20, bottom: 10, left: 60 };
 	const gap = 30;

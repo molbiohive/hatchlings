@@ -1,13 +1,14 @@
 <script lang="ts">
-	import type { SpectrumPeak } from '../../types/index.js';
+	import type { SpectrumPeak, SpectrumData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
 	import AxisY from '../shared/AxisY.svelte';
 
 	interface Props {
-		x: number[];
-		y: number[];
+		data?: SpectrumData;
+		x?: number[];
+		y?: number[];
 		peaks?: SpectrumPeak[];
 		xLabel?: string;
 		yLabel?: string;
@@ -20,18 +21,26 @@
 	}
 
 	let {
-		x,
-		y,
-		peaks = [],
-		xLabel = 'Wavelength (nm)',
-		yLabel = 'Absorbance',
-		title = '',
+		data,
+		x: xProp,
+		y: yProp,
+		peaks: peaksProp,
+		xLabel: xLabelProp,
+		yLabel: yLabelProp,
+		title: titleProp,
 		width = 550,
 		height = 320,
 		color = '#1f77b4',
 		showPeaks = true,
 		onhoverinfo,
 	}: Props = $props();
+
+	const x = $derived(xProp ?? data?.x ?? []);
+	const y = $derived(yProp ?? data?.y ?? []);
+	const peaks = $derived(peaksProp ?? data?.peaks ?? []);
+	const xLabel = $derived(xLabelProp ?? data?.xLabel ?? 'Wavelength (nm)');
+	const yLabel = $derived(yLabelProp ?? data?.yLabel ?? 'Absorbance');
+	const title = $derived(titleProp ?? data?.title ?? '');
 
 	const margin = { top: 30, right: 20, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);

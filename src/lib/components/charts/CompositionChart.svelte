@@ -1,10 +1,11 @@
 <script lang="ts">
-	import type { Alphabet } from '../../types/index.js';
+	import type { Alphabet, CompositionData } from '../../types/index.js';
 	import { nucleotideColors, aminoAcidColors } from '../../util/colors.js';
 
 	interface Props {
+		data?: CompositionData;
 		/** Residue counts, e.g. { A: 150, T: 120, G: 130, C: 100 } */
-		counts: Record<string, number>;
+		counts?: Record<string, number>;
 		/** Sequence alphabet */
 		alphabet?: Alphabet;
 		/** GC content (0-1) for DNA/RNA — if provided, shows donut */
@@ -16,12 +17,17 @@
 	}
 
 	let {
-		counts,
-		alphabet = 'dna',
-		gc,
+		data,
+		counts: countsProp,
+		alphabet: alphabetProp,
+		gc: gcProp,
 		width = 500,
 		height = 250,
 	}: Props = $props();
+
+	const counts = $derived(countsProp ?? data?.counts ?? {});
+	const alphabet = $derived(alphabetProp ?? data?.alphabet ?? 'dna');
+	const gc = $derived(gcProp ?? data?.gc);
 
 	let colorMap = $derived(alphabet === 'protein' ? aminoAcidColors : nucleotideColors);
 

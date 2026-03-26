@@ -1,9 +1,10 @@
 <script lang="ts">
-	import type { LogoPosition, Alphabet } from '../../types/index.js';
+	import type { LogoPosition, SeqLogoData, Alphabet } from '../../types/index.js';
 	import { nucleotideColors, aminoAcidColors } from '../../util/colors.js';
 
 	interface Props {
-		positions: LogoPosition[];
+		data?: SeqLogoData;
+		positions?: LogoPosition[];
 		alphabet?: Alphabet;
 		width?: number;
 		height?: number;
@@ -11,12 +12,16 @@
 	}
 
 	let {
-		positions,
-		alphabet = 'dna',
+		data,
+		positions: positionsProp,
+		alphabet: alphabetProp,
 		width = 500,
 		height = 200,
 		title = '',
 	}: Props = $props();
+
+	const positions = $derived(positionsProp ?? data?.positions ?? []);
+	const alphabet = $derived(alphabetProp ?? data?.alphabet ?? 'dna');
 
 	const margin = { top: 25, right: 10, bottom: 30, left: 40 };
 	const plotW = $derived(width - margin.left - margin.right);

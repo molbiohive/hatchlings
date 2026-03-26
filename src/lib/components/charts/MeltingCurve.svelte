@@ -9,7 +9,8 @@
 	import SvgLegend from '../shared/SvgLegend.svelte';
 
 	interface Props {
-		curves: MeltingCurveData['curves'];
+		data?: MeltingCurveData;
+		curves?: MeltingCurveData['curves'];
 		width?: number;
 		height?: number;
 		showDerivative?: boolean;
@@ -18,13 +19,16 @@
 	}
 
 	let {
-		curves,
+		data,
+		curves: curvesProp,
 		width = 550,
 		height = 350,
 		showDerivative = true,
 		showTm = true,
 		onhoverinfo,
 	}: Props = $props();
+
+	const curves = $derived(curvesProp ?? data?.curves ?? []);
 
 	const margin = { top: 20, right: 60, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);

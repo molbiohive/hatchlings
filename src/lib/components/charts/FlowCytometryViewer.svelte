@@ -1,12 +1,13 @@
 <script lang="ts">
-	import type { Gate } from '../../types/index.js';
+	import type { Gate, FlowData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { CHART_MARGIN } from '../../util/layout.js';
 	import { dataRange } from '../../util/chart.js';
 
 	interface Props {
-		events: number[][];
-		axes: { name: string; index: number }[];
+		data?: FlowData;
+		events?: number[][];
+		axes?: { name: string; index: number }[];
 		gates?: Gate[];
 		width?: number;
 		height?: number;
@@ -20,9 +21,10 @@
 	}
 
 	let {
-		events,
-		axes,
-		gates = [],
+		data,
+		events: eventsProp,
+		axes: axesProp,
+		gates: gatesProp,
 		width = 450,
 		height = 400,
 		xAxisIdx = 0,
@@ -33,6 +35,10 @@
 		ongatechange,
 		onhoverinfo,
 	}: Props = $props();
+
+	const events = $derived(eventsProp ?? data?.events ?? []);
+	const axes = $derived(axesProp ?? data?.axes ?? []);
+	const gates = $derived(gatesProp ?? data?.gates ?? []);
 
 	/** Resolve a CSS custom property from the canvas element, with fallback */
 	function resolveVar(el: HTMLElement, prop: string, fallback: string): string {

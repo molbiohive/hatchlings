@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { DistributionData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
@@ -6,7 +7,8 @@
 	import { CHART_MARGIN } from '../../util/layout.js';
 
 	interface Props {
-		bins: { start: number; end: number; count: number }[];
+		data?: DistributionData;
+		bins?: { start: number; end: number; count: number }[];
 		overlay?: { x: number[]; y: number[] };
 		mode?: 'histogram' | 'density' | 'cumulative';
 		width?: number;
@@ -18,9 +20,10 @@
 	}
 
 	let {
-		bins,
-		overlay,
-		mode = 'histogram',
+		data,
+		bins: binsProp,
+		overlay: overlayProp,
+		mode: modeProp,
 		width = 500,
 		height = 300,
 		xLabel = 'Value',
@@ -28,6 +31,10 @@
 		color = '#1f77b4',
 		onhoverinfo,
 	}: Props = $props();
+
+	const bins = $derived(binsProp ?? data?.bins ?? []);
+	const overlay = $derived(overlayProp ?? data?.overlay);
+	const mode = $derived(modeProp ?? data?.mode ?? 'histogram');
 
 	const margin = CHART_MARGIN;
 	const plotW = $derived(width - margin.left - margin.right);

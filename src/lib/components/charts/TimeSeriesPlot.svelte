@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TimeSeriesLine, TimeSeriesEvent } from '../../types/index.js';
+	import type { TimeSeriesLine, TimeSeriesEvent, TimeSeriesData } from '../../types/index.js';
 	import type { HoverInfo, InfoItem } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import { hover } from '../../util/hover.js';
@@ -9,7 +9,8 @@
 	import SvgLegend from '../shared/SvgLegend.svelte';
 
 	interface Props {
-		series: TimeSeriesLine[];
+		data?: TimeSeriesData;
+		series?: TimeSeriesLine[];
 		events?: TimeSeriesEvent[];
 		xLabel?: string;
 		width?: number;
@@ -19,14 +20,19 @@
 	}
 
 	let {
-		series,
-		events = [],
-		xLabel = 'Time',
+		data,
+		series: seriesProp,
+		events: eventsProp,
+		xLabel: xLabelProp,
 		width = 600,
 		height = 350,
 		showPoints = false,
 		onhoverinfo,
 	}: Props = $props();
+
+	const series = $derived(seriesProp ?? data?.series ?? []);
+	const events = $derived(eventsProp ?? data?.events ?? []);
+	const xLabel = $derived(xLabelProp ?? data?.xLabel ?? 'Time');
 
 	const margin = { top: 20, right: 60, bottom: 50, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);

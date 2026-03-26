@@ -1,11 +1,12 @@
 <script lang="ts">
-	import type { WaterfallBar } from '../../types/index.js';
+	import type { WaterfallBar, WaterfallData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { hover } from '../../util/hover.js';
 	import AxisY from '../shared/AxisY.svelte';
 
 	interface Props {
-		bars: WaterfallBar[];
+		data?: WaterfallData;
+		bars?: WaterfallBar[];
 		width?: number;
 		height?: number;
 		xLabel?: string;
@@ -15,7 +16,8 @@
 	}
 
 	let {
-		bars,
+		data,
+		bars: barsProp,
 		width = 500,
 		height = 350,
 		xLabel = '',
@@ -23,6 +25,8 @@
 		sortDescending = true,
 		onhoverinfo,
 	}: Props = $props();
+
+	const bars = $derived(barsProp ?? data?.bars ?? []);
 
 	const margin = { top: 20, right: 20, bottom: 60, left: 60 };
 	const plotW = $derived(width - margin.left - margin.right);

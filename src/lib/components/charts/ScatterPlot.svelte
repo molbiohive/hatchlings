@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { DataPoint, Gate } from '../../types/index.js';
+	import type { DataPoint, Gate, ScatterData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { categoricalColors } from '../../util/colors.js';
 	import { hover } from '../../util/hover.js';
@@ -9,7 +9,8 @@
 	import { dataRange } from '../../util/chart.js';
 
 	interface Props {
-		points: DataPoint[];
+		data?: ScatterData;
+		points?: DataPoint[];
 		axes?: { x: string; y: string };
 		gates?: Gate[];
 		width?: number;
@@ -23,18 +24,25 @@
 	}
 
 	let {
-		points,
-		axes,
-		gates = [],
+		data,
+		points: pointsProp,
+		axes: axesProp,
+		gates: gatesProp,
 		width = 450,
 		height = 400,
-		xLabel = axes?.x ?? 'X',
-		yLabel = axes?.y ?? 'Y',
+		xLabel: xLabelProp,
+		yLabel: yLabelProp,
 		logX = false,
 		logY = false,
 		pointSize = 2.5,
 		onhoverinfo,
 	}: Props = $props();
+
+	const points = $derived(pointsProp ?? data?.points ?? []);
+	const axes = $derived(axesProp ?? data?.axes);
+	const gates = $derived(gatesProp ?? data?.gates ?? []);
+	const xLabel = $derived(xLabelProp ?? axes?.x ?? 'X');
+	const yLabel = $derived(yLabelProp ?? axes?.y ?? 'Y');
 
 	const margin = CHART_MARGIN;
 	const plotW = $derived(width - margin.left - margin.right);

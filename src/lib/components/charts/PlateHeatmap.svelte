@@ -1,12 +1,13 @@
 <script lang="ts">
-	import type { Well, PlateFormat } from '../../types/index.js';
+	import type { Well, PlateFormat, PlateData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { interpolateColor } from '../../util/colors.js';
 	import { hover } from '../../util/hover.js';
 
 	interface Props {
-		format: PlateFormat;
-		wells: Well[];
+		data?: PlateData;
+		format?: PlateFormat;
+		wells?: Well[];
 		zFactor?: number;
 		title?: string;
 		width?: number;
@@ -18,10 +19,11 @@
 	}
 
 	let {
-		format = 96,
-		wells,
-		zFactor,
-		title = '',
+		data,
+		format: formatProp,
+		wells: wellsProp,
+		zFactor: zFactorProp,
+		title: titleProp,
 		width = 500,
 		height = 350,
 		colorScale = 'viridis',
@@ -29,6 +31,11 @@
 		onwellclick,
 		onhoverinfo,
 	}: Props = $props();
+
+	const format = $derived(formatProp ?? data?.format ?? 96);
+	const wells = $derived(wellsProp ?? data?.wells ?? []);
+	const zFactor = $derived(zFactorProp ?? data?.zFactor);
+	const title = $derived(titleProp ?? data?.title ?? '');
 
 	const plateLayouts: Record<PlateFormat, { rows: number; cols: number }> = {
 		6: { rows: 2, cols: 3 },

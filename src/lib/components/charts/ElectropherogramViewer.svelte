@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ElectropherogramPeak } from '../../types/index.js';
+	import type { ElectropherogramPeak, ElectropherogramData } from '../../types/index.js';
 	import type { HoverInfo } from '../../types/utility.js';
 	import { hover } from '../../util/hover.js';
 	import AxisX from '../shared/AxisX.svelte';
@@ -7,9 +7,10 @@
 	import { CHART_MARGIN } from '../../util/layout.js';
 
 	interface Props {
-		x: number[];
-		y: number[];
-		peaks: ElectropherogramPeak[];
+		data?: ElectropherogramData;
+		x?: number[];
+		y?: number[];
+		peaks?: ElectropherogramPeak[];
 		ladder?: { x: number; size: number }[];
 		xLabel?: string;
 		yLabel?: string;
@@ -21,18 +22,26 @@
 	}
 
 	let {
-		x,
-		y,
-		peaks,
-		ladder = [],
-		xLabel = 'Migration Time (s)',
-		yLabel = 'Fluorescence (RFU)',
+		data,
+		x: xProp,
+		y: yProp,
+		peaks: peaksProp,
+		ladder: ladderProp,
+		xLabel: xLabelProp,
+		yLabel: yLabelProp,
 		width = 600,
 		height = 300,
 		showPeaks = true,
 		color = '#4dc3ff',
 		onhoverinfo,
 	}: Props = $props();
+
+	const x = $derived(xProp ?? data?.x ?? []);
+	const y = $derived(yProp ?? data?.y ?? []);
+	const peaks = $derived(peaksProp ?? data?.peaks ?? []);
+	const ladder = $derived(ladderProp ?? data?.ladder ?? []);
+	const xLabel = $derived(xLabelProp ?? data?.xLabel ?? 'Migration Time (s)');
+	const yLabel = $derived(yLabelProp ?? data?.yLabel ?? 'Fluorescence (RFU)');
 
 	const margin = CHART_MARGIN;
 	const plotW = $derived(width - margin.left - margin.right);

@@ -74,3 +74,20 @@ export interface SequenceData {
 	alphabet?: Alphabet;
 	topology?: 'circular' | 'linear';
 }
+
+export interface ProteinSequenceData {
+	seq?: string;
+	dnaSource?: string;
+	frame?: 0 | 1 | 2;
+	annotations?: ProteinAnnotation[];
+}
+
+export interface DiffData {
+	seqA: string;
+	seqB: string;
+	nameA?: string;
+	nameB?: string;
+	featuresA?: Part[];
+	featuresB?: Part[];
+	alphabet?: Alphabet;
+}

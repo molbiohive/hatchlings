@@ -69,3 +69,21 @@ export interface FlowData {
 	axes: { name: string; index: number }[];
 	gates?: Gate[];
 }
+
+/** Scatter plot data */
+export interface ScatterData {
+	points: DataPoint[];
+	axes?: { x: string; y: string };
+	gates?: Gate[];
+}
+
+/** Volcano plot data */
+export interface VolcanoData {
+	points: DataPoint[];
+	thresholds?: Thresholds;
+}
+
+/** Waterfall plot data */
+export interface WaterfallData {
+	bars: WaterfallBar[];
+}

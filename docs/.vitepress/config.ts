@@ -1,12 +1,12 @@
 import { defineConfig } from 'vitepress';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { svelteDocs } from './svelte-plugin';
 
 export default defineConfig({
 	title: 'hatchlings',
 	description: 'Svelte 5 molecular biology component library',
 	base: '/hatchlings/',
 	vite: {
-		plugins: [svelte()],
+		plugins: [...svelteDocs()],
 		ssr: { external: ['3dmol'] },
 	},
 	themeConfig: {

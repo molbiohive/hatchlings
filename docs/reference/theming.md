@@ -82,7 +82,56 @@ Set the variables directly in your stylesheet:
 |---|---|---|---|
 | `--hatch-selection-fill` | `rgba(59,130,246,0.15)` | `rgba(59,130,246,0.12)` | Selection fill |
 | `--hatch-selection-stroke` | `rgba(59,130,246,0.6)` | `rgba(59,130,246,0.5)` | Selection border |
+| `--hatch-selection-handle` | `rgba(59,130,246,0.8)` | `rgba(59,130,246,0.8)` | Selection drag handles |
 | `--hatch-caret-color` | `#ffffff` | `#000000` | Caret/cursor |
+
+### Tooltip
+
+| Variable | Dark | Light | Description |
+|---|---|---|---|
+| `--hatch-tooltip-bg` | `#141c26` | `#fafaf8` | Tooltip background |
+| `--hatch-tooltip-border` | `#2a3848` | `#d8d6d2` | Tooltip border |
+| `--hatch-tooltip-text` | `#d4dce6` | `#2a2e34` | Tooltip text |
+| `--hatch-tooltip-label` | `#8a95a5` | `#6a7080` | Tooltip label text |
+
+### Plasmid
+
+| Variable | Dark | Light | Description |
+|---|---|---|---|
+| `--hatch-ring-color` | `#4a5a6a` | `#8a9098` | Plasmid ring |
+| `--hatch-tick-major` | `#5a6a7a` | `#7a8088` | Major tick marks |
+| `--hatch-tick-minor` | `#3a4858` | `#b8bcc4` | Minor tick marks |
+| `--hatch-cut-site` | `#d45858` | `#c04040` | Cut site markers |
+
+### Sequence Viewer
+
+| Variable | Dark | Light | Description |
+|---|---|---|---|
+| `--hatch-seq-bg` | `transparent` | `transparent` | Viewer background |
+| `--hatch-seq-border` | `#2a3848` | `#d8d6d2` | Viewer border |
+| `--hatch-ruler-color` | `#4a5a6a` | `#8a9098` | Ruler tick marks |
+| `--hatch-ruler-text` | `#7a8898` | `#6a7080` | Ruler numbers |
+| `--hatch-line-number` | `#566070` | `#9aa0ac` | Line numbers |
+| `--hatch-cutsite-color` | `#d45858` | `#c04040` | Cut site indicators |
+
+### Plate Heatmap
+
+| Variable | Dark | Light | Description |
+|---|---|---|---|
+| `--hatch-plate-bg` | `transparent` | `transparent` | Plate background |
+| `--hatch-plate-border` | `#2a3848` | `#d8d6d2` | Plate border |
+| `--hatch-well-border` | `#2a3848` | `#d8d6d2` | Well borders |
+| `--hatch-well-text` | `#ffffff` | `#2a2e34` | Well label text |
+| `--hatch-empty-well` | `#1e2a38` | `#e8e6e2` | Empty well fill |
+
+### Controls
+
+| Variable | Dark | Light | Description |
+|---|---|---|---|
+| `--hatch-controls-bg` | `#1e2a38` | `#e8e6e2` | Control bar background |
+| `--hatch-controls-border` | `#3a4858` | `#c8ccd4` | Control bar border |
+| `--hatch-controls-color` | `#d4dce6` | `#2a2e34` | Control text/icons |
+| `--hatch-controls-hover` | `#2a3848` | `#d8d6d2` | Control hover state |
 
 ## Custom Themes
 
@@ -95,6 +144,7 @@ const myTheme: HatchTheme = {
   '--hatch-bg': '#1a1a2e',
   '--hatch-plot-bg': '#16213e',
   '--hatch-text': '#e8e8e8',
+  '--hatch-highlight': '#e94560',
   // ... override any variables
 };
 ```

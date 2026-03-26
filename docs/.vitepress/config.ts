@@ -15,6 +15,7 @@ export default defineConfig({
 			{ text: 'Viewers', link: '/viewers/plasmid-viewer' },
 			{ text: 'Cloning', link: '/cloning/cloning-node' },
 			{ text: 'Charts', link: '/charts/dose-response-curve' },
+			{ text: 'Reference', link: '/reference/data-interfaces' },
 			{
 				text: 'v0.7.0',
 				items: [
@@ -29,8 +30,17 @@ export default defineConfig({
 					text: 'Guide',
 					items: [
 						{ text: 'Getting Started', link: '/guide/getting-started' },
-						{ text: 'Data Interfaces', link: '/guide/data-interfaces' },
-						{ text: 'Theming', link: '/guide/theming' },
+					],
+				},
+			],
+			'/reference/': [
+				{
+					text: 'Reference',
+					items: [
+						{ text: 'Data Interfaces', link: '/reference/data-interfaces' },
+						{ text: 'Theming', link: '/reference/theming' },
+						{ text: 'Tooltips', link: '/reference/tooltips' },
+						{ text: 'Selection & Sync', link: '/reference/selection-sync' },
 					],
 				},
 			],

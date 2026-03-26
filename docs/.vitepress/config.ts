@@ -17,7 +17,7 @@ export default defineConfig({
 			{ text: 'Charts', link: '/charts/dose-response-curve' },
 			{ text: 'Reference', link: '/reference/data-interfaces' },
 			{
-				text: 'v0.8.0',
+				text: 'v0.8.1',
 				items: [
 					{ text: 'npm', link: 'https://www.npmjs.com/package/@molbiohive/hatchlings' },
 					{ text: 'Changelog', link: 'https://github.com/molbiohive/hatchlings/releases' },

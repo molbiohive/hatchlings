@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress';
 import { svelteDocs } from './svelte-plugin';
+import pkg from '../../package.json' with { type: 'json' };
 
 export default defineConfig({
 	title: 'hatchlings',
@@ -17,7 +18,7 @@ export default defineConfig({
 			{ text: 'Charts', link: '/charts/dose-response-curve' },
 			{ text: 'Reference', link: '/reference/data-interfaces' },
 			{
-				text: 'v0.8.1',
+				text: `v${pkg.version}`,
 				items: [
 					{ text: 'npm', link: 'https://www.npmjs.com/package/@molbiohive/hatchlings' },
 					{ text: 'Changelog', link: 'https://github.com/molbiohive/hatchlings/releases' },

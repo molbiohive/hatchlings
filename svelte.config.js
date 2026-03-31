@@ -12,6 +12,9 @@ const config = {
 		}),
 		paths: {
 			base: process.argv.includes('dev') ? '' : '/hatchlings'
+		},
+		prerender: {
+			handleHttpError: 'warn'
 		}
 	}
 };

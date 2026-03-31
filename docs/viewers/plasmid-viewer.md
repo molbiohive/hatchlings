@@ -54,6 +54,7 @@ const PlasmidViewer = markRaw(PlasmidViewerRaw);
 | `showTicks` | `boolean` | `true` | Show bp tick marks |
 | `showInternalLabels` | `boolean` | `true` | Show labels inside arcs |
 | `topology` | `string` | `'circular'` | Override topology |
+| `maxLayers` | `number` | `4` | Max stacking layers for features/primers before collapsing with "+N" indicator |
 | `interactive` | `boolean` | `true` | Enable mouse interaction |
 
 ## Events

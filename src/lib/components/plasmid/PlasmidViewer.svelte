@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Part, CutSite, PlasmidData } from '../../types/index.js';
 	import type { SelectionState } from '../../state/index.js';
-	import { formatBp, computeCircularAnnotationLayers, bpToXY, relaxLabels, maxLayer, TWO_PI, cutSiteEnd, buildPartHoverInfo, buildCutSiteHoverInfo, isPrimer } from '../../util/coordinates.js';
+	import { formatBp, bpToXY, bpToAngle, angleToXY, relaxLabels, TWO_PI, cutSiteEnd, buildPartHoverInfo, buildCutSiteHoverInfo, isPrimer } from '../../util/coordinates.js';
 	import type { LabelPosition } from '../../util/coordinates.js';
 	import { getFeatureColor, PRIMER_COLOR, CUT_SITE_COLOR } from '../../util/colors.js';
 	import { PART_WIDTH, PART_GAP, CUTSITE_SPACE, SCALE_BAND } from '../../util/layout.js';
@@ -26,6 +26,8 @@
 		showInternalLabels?: boolean;
 		/** Sequence topology */
 		topology?: 'circular' | 'linear';
+		/** Maximum stacking layers for features/primers before collapsing (default 4) */
+		maxLayers?: number;
 		/** When false, disables all mouse/wheel/keyboard handlers, selection, and cut-site labels */
 		interactive?: boolean;
 		onselect?: (selection: { start: number; end: number }) => void;
@@ -48,6 +50,7 @@
 		showTicks = true,
 		showInternalLabels = true,
 		topology: topologyProp,
+		maxLayers = 4,
 		interactive = true,
 		onselect,
 		onselectionchange,
@@ -72,109 +75,231 @@
 
 	// --- Layer computation ---
 
-
-	/** Split parts into features and primers (no enrichment — plasmid shows simple arcs) */
+	/** Split parts into features and primers (kept for selectionInfo / center hover) */
 	let features = $derived(parts.filter(p => !isPrimer(p)));
 	let primers = $derived(parts.filter(p => isPrimer(p)));
 
-	/** Split features into forward (+) and reverse (-) groups with indices into features array */
-	let forwardParts = $derived(features.map((p, i) => ({ part: p, index: i })).filter(x => x.part.strand !== -1));
-	let reverseParts = $derived(features.map((p, i) => ({ part: p, index: i })).filter(x => x.part.strand === -1));
+	/** Combined per-strand arrays — each entry carries its index in `parts` */
+	let forwardAll = $derived(
+		parts.map((p, i) => ({ part: p, idx: i, kind: isPrimer(p) ? 'primer' as const : 'feature' as const }))
+			.filter(x => x.part.strand !== -1)
+	);
+	let reverseAll = $derived(
+		parts.map((p, i) => ({ part: p, idx: i, kind: isPrimer(p) ? 'primer' as const : 'feature' as const }))
+			.filter(x => x.part.strand === -1)
+	);
 
-	/** Compute stacking layers for each group separately (circular-aware for wrapping parts) */
+	/** Check if an interval overlaps any interval in a layer (circular-aware) */
+	function overlapsAnyInLayer(
+		interval: { start: number; end: number },
+		layer: { start: number; end: number }[],
+	): boolean {
+		for (const other of layer) {
+			if (rangesOverlap(interval.start, interval.end, other.start, other.end)) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Two-phase layer assignment: features first (longest innermost), then primers (prefer outer layers).
+	 * Returns Map<idx, layer> where idx is the index into `parts`.
+	 */
+	function assignCombinedLayers(
+		featureIntervals: { start: number; end: number; idx: number }[],
+		primerIntervals: { start: number; end: number; idx: number }[],
+	): Map<number, number> {
+		const result = new Map<number, number>();
+		const layerOccupied: { start: number; end: number }[][] = [];
+
+		// Phase 1: Features — sorted by length DESC (longest -> layer 0)
+		const sortedFeatures = [...featureIntervals].sort((a, b) => {
+			const lenA = ((a.end - a.start) % size + size) % size;
+			const lenB = ((b.end - b.start) % size + size) % size;
+			return lenB - lenA;
+		});
+		for (const feat of sortedFeatures) {
+			let assigned = -1;
+			for (let layer = 0; layer < layerOccupied.length; layer++) {
+				if (!overlapsAnyInLayer(feat, layerOccupied[layer])) {
+					assigned = layer;
+					break;
+				}
+			}
+			if (assigned === -1) {
+				assigned = layerOccupied.length;
+				layerOccupied.push([]);
+			}
+			layerOccupied[assigned].push(feat);
+			result.set(feat.idx, assigned);
+		}
+
+		// Phase 2: Primers — prefer higher layers (on top), fall back to lower, or create new
+		const sortedPrimers = [...primerIntervals].sort((a, b) => {
+			const lenA = ((a.end - a.start) % size + size) % size;
+			const lenB = ((b.end - b.start) % size + size) % size;
+			return lenB - lenA;
+		});
+		for (const pmr of sortedPrimers) {
+			let assigned = -1;
+			for (let layer = 0; layer < layerOccupied.length; layer++) {
+				if (!overlapsAnyInLayer(pmr, layerOccupied[layer])) {
+					assigned = layer;
+					break;
+				}
+			}
+			if (assigned === -1) {
+				assigned = layerOccupied.length;
+				layerOccupied.push([]);
+			}
+			layerOccupied[assigned].push(pmr);
+			result.set(pmr.idx, assigned);
+		}
+
+		return result;
+	}
+
+	/** Compute combined stacking layers for forward strand */
 	let forwardOffsets = $derived.by(() => {
-		const intervals = forwardParts.map(x => ({ start: x.part.start, end: x.part.end }));
-		return computeCircularAnnotationLayers(intervals, size);
+		const feats = forwardAll
+			.filter(x => x.kind === 'feature')
+			.map(x => ({ start: x.part.start, end: x.part.end, idx: x.idx }));
+		const pmrs = forwardAll
+			.filter(x => x.kind === 'primer')
+			.map(x => ({ start: x.part.start, end: x.part.end, idx: x.idx }));
+		return assignCombinedLayers(feats, pmrs);
 	});
+
+	/** Compute combined stacking layers for reverse strand */
 	let reverseOffsets = $derived.by(() => {
-		const intervals = reverseParts.map(x => ({ start: x.part.start, end: x.part.end }));
-		return computeCircularAnnotationLayers(intervals, size);
+		const feats = reverseAll
+			.filter(x => x.kind === 'feature')
+			.map(x => ({ start: x.part.start, end: x.part.end, idx: x.idx }));
+		const pmrs = reverseAll
+			.filter(x => x.kind === 'primer')
+			.map(x => ({ start: x.part.start, end: x.part.end, idx: x.idx }));
+		return assignCombinedLayers(feats, pmrs);
 	});
 
-	/** Max stacking depth per group */
-	let maxForwardLayer = $derived(maxLayer(forwardOffsets));
-	let maxReverseLayer = $derived(maxLayer(reverseOffsets));
+	/** Max stacking depth per strand */
+	let maxForwardLayer = $derived(
+		forwardAll.reduce((max, x) => Math.max(max, forwardOffsets.get(x.idx) ?? 0), 0)
+	);
+	let maxReverseLayer = $derived(
+		reverseAll.reduce((max, x) => Math.max(max, reverseOffsets.get(x.idx) ?? 0), 0)
+	);
 
-	/** Primer stacking layers */
-	let forwardPrimers = $derived(primers.filter(p => p.strand !== -1));
-	let reversePrimers = $derived(primers.filter(p => p.strand === -1));
+	/** Capped layer counts for radius calculations */
+	let cappedMaxForwardLayer = $derived(Math.min(maxForwardLayer, maxLayers - 1));
+	let cappedMaxReverseLayer = $derived(Math.min(maxReverseLayer, maxLayers - 1));
 
-	let forwardPrimerOffsets = $derived.by(() => {
-		const intervals = forwardPrimers.map(p => ({ start: p.start, end: p.end }));
-		return computeCircularAnnotationLayers(intervals, size);
+	/** Overflow counts */
+	let overflowFeatureCount = $derived(
+		[...forwardAll, ...reverseAll].filter(x => {
+			if (x.kind !== 'feature') return false;
+			const offsets = x.part.strand !== -1 ? forwardOffsets : reverseOffsets;
+			return (offsets.get(x.idx) ?? 0) >= maxLayers;
+		}).length
+	);
+	let overflowPrimerCount = $derived(
+		[...forwardAll, ...reverseAll].filter(x => {
+			if (x.kind !== 'primer') return false;
+			const offsets = x.part.strand !== -1 ? forwardOffsets : reverseOffsets;
+			return (offsets.get(x.idx) ?? 0) >= maxLayers;
+		}).length
+	);
+
+	/** Find the end angle of the last feature on the outermost visible layer for overflow badge placement */
+	let overflowFtrBadge = $derived.by((): { angle: number; effR: number } | null => {
+		if (overflowFeatureCount === 0) return null;
+		const topLayer = maxLayers - 1;
+		let bestEnd = -1;
+		let effR = 0;
+		for (const item of forwardAll) {
+			if (item.kind !== 'feature') continue;
+			if ((forwardOffsets.get(item.idx) ?? 0) === topLayer) {
+				if (item.part.end > bestEnd) {
+					bestEnd = item.part.end;
+					effR = forwardRadius + topLayer * (PART_WIDTH + PART_GAP);
+				}
+			}
+		}
+		for (const item of reverseAll) {
+			if (item.kind !== 'feature') continue;
+			if ((reverseOffsets.get(item.idx) ?? 0) === topLayer) {
+				if (bestEnd === -1 || item.part.end > bestEnd) {
+					bestEnd = item.part.end;
+					effR = reverseRadius - topLayer * (PART_WIDTH + PART_GAP);
+				}
+			}
+		}
+		if (bestEnd === -1) return null;
+		return { angle: bpToAngle(bestEnd, size), effR };
 	});
-	let reversePrimerOffsets = $derived.by(() => {
-		const intervals = reversePrimers.map(p => ({ start: p.start, end: p.end }));
-		return computeCircularAnnotationLayers(intervals, size);
+
+	let overflowPmrBadge = $derived.by((): { angle: number; effR: number } | null => {
+		if (overflowPrimerCount === 0) return null;
+		const topLayer = maxLayers - 1;
+		let bestEnd = -1;
+		let effR = 0;
+		for (const item of forwardAll) {
+			if (item.kind !== 'primer') continue;
+			if ((forwardOffsets.get(item.idx) ?? 0) === topLayer) {
+				if (item.part.end > bestEnd) {
+					bestEnd = item.part.end;
+					effR = forwardRadius + topLayer * (PART_WIDTH + PART_GAP);
+				}
+			}
+		}
+		for (const item of reverseAll) {
+			if (item.kind !== 'primer') continue;
+			if ((reverseOffsets.get(item.idx) ?? 0) === topLayer) {
+				if (bestEnd === -1 || item.part.end > bestEnd) {
+					bestEnd = item.part.end;
+					effR = reverseRadius - topLayer * (PART_WIDTH + PART_GAP);
+				}
+			}
+		}
+		if (bestEnd === -1) return null;
+		return { angle: bpToAngle(bestEnd, size), effR };
 	});
 
-	let maxForwardPrimerLayer = $derived(maxLayer(forwardPrimerOffsets));
-	let maxReversePrimerLayer = $derived(maxLayer(reversePrimerOffsets));
-
-	/** Forward features: just outside backbone + cut site space */
+	/** Forward: just outside backbone + cut site space */
 	let forwardRadius = $derived(
 		baseRadius + CUTSITE_SPACE + (cutSites.length > 0 ? 4 : 0)
 	);
 
-	/** Forward primers: beyond the forward feature ring */
-	let primerForwardRadius = $derived(
-		forwardRadius +
-		(forwardParts.length > 0
-			? (maxForwardLayer + 1) * (PART_WIDTH + PART_GAP) + 4
-			: 4)
-	);
-
-	/** Reverse features: just inside scale band */
+	/** Reverse: just inside scale band */
 	let reverseRadius = $derived(baseRadius - SCALE_BAND - 10);
-
-	/** Reverse primers: beyond reverse features (further inward) */
-	let primerReverseRadius = $derived(
-		reverseRadius -
-		(reverseParts.length > 0
-			? (maxReverseLayer + 1) * (PART_WIDTH + PART_GAP) + 4
-			: 4)
-	);
 
 	/** Outermost ring radius (for selection overlay width) */
 	let outerRingRadius = $derived(
-		primerForwardRadius +
-		(forwardPrimers.length > 0
-			? (maxForwardPrimerLayer + 1) * (PART_WIDTH + PART_GAP)
-			: 0) + 12
+		forwardRadius + (forwardAll.length > 0
+			? (cappedMaxForwardLayer + 1) * (PART_WIDTH + PART_GAP) : 0) + 12
 	);
 
-	/** Build a unified featureRenderInfo map: feature index → { radius, layer } for PartArc rendering */
-	let featureRenderInfo = $derived.by(() => {
-		const info = new Map<number, { radius: number; yOffset: number }>();
-		for (let fi = 0; fi < forwardParts.length; fi++) {
-			const origIdx = forwardParts[fi].index;
-			const layer = forwardOffsets.get(fi) ?? 0;
-			info.set(origIdx, { radius: forwardRadius, yOffset: layer });
+	/** Unified render info: parts index -> { radius, kind }.
+	 *  Pre-computes effective radius using uniform step PART_WIDTH + PART_GAP.
+	 *  Skips parts whose layer >= maxLayers (overflow). */
+	let renderInfo = $derived.by(() => {
+		const info = new Map<number, { radius: number; kind: 'feature' | 'primer' }>();
+		for (const item of forwardAll) {
+			const layer = forwardOffsets.get(item.idx) ?? 0;
+			if (layer >= maxLayers) continue;
+			info.set(item.idx, {
+				radius: forwardRadius + layer * (PART_WIDTH + PART_GAP),
+				kind: item.kind,
+			});
 		}
-		for (let ri = 0; ri < reverseParts.length; ri++) {
-			const origIdx = reverseParts[ri].index;
-			const layer = reverseOffsets.get(ri) ?? 0;
-			info.set(origIdx, { radius: reverseRadius, yOffset: -layer });
-		}
-		return info;
-	});
-
-	/** Build primer render info */
-	let primerRenderInfo = $derived.by(() => {
-		const info = new Map<number, { radius: number; yOffset: number }>();
-		for (let fi = 0; fi < forwardPrimers.length; fi++) {
-			const layer = forwardPrimerOffsets.get(fi) ?? 0;
-			info.set(fi, { radius: primerForwardRadius, yOffset: layer });
-		}
-		for (let ri = 0; ri < reversePrimers.length; ri++) {
-			const layer = reversePrimerOffsets.get(ri) ?? 0;
-			info.set(forwardPrimers.length + ri, { radius: primerReverseRadius, yOffset: -layer });
+		for (const item of reverseAll) {
+			const layer = reverseOffsets.get(item.idx) ?? 0;
+			if (layer >= maxLayers) continue;
+			info.set(item.idx, {
+				radius: reverseRadius - layer * (PART_WIDTH + PART_GAP),
+				kind: item.kind,
+			});
 		}
 		return info;
 	});
-
-	/** Combined primer list for rendering (forward then reverse) */
-	let allPrimers = $derived([...forwardPrimers, ...reversePrimers]);
 
 	/** Unique cutter enzymes (appear exactly once) */
 	let uniqueCutters = $derived.by(() => {
@@ -594,47 +719,51 @@
 				/>
 			{/each}
 
-			<!-- Layer 5a: Feature arcs -->
-			{#each features as feature, i (feature.name + feature.start + '-' + i)}
-				{@const ri = featureRenderInfo.get(i)}
-				<PartArc
-					part={feature}
-					totalSize={size}
-					radius={ri?.radius ?? forwardRadius}
-					{cx}
-					{cy}
-					yOffset={ri?.yOffset ?? 0}
-					showInternalLabel={showInternalLabels}
-					rotation={rotationDeg}
-					selected={selectedPart === feature}
-					onmouseenter={(e) => handlePartMouseEnter(e, feature)}
-					onmouseleave={handleMouseLeave}
-					onclick={() => handlePartClick(feature)}
-				/>
+			<!-- Layer 5: Feature and primer arcs (unified stacking, skip overflow layers) -->
+			{#each parts as part, i (part.name + part.start + '-' + i)}
+				{#if renderInfo.has(i)}
+					{@const ri = renderInfo.get(i)}
+					<PartArc
+						part={ri?.kind === 'primer' ? { ...part, bindingStart: undefined, bindingEnd: undefined, mismatches: undefined } : part}
+						totalSize={size}
+						radius={ri?.radius ?? forwardRadius}
+						{cx}
+						{cy}
+						width={ri?.kind === 'primer' ? 7 : 14}
+						showInternalLabel={showInternalLabels}
+						rotation={rotationDeg}
+						halfArrow={ri?.kind === 'primer'}
+						overrideColor={ri?.kind === 'primer' ? PRIMER_COLOR : undefined}
+						fillOpacity={ri?.kind === 'primer' ? 0.5 : 1.0}
+						selected={selectedPart === part}
+						onmouseenter={(e) => handlePartMouseEnter(e, part)}
+						onmouseleave={handleMouseLeave}
+						onclick={() => handlePartClick(part)}
+					/>
+				{/if}
 			{/each}
 
-			<!-- Layer 5b: Primer arcs -->
-			{#each allPrimers as primer, i (primer.name + primer.start + '-primer-' + i)}
-				{@const ri = primerRenderInfo.get(i)}
-				<PartArc
-					part={{ ...primer, bindingStart: undefined, bindingEnd: undefined, mismatches: undefined }}
-					totalSize={size}
-					radius={ri?.radius ?? primerForwardRadius}
-					{cx}
-					{cy}
-					width={7}
-					yOffset={ri?.yOffset ?? 0}
-					showInternalLabel={showInternalLabels}
-					rotation={rotationDeg}
-					halfArrow={true}
-					overrideColor={PRIMER_COLOR}
-					fillOpacity={0.5}
-					selected={selectedPart === primer}
-					onmouseenter={(e) => handlePartMouseEnter(e, primer)}
-					onmouseleave={handleMouseLeave}
-					onclick={() => handlePartClick(primer)}
-				/>
-			{/each}
+			<!-- Layer 5c: Overflow indicators (arc-following text on the last visible layer) -->
+			{#if overflowFtrBadge}
+				{@const startAngle = overflowFtrBadge.angle + 0.04}
+				{@const endAngle = startAngle + 0.35}
+				{@const p1 = angleToXY(startAngle, overflowFtrBadge.effR, cx, cy)}
+				{@const p2 = angleToXY(endAngle, overflowFtrBadge.effR, cx, cy)}
+				<path id="overflow-ftr-arc" d="M {p1.x} {p1.y} A {overflowFtrBadge.effR} {overflowFtrBadge.effR} 0 0 1 {p2.x} {p2.y}" fill="none" stroke="none" />
+				<text class="overflow-indicator">
+					<textPath href="#overflow-ftr-arc" startOffset="50%" text-anchor="middle">+{overflowFeatureCount} ftr</textPath>
+				</text>
+			{/if}
+			{#if overflowPmrBadge}
+				{@const startAngle = overflowPmrBadge.angle + 0.04}
+				{@const endAngle = startAngle + 0.35}
+				{@const p1 = angleToXY(startAngle, overflowPmrBadge.effR, cx, cy)}
+				{@const p2 = angleToXY(endAngle, overflowPmrBadge.effR, cx, cy)}
+				<path id="overflow-pmr-arc" d="M {p1.x} {p1.y} A {overflowPmrBadge.effR} {overflowPmrBadge.effR} 0 0 1 {p2.x} {p2.y}" fill="none" stroke="none" />
+				<text class="overflow-indicator">
+					<textPath href="#overflow-pmr-arc" startOffset="50%" text-anchor="middle">+{overflowPrimerCount} pmr</textPath>
+				</text>
+			{/if}
 
 			<!-- Layer 6: Cut site label text -->
 			{#if interactive}
@@ -665,7 +794,7 @@
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<circle
 				{cx} {cy}
-				r={baseRadius * 0.65}
+				r={baseRadius * 0.325}
 				fill="transparent"
 				onmouseenter={handleCenterEnter}
 				onmouseleave={handleMouseLeave}
@@ -782,6 +911,14 @@
 		font-size: 8px;
 		fill: var(--hatch-text-muted, #8a95a5);
 		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+		user-select: none;
+	}
+
+	.overflow-indicator {
+		font-size: 10px;
+		fill: var(--hatch-text-muted, #8892a4);
+		font-family: var(--hatch-font-mono, 'SF Mono', 'Fira Code', monospace);
+		pointer-events: none;
 		user-select: none;
 	}
 
